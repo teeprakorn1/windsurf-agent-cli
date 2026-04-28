@@ -18,26 +18,32 @@
 
 ## 🚀 Quick Start
 
-### 1. Install Windsurf IDE
+### Option A: Use `npx` (Recommended — No Install Needed)
 
-Download from [codeium.com/windsurf](https://codeium.com/windsurf)
+```bash
+# 1. Go to your project
+cd your-project
 
-### 2. Clone This Project
+# 2. Initialize Antigravity Kit
+npx windsurf-agent-cli init
+
+# 3. Open in Windsurf IDE
+windsurf .
+```
+
+That's it! The `init` command will:
+- Copy `.windsurf/` config (agents, skills, workflows, rules) into your project
+- Update `.gitignore` with `# AG Kit` + `.windsurf` automatically
+
+### Option B: Clone This Repo
 
 ```bash
 git clone https://github.com/teeprakorn1/windsurf-agent-cli.git
 cd windsurf-agent-cli
-```
-
-### 3. Open in Windsurf
-
-```bash
 windsurf .
 ```
 
-Windsurf automatically reads `.windsurf/` configuration and activates all agents, skills, and workflows.
-
-### 4. Start Using Commands
+### Start Using Commands
 
 Type any slash command in the Windsurf chat panel:
 
@@ -45,6 +51,18 @@ Type any slash command in the Windsurf chat panel:
 /create Build a task management app
 /backend Design REST API with PostgreSQL
 /security Audit my codebase for vulnerabilities
+```
+
+### CLI Commands
+
+```bash
+npx windsurf-agent-cli init           # First-time setup — copy .windsurf/ to your project
+npx windsurf-agent-cli update         # Update .windsurf/ to latest version
+npx windsurf-agent-cli status         # Show project statistics
+npx windsurf-agent-cli list           # List all available slash commands
+npx windsurf-agent-cli checklist      # Run master checklist
+npx windsurf-agent-cli checklist --url http://localhost:3000  # Checklist with performance + E2E
+npx windsurf-agent-cli help           # Show help message
 ```
 
 ---

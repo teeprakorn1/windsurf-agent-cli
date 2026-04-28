@@ -61,6 +61,82 @@ function showStatus() {
   console.log("");
 }
 
+function initProject() {
+  const targetDir = process.cwd();
+  const targetWindsurf = path.join(targetDir, ".windsurf");
+
+  if (fs.existsSync(targetWindsurf)) {
+    console.log("⚠️  .windsurf/ already exists in this project.");
+    console.log("   Run `npx windsurf-agent-cli update` to update instead.\n");
+    return;
+  }
+
+  console.log("📦 Copying .windsurf/ to project...\n");
+
+  function copyRecursive(src, dest) {
+    if (!fs.existsSync(dest)) fs.mkdirSync(dest, { recursive: true });
+    const entries = fs.readdirSync(src, { withFileTypes: true });
+    for (const entry of entries) {
+      const srcPath = path.join(src, entry.name);
+      const destPath = path.join(dest, entry.name);
+      if (entry.isDirectory()) {
+        copyRecursive(srcPath, destPath);
+      } else {
+        fs.copyFileSync(srcPath, destPath);
+      }
+    }
+  }
+
+  copyRecursive(WINDSURF_DIR, targetWindsurf);
+
+  // Update .gitignore
+  const gitignorePath = path.join(targetDir, ".gitignore");
+  const gitignoreEntries = ["# AG Kit", ".windsurf"];
+  let content = "";
+  try { content = fs.readFileSync(gitignorePath, "utf-8"); } catch {}
+  if (!content.includes("AG Kit")) {
+    const separator = content.endsWith("\n") ? "" : "\n";
+    fs.writeFileSync(gitignorePath, content + separator + gitignoreEntries.join("\n") + "\n", "utf-8");
+    console.log("✅ Updated .gitignore");
+  }
+
+  console.log("✅ .windsurf/ copied to project!");
+  console.log("\nNext steps:");
+  console.log("  1. Open this project in Windsurf IDE: windsurf .");
+  console.log("  2. Use slash commands in Windsurf chat (e.g., /backend, /security)");
+  console.log("");
+}
+
+function updateProject() {
+  const targetDir = process.cwd();
+  const targetWindsurf = path.join(targetDir, ".windsurf");
+
+  if (!fs.existsSync(targetWindsurf)) {
+    console.log("⚠️  .windsurf/ not found. Run `npx windsurf-agent-cli init` first.\n");
+    return;
+  }
+
+  console.log("🔄 Updating .windsurf/...\n");
+
+  function copyRecursive(src, dest) {
+    if (!fs.existsSync(dest)) fs.mkdirSync(dest, { recursive: true });
+    const entries = fs.readdirSync(src, { withFileTypes: true });
+    for (const entry of entries) {
+      const srcPath = path.join(src, entry.name);
+      const destPath = path.join(dest, entry.name);
+      if (entry.isDirectory()) {
+        copyRecursive(srcPath, destPath);
+      } else {
+        fs.copyFileSync(srcPath, destPath);
+      }
+    }
+  }
+
+  copyRecursive(WINDSURF_DIR, targetWindsurf);
+  console.log("✅ .windsurf/ updated!");
+  console.log("");
+}
+
 function runChecklist(url) {
   const cmd = url 
     ? `python3 .windsurf/scripts/checklist.py . --url ${url}`
@@ -97,6 +173,12 @@ const command = args[0];
 showBanner();
 
 switch (command) {
+  case "init":
+    initProject();
+    break;
+  case "update":
+    updateProject();
+    break;
   case "status":
     showStatus();
     break;
@@ -112,6 +194,8 @@ switch (command) {
     console.log(`Usage: npx windsurf-agent-cli <command>
 
 Commands:
+  init                Copy .windsurf/ config to current project (first-time setup)
+  update              Update .windsurf/ config in current project
   status              Show project statistics (agents, skills, workflows, etc.)
   list                List all available slash commands
   checklist           Run master checklist for quality verification
@@ -119,6 +203,8 @@ Commands:
   help                Show this help message
 
 Examples:
+  npx windsurf-agent-cli init          # First-time setup in your project
+  npx windsurf-agent-cli update        # Update to latest config
   npx windsurf-agent-cli status
   npx windsurf-agent-cli list
   npx windsurf-agent-cli checklist
