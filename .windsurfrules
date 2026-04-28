@@ -1,9 +1,9 @@
-# Antigravity Kit — Windsurf Workspace Rules
+# Sub-Agent Kit — Windsurf Workspace Rules
 # This file is auto-read by Windsurf IDE
 # It references the main rule system in .windsurf/rules/
 
 ## 🎯 Overview
-This workspace uses the Antigravity Kit — a multi-agent AI framework for Windsurf.
+This workspace uses the Sub-Agent Kit — a multi-agent AI framework for Windsurf.
 
 ## 📁 Structure
 - `.windsurf/agents/` — 79 specialized AI agents

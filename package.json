@@ -43,6 +43,7 @@
   "files": [
     ".windsurf/",
     "bin/",
+    "lib/",
     "docs/",
     "LICENSE",
     "README.md",

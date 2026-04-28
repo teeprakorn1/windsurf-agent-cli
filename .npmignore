@@ -1,7 +1,6 @@
-node_modules/
-.env
-.env.local
-.env.*.local
+# Source control
+.git
+.gitignore
 
 # OS
 .DS_Store
@@ -17,7 +16,7 @@ Thumbs.db
 *.log
 npm-debug.log*
 
-# Build
+# Build artifacts
 dist/
 build/
 .cache/
@@ -34,12 +33,14 @@ __pycache__/
 .venv/
 venv/
 
-# Secrets — NEVER commit
+# Secrets
+.env
+.env.local
+.env.*.local
 *.key
 *.pem
 *.p12
 credentials.json
 service-account.json
-# AG Kit — .windsurf/ is tracked in git (it IS the package payload)
-# Use .npmignore to control npm publish exclusions
-.windsurf/.version
+
+# DO NOT ignore .windsurf/ — it IS the package payload

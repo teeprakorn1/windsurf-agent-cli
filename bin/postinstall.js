@@ -6,6 +6,7 @@
 
 const fs = require("fs");
 const path = require("path");
+const { countFiles: countFilesUtil, countDirs, updateGitignore } = require("../lib/utils");
 
 const NEW_SECTION_ENTRIES = [
   "# AG Kit",
@@ -88,17 +89,9 @@ updateGitignore();
 
 const pkgDir = path.resolve(__dirname, "..");
 const windsurfDir = path.join(pkgDir, ".windsurf");
-function countItems(dir, ext) {
-  if (!fs.existsSync(dir)) return 0;
-  return fs.readdirSync(dir).filter(f => f.endsWith(ext)).length;
-}
-function countDirs(dir) {
-  if (!fs.existsSync(dir)) return 0;
-  return fs.readdirSync(dir).filter(f => fs.statSync(path.join(dir, f)).isDirectory()).length;
-}
-const agentCount = countItems(path.join(windsurfDir, "agents"), ".md");
+const agentCount = countFilesUtil(path.join(windsurfDir, "agents"), ".md");
 const skillCount = countDirs(path.join(windsurfDir, "skills"));
-const workflowCount = countItems(path.join(windsurfDir, "workflows"), ".md");
+const workflowCount = countFilesUtil(path.join(windsurfDir, "workflows"), ".md");
 
 console.log(`
 ╔══════════════════════════════════════════════╗

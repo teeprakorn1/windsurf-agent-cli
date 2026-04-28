@@ -10,6 +10,7 @@ const http = require("http");
 const https = require("https");
 const path = require("path");
 const fs = require("fs");
+const { countFiles, countDirs, updateGitignore } = require("../lib/utils");
 
 const PROJECT_ROOT = path.resolve(__dirname, "..");
 const WINDSURF_DIR = path.join(PROJECT_ROOT, ".windsurf");
@@ -66,21 +67,10 @@ function saveInstalledVersion() {
 }
 
 function getComponentCounts() {
-  const agentsDir = path.join(WINDSURF_DIR, "agents");
-  const skillsDir = path.join(WINDSURF_DIR, "skills");
-  const workflowsDir = path.join(WINDSURF_DIR, "workflows");
-  const countFiles = (dir, ext) => {
-    if (!fs.existsSync(dir)) return 0;
-    return fs.readdirSync(dir).filter(f => f.endsWith(ext)).length;
-  };
-  const countDirs = (dir) => {
-    if (!fs.existsSync(dir)) return 0;
-    return fs.readdirSync(dir).filter(f => fs.statSync(path.join(dir, f)).isDirectory()).length;
-  };
   return {
-    agents: countFiles(agentsDir, ".md"),
-    skills: countDirs(skillsDir),
-    workflows: countFiles(workflowsDir, ".md"),
+    agents: countFiles(path.join(WINDSURF_DIR, "agents"), ".md"),
+    skills: countDirs(path.join(WINDSURF_DIR, "skills")),
+    workflows: countFiles(path.join(WINDSURF_DIR, "workflows"), ".md"),
   };
 }
 
@@ -95,29 +85,13 @@ function showBanner() {
 function showStatus() {
   console.log("📊 Project Status:\n");
 
-  const agentsDir = path.join(WINDSURF_DIR, "agents");
-  const skillsDir = path.join(WINDSURF_DIR, "skills");
-  const workflowsDir = path.join(WINDSURF_DIR, "workflows");
   const scriptsDir = path.join(WINDSURF_DIR, "scripts");
-  const rulesDir = path.join(WINDSURF_DIR, "rules");
 
-  const countFiles = (dir) => {
-    if (!fs.existsSync(dir)) return 0;
-    return fs.readdirSync(dir).filter(f => f.endsWith(".md")).length;
-  };
-
-  const countDirs = (dir) => {
-    if (!fs.existsSync(dir)) return 0;
-    return fs.readdirSync(dir).filter(f => 
-      fs.statSync(path.join(dir, f)).isDirectory()
-    ).length;
-  };
-
-  console.log(`  Agents:    ${countFiles(agentsDir)}`);
-  console.log(`  Skills:    ${countDirs(skillsDir)}`);
-  console.log(`  Workflows: ${countFiles(workflowsDir)}`);
+  console.log(`  Agents:    ${countFiles(path.join(WINDSURF_DIR, "agents"), ".md")}`);
+  console.log(`  Skills:    ${countDirs(path.join(WINDSURF_DIR, "skills"))}`);
+  console.log(`  Workflows: ${countFiles(path.join(WINDSURF_DIR, "workflows"), ".md")}`);
   console.log(`  Scripts:   ${fs.existsSync(scriptsDir) ? fs.readdirSync(scriptsDir).filter(f => f.endsWith(".py")).length : 0}`);
-  console.log(`  Rules:     ${countFiles(rulesDir)}`);
+  console.log(`  Rules:     ${countFiles(path.join(WINDSURF_DIR, "rules"), ".md")}`);
   console.log("");
 }
 
@@ -143,18 +117,7 @@ function copyRecursive(src, dest, options = {}) {
   return overwritten;
 }
 
-function updateGitignore() {
-  const targetDir = process.cwd();
-  const gitignorePath = path.join(targetDir, ".gitignore");
-  const gitignoreEntries = ["# AG Kit", ".windsurf"];
-  let content = "";
-  try { content = fs.readFileSync(gitignorePath, "utf-8"); } catch {}
-  if (!content.includes("AG Kit")) {
-    const separator = content.endsWith("\n") ? "" : "\n";
-    fs.writeFileSync(gitignorePath, content + separator + gitignoreEntries.join("\n") + "\n", "utf-8");
-    console.log("  Updated .gitignore");
-  }
-}
+// updateGitignore is now imported from lib/utils
 
 function initProject(dryRun = false) {
   const targetDir = process.cwd();
@@ -176,7 +139,7 @@ function initProject(dryRun = false) {
   console.log("Copying .windsurf/ to project...\n");
   copyRecursive(WINDSURF_DIR, targetWindsurf);
   saveInstalledVersion();
-  updateGitignore();
+  updateGitignore(process.cwd());
 
   console.log("\nDone! .windsurf/ v" + CURRENT_VERSION + " installed.\n");
   console.log("Next steps:");
@@ -185,7 +148,7 @@ function initProject(dryRun = false) {
   console.log("");
 }
 
-async function updateProject() {
+async function updateProject(dryRun = false) {
   const targetDir = process.cwd();
   const targetWindsurf = path.join(targetDir, ".windsurf");
 
@@ -212,7 +175,6 @@ async function updateProject() {
     return;
   }
 
-  const dryRun = args.includes("--dry-run");
   console.log("\nUpdating .windsurf/ from v" + (installed || "?") + " to v" + CURRENT_VERSION + "...");
   const overwritten = copyRecursive(WINDSURF_DIR, targetWindsurf, { merge: true, dryRun });
   if (overwritten.length > 0) {
@@ -221,7 +183,7 @@ async function updateProject() {
   }
   if (!dryRun) {
     saveInstalledVersion();
-    updateGitignore();
+    updateGitignore(process.cwd());
   }
   if (dryRun) {
     console.log("\n[DRY RUN] No files were written.\n");
@@ -249,7 +211,18 @@ async function showVersion() {
   console.log("");
 }
 
+function isValidUrl(str) {
+  try {
+    const u = new URL(str);
+    return ["http:", "https:"].includes(u.protocol);
+  } catch { return false; }
+}
+
 function runChecklist(url) {
+  if (url && !isValidUrl(url)) {
+    console.error("Invalid URL provided. Only http:// and https:// URLs are allowed.\n");
+    return;
+  }
   const cmd = url 
     ? `python3 .windsurf/scripts/checklist.py . --url ${url}`
     : `python3 .windsurf/scripts/checklist.py .`;
@@ -261,7 +234,7 @@ function runChecklist(url) {
 }
 
 function parseFrontmatter(content) {
-  const match = content.match(/^---\n([\s\S]*?)\n---/);
+  const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
   if (!match) return {};
   const fm = {};
   match[1].split("\n").forEach(line => {
@@ -270,7 +243,9 @@ function parseFrontmatter(content) {
     const key = line.slice(0, idx).trim();
     let val = line.slice(idx + 1).trim();
     if (val.startsWith("[") && val.endsWith("]")) {
-      val = val.slice(1, -1).split(",").map(v => v.trim().replace(/["']/g, ""));
+      val = val.slice(1, -1).split(",").map(v => v.trim().replace(/^["']|["']$/g, ""));
+    } else if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+      val = val.slice(1, -1);
     }
     fm[key] = val;
   });
@@ -433,7 +408,7 @@ switch (command) {
     initProject(args.includes("--dry-run"));
     break;
   case "update":
-    await updateProject();
+    await updateProject(args.includes("--dry-run"));
     break;
   case "uninstall":
     uninstallProject();
