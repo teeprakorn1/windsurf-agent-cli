@@ -40,3 +40,5 @@ venv/
 *.p12
 credentials.json
 service-account.json
+# AG Kit
+.windsurf
