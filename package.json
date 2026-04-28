@@ -1,6 +1,6 @@
 {
   "name": "windsurf-agent-cli",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Antigravity Kit — AI Agent Framework for Windsurf IDE with 79 Agents, 46 Skills, 78 Workflows, and 10 Rules",
   "bin": {
     "windsurf-agent-cli": "./bin/cli.js"
