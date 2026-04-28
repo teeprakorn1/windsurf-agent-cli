@@ -6,7 +6,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const { countFiles: countFilesUtil, countDirs, updateGitignore } = require("../lib/utils");
+const { countFiles: countFilesUtil, countDirs } = require("../lib/utils");
 
 const NEW_SECTION_ENTRIES = [
   "# AG Kit",
