@@ -3,7 +3,7 @@ trigger: on_request
 keywords: [quality, clean code, refactoring, maintainable, readable, test, coverage, lint, format]
 ---
 
-# Code Quality Rules — Antigravity Kit
+# Code Quality Rules — Sub-Agent Kit
 
 > Standards for maintainable, readable, and testable code.
 

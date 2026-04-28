@@ -3,7 +3,7 @@ trigger: on_request
 keywords: [api, rest, graphql, endpoint, request, response, status code, http, route, controller]
 ---
 
-# API Design Rules — Antigravity Kit
+# API Design Rules — Sub-Agent Kit
 
 > APIs are contracts. Design them to last, document them to be useful.
 

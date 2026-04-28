@@ -3,7 +3,7 @@ trigger: on_request
 keywords: [security, secure, auth, password, token, secret, encrypt, vulnerability, owasp, cve, xss, sql injection]
 ---
 
-# Security Rules — Antigravity Kit
+# Security Rules — Sub-Agent Kit
 
 > Mandatory security practices for all code and configuration changes.
 

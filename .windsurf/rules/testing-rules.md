@@ -3,7 +3,7 @@ trigger: on_request
 keywords: [test, testing, unit test, integration test, e2e, tdd, coverage, mock, stub, fixture]
 ---
 
-# Testing Rules — Antigravity Kit
+# Testing Rules — Sub-Agent Kit
 
 > If it's not tested, it's broken. Test with purpose, not just coverage.
 

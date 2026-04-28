@@ -1,6 +1,6 @@
 # Antigravity Skills
 
-> **Guide to creating and using Skills in the Antigravity Kit**
+> **Guide to creating and using Skills in the Sub-Agent Kit**
 
 ---
 

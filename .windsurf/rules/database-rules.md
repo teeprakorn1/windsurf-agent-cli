@@ -3,7 +3,7 @@ trigger: on_request
 keywords: [database, sql, query, index, migration, schema, table, column, orm, postgres, mysql, mongodb]
 ---
 
-# Database Rules — Antigravity Kit
+# Database Rules — Sub-Agent Kit
 
 > Data is the foundation. Design schemas that scale, query efficiently, and migrate safely.
 

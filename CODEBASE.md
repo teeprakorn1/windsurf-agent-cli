@@ -2,7 +2,7 @@
 
 ## System Overview
 
-This project is **Antigravity Kit** — a configuration set for AI Agent Framework on Windsurf IDE, designed to create intelligent Agent systems that can analyze, plan, and coordinate together.
+This project is **Sub-Agent Kit** — a configuration set for AI Agent Framework on Windsurf IDE, designed to create intelligent Agent systems that can analyze, plan, and coordinate together.
 
 ## Architecture
 
@@ -71,7 +71,7 @@ Special directory for assets shared across skills:
   - `design_system.py` — Design system generator
 
 ### Rules (10 total)
-- `GEMINI.md` — Core rules of Antigravity Kit (Tier 0-2)
+- `GEMINI.md` — Core rules of Sub-Agent Kit (Tier 0-2)
 - `architecture.md` — System architecture
 - `security-rules.md` — Security best practices and guidelines
 - `performance-rules.md` — Performance optimization guidelines

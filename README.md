@@ -1,4 +1,4 @@
-# Windsurf Agent CLI — Antigravity Kit
+# Windsurf Agent CLI — Sub-Agent Kit
 
 > Workspace configuration for AI Agent Framework on Windsurf IDE — 79 Agents, 46 Skills, 78 Workflows, 10 Rules
 
@@ -24,7 +24,7 @@
 # 1. Go to your project
 cd your-project
 
-# 2. Initialize Antigravity Kit
+# 2. Initialize Sub-Agent Kit
 npx windsurf-agent-cli init
 
 # 3. Open in Windsurf IDE

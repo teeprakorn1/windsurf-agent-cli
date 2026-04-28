@@ -1,4 +1,4 @@
-# Skill Index — Antigravity Kit
+# Skill Index — Sub-Agent Kit
 
 > Mapping of Skills and their Agents
 

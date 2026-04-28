@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Windsurf Agent CLI — Antigravity Kit
+ * Windsurf Agent CLI — Sub-Agent Kit
  * AI Agent Framework for Windsurf IDE
  */
 
@@ -63,7 +63,7 @@ function saveInstalledVersion() {
 
 function showBanner() {
   console.log(`
-  Windsurf Agent CLI — Antigravity Kit v${CURRENT_VERSION}
+  Windsurf Agent CLI — Sub-Agent Kit v${CURRENT_VERSION}
   79 Agents | 46 Skills | 78 Workflows
 `);
 }

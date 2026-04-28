@@ -3,7 +3,7 @@ trigger: on_request
 keywords: [doc, documentation, readme, comment, guide, explain, tutorial, example]
 ---
 
-# Documentation Rules — Antigravity Kit
+# Documentation Rules — Sub-Agent Kit
 
 > Standards for clear, helpful, and maintainable documentation.
 
