@@ -145,6 +145,114 @@ function runChecklist(url) {
   runCommand(cmd);
 }
 
+function parseFrontmatter(content) {
+  const match = content.match(/^---\n([\s\S]*?)\n---/);
+  if (!match) return {};
+  const fm = {};
+  match[1].split("\n").forEach(line => {
+    const idx = line.indexOf(":");
+    if (idx === -1) return;
+    const key = line.slice(0, idx).trim();
+    let val = line.slice(idx + 1).trim();
+    if (val.startsWith("[") && val.endsWith("]")) {
+      val = val.slice(1, -1).split(",").map(v => v.trim().replace(/["']/g, ""));
+    }
+    fm[key] = val;
+  });
+  return fm;
+}
+
+function loadAllRules() {
+  const rulesDir = path.join(WINDSURF_DIR, "rules");
+  if (!fs.existsSync(rulesDir)) return [];
+  return fs.readdirSync(rulesDir)
+    .filter(f => f.endsWith(".md"))
+    .map(f => {
+      const content = fs.readFileSync(path.join(rulesDir, f), "utf-8");
+      const fm = parseFrontmatter(content);
+      const keywords = Array.isArray(fm.keywords) ? fm.keywords : [];
+      return { file: f, name: f.replace(".md", ""), keywords, trigger: fm.trigger || "" };
+    });
+}
+
+function findMatchingRules(agentDesc, agentSkills) {
+  const rules = loadAllRules();
+  const text = (agentDesc + " " + agentSkills).toLowerCase();
+  return rules.filter(r => r.keywords.some(k => text.includes(k.toLowerCase())));
+}
+
+function showAgentInfo(agentName) {
+  const agentsDir = path.join(WINDSURF_DIR, "agents");
+  const filePath = path.join(agentsDir, `${agentName}.md`);
+
+  if (!fs.existsSync(filePath)) {
+    // Try partial match
+    const files = fs.readdirSync(agentsDir).filter(f => f.endsWith(".md"));
+    const match = files.find(f => f.replace(".md", "").includes(agentName));
+    if (match) {
+      return showAgentInfo(match.replace(".md", ""));
+    }
+    console.log(`Agent not found: ${agentName}\n`);
+    console.log("Available agents:");
+    files.sort().forEach(f => console.log(`  ${f.replace(".md", "")}`));
+    console.log("");
+    return;
+  }
+
+  const content = fs.readFileSync(filePath, "utf-8");
+  const fm = parseFrontmatter(content);
+  const skills = Array.isArray(fm.skills) ? fm.skills : (fm.skills ? fm.skills.split(",").map(s => s.trim()) : []);
+  const tools = Array.isArray(fm.tools) ? fm.tools : (fm.tools ? fm.tools.split(",").map(t => t.trim()) : []);
+  const hasSubAgents = tools.includes("Agent");
+  const matchingRules = findMatchingRules(fm.description || "", fm.skills || "");
+
+  console.log(`Agent: ${fm.name || agentName}\n`);
+  console.log(`  Description: ${fm.description || 'N/A'}\n`);
+  console.log(`  Tools:       ${tools.join(', ')}`);
+  console.log(`  Skills:      ${skills.join(', ')}`);
+  console.log(`  Sub-agents:  ${hasSubAgents ? 'Yes (can spawn other agents)' : 'No'}`);
+  console.log(`  Rules:       ${matchingRules.length > 0 ? matchingRules.map(r => r.name).join(', ') : 'None matched'}`);
+
+  // Show skill details
+  if (skills.length > 0) {
+    console.log(`\n  Skill Details:`);
+    skills.forEach(skill => {
+      const skillPath = path.join(WINDSURF_DIR, "skills", skill, "SKILL.md");
+      if (fs.existsSync(skillPath)) {
+        const sc = fs.readFileSync(skillPath, "utf-8");
+        const sfm = parseFrontmatter(sc);
+        console.log(`     ${skill.padEnd(25)} ${sfm.description || 'Loaded'}`);
+      } else {
+        console.log(`     ${skill.padEnd(25)} (built-in)`);
+      }
+    });
+  }
+
+  // Show rule details
+  if (matchingRules.length > 0) {
+    console.log(`\n  Matched Rules:`);
+    matchingRules.forEach(r => {
+      console.log(`     ${r.name.padEnd(25)} keywords: ${r.keywords.slice(0, 5).join(', ')}${r.keywords.length > 5 ? '...' : ''}`);
+    });
+  }
+
+  // Show which workflow activates this agent
+  const workflowsDir = path.join(WINDSURF_DIR, "workflows");
+  if (fs.existsSync(workflowsDir)) {
+    const activatingWorkflows = fs.readdirSync(workflowsDir)
+      .filter(f => f.endsWith(".md"))
+      .filter(f => {
+        const wc = fs.readFileSync(path.join(workflowsDir, f), "utf-8");
+        return wc.includes(agentName);
+      });
+    if (activatingWorkflows.length > 0) {
+      console.log(`\n  Activated by: ${activatingWorkflows.map(f => '/' + f.replace('.md', '')).join(', ')}`);
+    }
+  }
+
+  console.log("");
+}
+
 function listCommands() {
   console.log("📋 Available Commands:\n");
 
@@ -173,6 +281,18 @@ const command = args[0];
 showBanner();
 
 switch (command) {
+  case "info":
+    if (!args[1]) {
+      console.log("Usage: npx windsurf-agent-cli info <agent-name>\n");
+      console.log("Example:");
+      console.log("  npx windsurf-agent-cli info frontend-specialist");
+      console.log("  npx windsurf-agent-cli info orchestrator");
+      console.log("  npx windsurf-agent-cli info security");
+      console.log("");
+    } else {
+      showAgentInfo(args[1]);
+    }
+    break;
   case "init":
     initProject();
     break;
@@ -196,6 +316,7 @@ switch (command) {
 Commands:
   init                Copy .windsurf/ config to current project (first-time setup)
   update              Update .windsurf/ config in current project
+  info <agent>        Show agent details: skills, sub-agents, rules, workflow
   status              Show project statistics (agents, skills, workflows, etc.)
   list                List all available slash commands
   checklist           Run master checklist for quality verification
@@ -203,12 +324,13 @@ Commands:
   help                Show this help message
 
 Examples:
-  npx windsurf-agent-cli init          # First-time setup in your project
-  npx windsurf-agent-cli update        # Update to latest config
+  npx windsurf-agent-cli init                        # First-time setup
+  npx windsurf-agent-cli info frontend-specialist    # Show agent details
+  npx windsurf-agent-cli info orchestrator           # Show orchestrator info
+  npx windsurf-agent-cli update                      # Update config
   npx windsurf-agent-cli status
   npx windsurf-agent-cli list
   npx windsurf-agent-cli checklist
-  npx windsurf-agent-cli checklist --url http://localhost:3000
 
 How It Works:
   After installing, .windsurf/ config is loaded by Windsurf IDE.
