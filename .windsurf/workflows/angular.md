@@ -1,5 +1,10 @@
 ---
 description: Angular development — enterprise TypeScript applications with RxJS, dependency injection, and reactive forms. Used for large-scale SPAs with strict architecture.
+skills:
+  - clean-code
+  - frontend-design
+  - lint-and-validate
+  - api-patterns
 ---
 
 # /angular — Angular Development
@@ -14,7 +19,7 @@ $ARGUMENTS
 > **MANDATORY:** Before starting any work, announce the active agent to the user.
 
 ```
-🤖 **Active Agent: `angular-developer`** | Skills: `clean-code, frontend-design, typescript-patterns, api-patterns`
+🤖 **Active Agent: `angular-developer`** | Skills: `clean-code, frontend-design, lint-and-validate, api-patterns`
 ```
 
 ## Task

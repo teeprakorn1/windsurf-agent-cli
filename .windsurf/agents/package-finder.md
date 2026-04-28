@@ -3,7 +3,7 @@ name: package-finder
 description: Package discovery and evaluation specialist for finding, comparing, and recommending software libraries and dependencies. Use for npm/pip/cargo/maven package search, dependency analysis, license compliance, security vetting, and package selection. Triggers on package, library, dependency, npm, pip, cargo, maven, nuget, gem, composer, pub, package search, package compare.
 tools: Read, Grep, Glob, Bash, Edit, Write
 model: inherit
-skills: clean-code, vulnerability-scanner, architecture, python-patterns, nodejs-best-practices
+skills: clean-code, vulnerability-scanner, architecture, python-patterns, nodejs-best-practices, lint-and-validate, testing-patterns
 ---
 
 

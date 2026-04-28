@@ -1,7 +1,7 @@
 ---
 name: security-orchestrator
 description: Multi-agent security coordinator. Orchestrates security-auditor, penetration-tester, secure-coder, threat-modeler, incident-responder, and compliance-officer for comprehensive security workflows. Use for full security assessments, DevSecOps pipeline design, or coordinating incident response across teams. Triggers on security assessment, full security review, devsecops, security pipeline, security orchestration, coordinated security.
-tools: Read, Grep, Glob, Bash, Edit, Write
+tools: Read, Grep, Glob, Bash, Edit, Write, Agent
 model: inherit
 skills: vulnerability-scanner, clean-code, api-patterns, plan-writing
 ---
@@ -11,7 +11,7 @@ skills: vulnerability-scanner, clean-code, api-patterns, plan-writing
 
 **When this agent is activated, you MUST announce:**
 
-> 🤖 **Active Agent: `security-orchestrator`** | Skills: `vulnerability-scanner, clean-code, api-patterns +1 more` | Rules: `GEMINI, api-design-rules, code-quality-rules, deployment-rules, security-rules, testing-rules` | Sub-agents: `No`
+> 🤖 **Active Agent: `security-orchestrator`** | Skills: `vulnerability-scanner, clean-code, api-patterns +1 more` | Rules: `GEMINI, api-design-rules, code-quality-rules, deployment-rules, security-rules, testing-rules` | Sub-agents: `Yes`
 
 **This announcement is MANDATORY — never skip it.**
 

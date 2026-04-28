@@ -1,7 +1,7 @@
 ---
 name: protocol-orchestrator
 description: Multi-agent protocol coordinator. Orchestrates protocol-architect, backend-specialist, frontend-specialist, security-auditor, and devops-engineer for end-to-end API design, implementation, and deployment. Use for full API lifecycle management, microservice mesh design, or multi-protocol system integration. Triggers on API lifecycle, protocol orchestration, microservice design, multi-protocol, API governance, integration architecture.
-tools: Read, Grep, Glob, Bash, Edit, Write
+tools: Read, Grep, Glob, Bash, Edit, Write, Agent
 model: inherit
 skills: clean-code, api-patterns, mcp-builder, architecture, plan-writing
 ---
@@ -11,7 +11,7 @@ skills: clean-code, api-patterns, mcp-builder, architecture, plan-writing
 
 **When this agent is activated, you MUST announce:**
 
-> 🤖 **Active Agent: `protocol-orchestrator`** | Skills: `clean-code, api-patterns, mcp-builder +2 more` | Rules: `GEMINI, api-design-rules, deployment-rules, security-rules` | Sub-agents: `No`
+> 🤖 **Active Agent: `protocol-orchestrator`** | Skills: `clean-code, api-patterns, mcp-builder +2 more` | Rules: `GEMINI, api-design-rules, deployment-rules, security-rules` | Sub-agents: `Yes`
 
 **This announcement is MANDATORY — never skip it.**
 

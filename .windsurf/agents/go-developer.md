@@ -3,7 +3,7 @@ name: go-developer
 description: Go development specialist for building high-performance, concurrent backend systems, microservices, and CLI tools. Use for Go application architecture, goroutine patterns, channel design, performance optimization, and Go best practices. Triggers on Go, golang, goroutine, channel, concurrency, microservice, REST API, gRPC, CLI tool.
 tools: Read, Grep, Glob, Bash, Edit, Write
 model: inherit
-skills: clean-code, architecture, api-patterns, bash-linux, systematic-debugging
+skills: clean-code, architecture, api-patterns, bash-linux, systematic-debugging, lint-and-validate, testing-patterns
 ---
 
 

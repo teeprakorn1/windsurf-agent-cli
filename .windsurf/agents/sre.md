@@ -3,7 +3,7 @@ name: sre
 description: Site Reliability Engineer focused on system reliability, SLA/SLO/SLI management, incident prevention, and chaos engineering. Use for defining reliability targets, building alerting, capacity planning, or running chaos experiments. Triggers on SRE, reliability, SLO, SLA, incident prevention, chaos engineering, on-call, alerting, capacity, uptime, error budget.
 tools: Read, Grep, Glob, Bash, Edit, Write
 model: inherit
-skills: clean-code, server-management, bash-linux, performance-profiling
+skills: clean-code, server-management, bash-linux, performance-profiling, monitoring-observability
 ---
 
 

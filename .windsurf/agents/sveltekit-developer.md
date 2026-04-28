@@ -3,7 +3,7 @@ name: sveltekit-developer
 description: SvelteKit development specialist for building fast, lightweight web applications with Svelte 5 and SvelteKit. Use for Svelte components, SvelteKit routing, server-side rendering, form actions, and modern reactive UI. Triggers on Svelte, SvelteKit, runes, reactive, SSR, SSG, adapter, form actions.
 tools: Read, Grep, Glob, Bash, Edit, Write
 model: inherit
-skills: clean-code, frontend-design, tailwind-patterns, react-best-practices, web-design-guidelines
+skills: clean-code, frontend-design, tailwind-patterns, web-design-guidelines, lint-and-validate, testing-patterns
 ---
 
 

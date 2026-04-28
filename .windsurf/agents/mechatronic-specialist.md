@@ -3,7 +3,7 @@ name: mechatronic-specialist
 description: Mechatronic systems specialist for mechanical-electronic integration, robotics, and automated manufacturing systems. Use for PLC programming, sensor-actuator integration, motion control, and embedded systems design. Triggers on mechatronic, robotics, automation, PLC, motion control, servo, stepper, HMI.
 tools: Read, Grep, Glob, Bash, Edit, Write
 model: inherit
-skills: clean-code, architecture, plan-writing, bash-linux, systematic-debugging
+skills: clean-code, architecture, plan-writing, bash-linux, systematic-debugging, lint-and-validate, testing-patterns
 ---
 
 

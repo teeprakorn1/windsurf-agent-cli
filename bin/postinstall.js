@@ -35,7 +35,7 @@ function findGitignore(startDir) {
 }
 
 function updateGitignore() {
-  const projectRoot = path.resolve(process.cwd(), "../../..");
+  const projectRoot = findProjectRoot();
   const gitignorePath = findGitignore(projectRoot);
 
   if (!gitignorePath) return;
@@ -68,7 +68,37 @@ function updateGitignore() {
   fs.writeFileSync(gitignorePath, content + separator + newMissing.join("\n") + "\n", "utf-8");
 }
 
+function findProjectRoot() {
+  let dir = process.cwd();
+  for (let i = 0; i < 20; i++) {
+    if (fs.existsSync(path.join(dir, ".git"))) return dir;
+    if (fs.existsSync(path.join(dir, "package.json")) && !fs.existsSync(path.join(dir, "node_modules"))) {
+      // Likely project root if it has package.json but isn't inside node_modules
+      const pkg = JSON.parse(fs.readFileSync(path.join(dir, "package.json"), "utf-8"));
+      if (pkg.name !== "windsurf-agent-cli") return dir;
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return process.cwd();
+}
+
 updateGitignore();
+
+const pkgDir = path.resolve(__dirname, "..");
+const windsurfDir = path.join(pkgDir, ".windsurf");
+function countItems(dir, ext) {
+  if (!fs.existsSync(dir)) return 0;
+  return fs.readdirSync(dir).filter(f => f.endsWith(ext)).length;
+}
+function countDirs(dir) {
+  if (!fs.existsSync(dir)) return 0;
+  return fs.readdirSync(dir).filter(f => fs.statSync(path.join(dir, f)).isDirectory()).length;
+}
+const agentCount = countItems(path.join(windsurfDir, "agents"), ".md");
+const skillCount = countDirs(path.join(windsurfDir, "skills"));
+const workflowCount = countItems(path.join(windsurfDir, "workflows"), ".md");
 
 console.log(`
 ╔══════════════════════════════════════════════╗
@@ -77,6 +107,6 @@ console.log(`
 ║   Run: npx windsurf-agent-cli                ║
 ║   Help: npx windsurf-agent-cli help          ║
 ║                                              ║
-║   79 Agents | 46 Skills | 78 Workflows      ║
+║   ${agentCount} Agents | ${skillCount} Skills | ${workflowCount} Workflows      ║
 ╚══════════════════════════════════════════════╝
 `);

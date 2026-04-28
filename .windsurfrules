@@ -6,11 +6,11 @@
 This workspace uses the Antigravity Kit — a multi-agent AI framework for Windsurf.
 
 ## 📁 Structure
-- `.windsurf/agents/` — 20 specialized AI agents
-- `.windsurf/skills/` — 38 domain-specific skills
-- `.windsurf/workflows/` — 15 slash-command workflows
+- `.windsurf/agents/` — 79 specialized AI agents
+- `.windsurf/skills/` — 46 domain-specific skills
+- `.windsurf/workflows/` — 78 slash-command workflows
 - `.windsurf/scripts/` — 4 validation scripts
-- `.windsurf/rules/` — Core rules (GEMINI.md, architecture.md)
+- `.windsurf/rules/` — 10 rules (GEMINI.md, architecture.md + 8 domain rules)
 
 ## 🚀 Quick Start
 Use slash commands in Windsurf chat:

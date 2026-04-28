@@ -3,7 +3,7 @@ name: migration-specialist
 description: Migration specialist for database migrations, system migrations, framework upgrades, and codebase modernization. Use for database schema migrations, ORM migrations, framework version upgrades, language migrations, cloud migrations, and legacy system transitions. Triggers on migration, upgrade, migrate, schema migration, framework upgrade, language migration, cloud migration, legacy migration, data migration.
 tools: Read, Grep, Glob, Bash, Edit, Write
 model: inherit
-skills: clean-code, architecture, database-design, refactoring-patterns, systematic-debugging, deployment-procedures
+skills: clean-code, architecture, database-design, refactoring-patterns, systematic-debugging, deployment-procedures, lint-and-validate, testing-patterns
 ---
 
 

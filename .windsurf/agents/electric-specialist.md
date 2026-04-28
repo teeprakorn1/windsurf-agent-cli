@@ -3,7 +3,7 @@ name: electric-specialist
 description: Electrical systems specialist for power distribution, motor control, wiring design, and electrical safety compliance. Use for electrical panel design, motor sizing, VFD configuration, power calculations, and IEC/NEC compliance. Triggers on electrical, motor, VFD, panel, wiring, power, voltage, current, IEC, NEC.
 tools: Read, Grep, Glob, Bash, Edit, Write
 model: inherit
-skills: clean-code, architecture, plan-writing, bash-linux, systematic-debugging
+skills: clean-code, architecture, plan-writing, bash-linux, systematic-debugging, lint-and-validate, testing-patterns
 ---
 
 

@@ -23,14 +23,18 @@ function runCommand(cmd, cwd = PROJECT_ROOT) {
   } catch (error) {
     console.error(`Error running: ${cmd}`);
     console.error(error.message);
-    process.exit(1);
+    return null;
   }
 }
 
-function fetchJSON(url) {
+function fetchJSON(url, redirects = 0) {
   return new Promise((resolve, reject) => {
+    if (redirects > 5) return reject(new Error("too many redirects"));
     const client = url.startsWith("https") ? https : http;
     client.get(url, { timeout: 5000 }, (res) => {
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        return fetchJSON(res.headers.location, redirects + 1).then(resolve, reject);
+      }
       let data = "";
       res.on("data", chunk => data += chunk);
       res.on("end", () => {
@@ -61,10 +65,30 @@ function saveInstalledVersion() {
   fs.writeFileSync(versionFile, CURRENT_VERSION, "utf-8");
 }
 
+function getComponentCounts() {
+  const agentsDir = path.join(WINDSURF_DIR, "agents");
+  const skillsDir = path.join(WINDSURF_DIR, "skills");
+  const workflowsDir = path.join(WINDSURF_DIR, "workflows");
+  const countFiles = (dir, ext) => {
+    if (!fs.existsSync(dir)) return 0;
+    return fs.readdirSync(dir).filter(f => f.endsWith(ext)).length;
+  };
+  const countDirs = (dir) => {
+    if (!fs.existsSync(dir)) return 0;
+    return fs.readdirSync(dir).filter(f => fs.statSync(path.join(dir, f)).isDirectory()).length;
+  };
+  return {
+    agents: countFiles(agentsDir, ".md"),
+    skills: countDirs(skillsDir),
+    workflows: countFiles(workflowsDir, ".md"),
+  };
+}
+
 function showBanner() {
+  const c = getComponentCounts();
   console.log(`
   Windsurf Agent CLI — Sub-Agent Kit v${CURRENT_VERSION}
-  79 Agents | 46 Skills | 78 Workflows
+  ${c.agents} Agents | ${c.skills} Skills | ${c.workflows} Workflows
 `);
 }
 
@@ -97,18 +121,26 @@ function showStatus() {
   console.log("");
 }
 
-function copyRecursive(src, dest) {
-  if (!fs.existsSync(dest)) fs.mkdirSync(dest, { recursive: true });
+function copyRecursive(src, dest, options = {}) {
+  const { merge = false, dryRun = false, overwritten = [] } = options;
+  if (!fs.existsSync(dest)) {
+    if (!dryRun) fs.mkdirSync(dest, { recursive: true });
+  }
   const entries = fs.readdirSync(src, { withFileTypes: true });
   for (const entry of entries) {
     const srcPath = path.join(src, entry.name);
     const destPath = path.join(dest, entry.name);
     if (entry.isDirectory()) {
-      copyRecursive(srcPath, destPath);
+      copyRecursive(srcPath, destPath, { merge, dryRun, overwritten });
     } else {
-      fs.copyFileSync(srcPath, destPath);
+      if (merge && fs.existsSync(destPath)) {
+        overwritten.push(path.relative(process.cwd(), destPath));
+        continue;
+      }
+      if (!dryRun) fs.copyFileSync(srcPath, destPath);
     }
   }
+  return overwritten;
 }
 
 function updateGitignore() {
@@ -124,12 +156,20 @@ function updateGitignore() {
   }
 }
 
-function initProject() {
+function initProject(dryRun = false) {
   const targetDir = process.cwd();
   const targetWindsurf = path.join(targetDir, ".windsurf");
 
   if (fs.existsSync(targetWindsurf)) {
     console.log(".windsurf/ already exists. Run `npx windsurf-agent-cli update` instead.\n");
+    return;
+  }
+
+  if (dryRun) {
+    console.log("[DRY RUN] Would copy .windsurf/ to project:\n");
+    const entries = fs.readdirSync(WINDSURF_DIR, { withFileTypes: true });
+    entries.forEach(e => console.log("  .windsurf/" + e.name + (e.isDirectory() ? "/" : "")));
+    console.log("\n[DRY RUN] No files were written.\n");
     return;
   }
 
@@ -172,11 +212,22 @@ async function updateProject() {
     return;
   }
 
+  const dryRun = args.includes("--dry-run");
   console.log("\nUpdating .windsurf/ from v" + (installed || "?") + " to v" + CURRENT_VERSION + "...");
-  copyRecursive(WINDSURF_DIR, targetWindsurf);
-  saveInstalledVersion();
-  updateGitignore();
-  console.log("\nUpdated to v" + CURRENT_VERSION + "!\n");
+  const overwritten = copyRecursive(WINDSURF_DIR, targetWindsurf, { merge: true, dryRun });
+  if (overwritten.length > 0) {
+    console.log("\n  Preserved user-modified files (not overwritten):");
+    overwritten.forEach(f => console.log("    " + f));
+  }
+  if (!dryRun) {
+    saveInstalledVersion();
+    updateGitignore();
+  }
+  if (dryRun) {
+    console.log("\n[DRY RUN] No files were written.\n");
+  } else {
+    console.log("\nUpdated to v" + CURRENT_VERSION + "!\n");
+  }
 }
 
 async function showVersion() {
@@ -203,7 +254,10 @@ function runChecklist(url) {
     ? `python3 .windsurf/scripts/checklist.py . --url ${url}`
     : `python3 .windsurf/scripts/checklist.py .`;
   console.log("Running Master Checklist...\n");
-  runCommand(cmd);
+  const result = runCommand(cmd);
+  if (result === null) {
+    console.error("Checklist failed. See errors above.\n");
+  }
 }
 
 function parseFrontmatter(content) {
@@ -335,6 +389,21 @@ function listCommands() {
   console.log("");
 }
 
+function uninstallProject() {
+  const targetDir = process.cwd();
+  const targetWindsurf = path.join(targetDir, ".windsurf");
+
+  if (!fs.existsSync(targetWindsurf)) {
+    console.log(".windsurf/ not found. Nothing to uninstall.\n");
+    return;
+  }
+
+  console.log("Removing .windsurf/ from project...\n");
+  fs.rmSync(targetWindsurf, { recursive: true, force: true });
+  console.log("Done! .windsurf/ has been removed.\n");
+  console.log("Note: .gitignore entries were left intact. Remove '# AG Kit' and '.windsurf' manually if desired.\n");
+}
+
 // CLI
 const args = process.argv.slice(2);
 const command = args[0];
@@ -361,10 +430,13 @@ switch (command) {
     }
     break;
   case "init":
-    initProject();
+    initProject(args.includes("--dry-run"));
     break;
   case "update":
     await updateProject();
+    break;
+  case "uninstall":
+    uninstallProject();
     break;
   case "status":
     showStatus();
@@ -382,7 +454,10 @@ switch (command) {
 
 Commands:
   init                Copy .windsurf/ config to current project (first-time setup)
-  update              Update .windsurf/ config (checks npm for newer version)
+  init --dry-run      Preview what init would copy (no files written)
+  update              Update .windsurf/ config (preserves user-modified files)
+  update --dry-run    Preview what update would change (no files written)
+  uninstall           Remove .windsurf/ from current project
   version             Show current version + check for updates
   info <agent>        Show agent details: skills, sub-agents, rules, workflow
   status              Show project statistics (agents, skills, workflows, etc.)

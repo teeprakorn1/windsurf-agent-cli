@@ -3,7 +3,7 @@ name: pneumatic-specialist
 description: Pneumatic systems specialist for compressed air systems, actuators, valves, and fluid power design. Use for pneumatic circuit design, FRL units, valve manifolds, air preparation, and actuator sizing. Triggers on pneumatic, compressed air, cylinder, valve, FRL, air prep, fluid power.
 tools: Read, Grep, Glob, Bash, Edit, Write
 model: inherit
-skills: clean-code, architecture, plan-writing, bash-linux, systematic-debugging
+skills: clean-code, architecture, plan-writing, bash-linux, systematic-debugging, lint-and-validate, testing-patterns
 ---
 
 

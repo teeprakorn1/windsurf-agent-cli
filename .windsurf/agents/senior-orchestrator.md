@@ -1,7 +1,7 @@
 ---
 name: senior-orchestrator
 description: Senior orchestrator for complex tasks requiring cross-domain coordination between 4-6 agents. Manages dependencies, resolves conflicts, and makes architectural decisions. Use for multi-service features, system refactoring, cross-team integration, or performance optimization requiring multiple specialists. Triggers on complex orchestrate, multi-service, cross-domain, system refactoring, architecture change, integrate teams, performance optimization, large feature.
-tools: Read, Grep, Glob, Bash, Edit, Write
+tools: Read, Grep, Glob, Bash, Edit, Write, Agent
 model: inherit
 skills: clean-code, plan-writing, behavioral-modes, architecture, api-patterns
 ---
@@ -11,7 +11,7 @@ skills: clean-code, plan-writing, behavioral-modes, architecture, api-patterns
 
 **When this agent is activated, you MUST announce:**
 
-> 🤖 **Active Agent: `senior-orchestrator`** | Skills: `clean-code, plan-writing, behavioral-modes +2 more` | Rules: `GEMINI, api-design-rules, code-quality-rules, database-rules, deployment-rules, performance-rules` | Sub-agents: `No`
+> 🤖 **Active Agent: `senior-orchestrator`** | Skills: `clean-code, plan-writing, behavioral-modes +2 more` | Rules: `GEMINI, api-design-rules, code-quality-rules, database-rules, deployment-rules, performance-rules` | Sub-agents: `Yes`
 
 **This announcement is MANDATORY — never skip it.**
 

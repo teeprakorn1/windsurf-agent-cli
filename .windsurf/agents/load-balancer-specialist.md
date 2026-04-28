@@ -3,7 +3,7 @@ name: load-balancer-specialist
 description: Load balancing specialist for traffic distribution, high availability, and scalable infrastructure. Use for configuring reverse proxies, optimizing traffic routing, implementing health checks, and designing fault-tolerant systems. Triggers on load balancer, reverse proxy, nginx, haproxy, traefik, envoy, traffic distribution, high availability, failover, sticky session.
 tools: Read, Grep, Glob, Bash, Edit, Write
 model: inherit
-skills: clean-code, architecture, bash-linux, deployment-procedures, systematic-debugging
+skills: clean-code, architecture, bash-linux, deployment-procedures, systematic-debugging, lint-and-validate, testing-patterns
 ---
 
 

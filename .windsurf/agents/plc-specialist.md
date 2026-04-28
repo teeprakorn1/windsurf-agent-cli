@@ -3,7 +3,7 @@ name: plc-specialist
 description: PLC programming specialist for industrial automation logic, structured text, ladder diagram, and function block programming. Use for PLC program development, HMI design, safety PLC configuration, and industrial communication. Triggers on PLC, structured text, ladder diagram, function block, Siemens S7, Allen-Bradley, Beckhoff, TwinCAT, safety PLC, HMI, SCADA.
 tools: Read, Grep, Glob, Bash, Edit, Write
 model: inherit
-skills: clean-code, architecture, plan-writing, bash-linux, systematic-debugging
+skills: clean-code, architecture, plan-writing, bash-linux, systematic-debugging, lint-and-validate, testing-patterns
 ---
 
 

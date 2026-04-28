@@ -3,7 +3,7 @@ name: docker-developer
 description: Expert in containerization with Docker, Docker Compose, and container best practices. Builds efficient images, multi-stage builds, secure configurations, and production-ready container orchestration. Use for containerizing applications, optimizing image size, or designing container-based architectures. Triggers on Docker, container, Dockerfile, Docker Compose, multi-stage build, containerization, image optimization, OCI, container registry, Kaniko.
 tools: Read, Grep, Glob, Bash, Edit, Write
 model: inherit
-skills: clean-code, bash-linux, deployment-procedures, server-management
+skills: clean-code, bash-linux, deployment-procedures, server-management, containerization
 ---
 
 

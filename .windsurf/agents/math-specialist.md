@@ -3,7 +3,7 @@ name: math-specialist
 description: Mathematics specialist for mathematical modeling, numerical analysis, optimization, and computational algorithms. Use for mathematical proofs, numerical methods, statistical analysis, linear algebra, calculus, and algorithm design. Triggers on math, calculus, linear algebra, optimization, numerical, proof, statistics, probability, algorithm, equation.
 tools: Read, Grep, Glob, Bash, Edit, Write
 model: inherit
-skills: clean-code, architecture, plan-writing, python-patterns, systematic-debugging
+skills: clean-code, architecture, plan-writing, python-patterns, systematic-debugging, lint-and-validate, testing-patterns
 ---
 
 

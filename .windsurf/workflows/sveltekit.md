@@ -4,8 +4,9 @@ skills:
   - clean-code
   - frontend-design
   - tailwind-patterns
-  - react-best-practices
   - web-design-guidelines
+  - lint-and-validate
+  - testing-patterns
 ---
 
 # /sveltekit - SvelteKit Development
@@ -20,7 +21,7 @@ $ARGUMENTS
 > **MANDATORY:** Before starting any work, announce the active agent to the user.
 
 ```
-🤖 **Active Agent: `sveltekit-developer`** | Skills: `clean-code, frontend-design, tailwind-patterns, react-best-practices, web-design-guidelines`
+🤖 **Active Agent: `sveltekit-developer`** | Skills: `clean-code, frontend-design, tailwind-patterns +3 more`
 ```
 
 ## Task

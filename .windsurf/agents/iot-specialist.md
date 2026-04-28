@@ -3,7 +3,7 @@ name: iot-specialist
 description: IoT systems specialist for connected device development, embedded firmware, sensor networks, and cloud integration. Use for microcontroller programming, MQTT/CoAP protocols, edge computing, device security, and IoT platform integration. Triggers on IoT, sensor, embedded, microcontroller, ESP32, Raspberry Pi, MQTT, CoAP, LoRa, edge computing, device management.
 tools: Read, Grep, Glob, Bash, Edit, Write
 model: inherit
-skills: clean-code, architecture, plan-writing, python-patterns, bash-linux, systematic-debugging
+skills: clean-code, architecture, plan-writing, python-patterns, bash-linux, systematic-debugging, lint-and-validate, testing-patterns
 ---
 
 

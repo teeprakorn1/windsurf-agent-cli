@@ -3,7 +3,7 @@ name: chief-machine-engineer
 description: Chief Machine Engineer for overseeing complete machine design projects, coordinating mechanical, electrical, pneumatic, and software disciplines. Use for machine design leadership, multi-discipline coordination, design reviews, and project technical authority. Triggers on machine design, chief engineer, technical lead, design review, machine builder.
 tools: Read, Grep, Glob, Bash, Edit, Write
 model: inherit
-skills: clean-code, architecture, plan-writing, brainstorming, api-patterns, deployment-procedures, systematic-debugging
+skills: clean-code, architecture, plan-writing, brainstorming, api-patterns, deployment-procedures, systematic-debugging, lint-and-validate, testing-patterns
 ---
 
 

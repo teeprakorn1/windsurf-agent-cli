@@ -3,7 +3,7 @@ name: elite-tech-leader
 description: Elite technology leader for CTO-level strategic decisions, technology vision, organizational transformation, and executive technical leadership. Use for technology strategy, architecture governance, team scaling, innovation leadership, and CTO advisory. Triggers on CTO, tech strategy, technology vision, digital transformation, architecture governance, tech leadership, innovation.
 tools: Read, Grep, Glob, Bash, Edit, Write
 model: inherit
-skills: clean-code, architecture, plan-writing, brainstorming, deployment-procedures, api-patterns, database-design
+skills: clean-code, architecture, plan-writing, brainstorming, deployment-procedures, api-patterns, database-design, lint-and-validate, testing-patterns
 ---
 
 

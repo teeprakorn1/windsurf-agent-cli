@@ -1,7 +1,7 @@
 ---
 name: backend-orchestrator
 description: Backend-focused orchestrator that coordinates backend-specialist, database-architect, devops-engineer, test-engineer, security-auditor, and protocol-architect for server-side development, API design, database migrations, deployment, and testing. Use when building backend services, designing APIs, or managing infrastructure changes. Triggers on backend orchestrate, API orchestration, server orchestration, database migration, infrastructure orchestration, backend pipeline.
-tools: Read, Grep, Glob, Bash, Edit, Write
+tools: Read, Grep, Glob, Bash, Edit, Write, Agent
 model: inherit
 skills: clean-code, api-patterns, database-design, deployment-procedures, bash-linux, plan-writing
 ---
@@ -11,7 +11,7 @@ skills: clean-code, api-patterns, database-design, deployment-procedures, bash-l
 
 **When this agent is activated, you MUST announce:**
 
-> 🤖 **Active Agent: `backend-orchestrator`** | Skills: `clean-code, api-patterns, database-design +3 more` | Rules: `GEMINI, api-design-rules, code-quality-rules, database-rules, deployment-rules, security-rules, testing-rules` | Sub-agents: `No`
+> 🤖 **Active Agent: `backend-orchestrator`** | Skills: `clean-code, api-patterns, database-design +3 more` | Rules: `GEMINI, api-design-rules, code-quality-rules, database-rules, deployment-rules, security-rules, testing-rules` | Sub-agents: `Yes`
 
 **This announcement is MANDATORY — never skip it.**
 

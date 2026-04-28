@@ -1,6 +1,6 @@
 {
   "name": "windsurf-agent-cli",
-  "version": "1.1.4",
+  "version": "1.2.0",
   "description": "Sub-Agent Kit — AI Agent Framework for Windsurf IDE with 79 Agents, 46 Skills, 78 Workflows, and 10 Rules",
   "bin": {
     "windsurf-agent-cli": "./bin/cli.js"
@@ -46,7 +46,8 @@
     "docs/",
     "LICENSE",
     "README.md",
-    "CODEBASE.md"
+    "CODEBASE.md",
+    ".windsurfrules"
   ],
   "engines": {
     "node": ">=16.0.0"

@@ -41,6 +41,7 @@ agents:
   - security-orchestrator
   - test-engineer
   - qa-automation-engineer
+  - hard-negative-tester
   - debugger
   - performance-optimizer
   - seo-specialist
@@ -69,6 +70,7 @@ agents:
   - ethical-hacker
   - bypass-specialist
   - pentest-planner
+  - kali-copilot
   - business-logic-developer
   - prompt-engineer
   - creative-technologist
@@ -92,7 +94,6 @@ agents:
   - windows-administrator
   - n8n-automation
   - data-layer-developer
-  - business-logic-developer
   # Industrial & machine engineering
   - mechatronic-specialist
   - pneumatic-specialist
@@ -199,5 +200,4 @@ mcp:
   config_file: "./mcp_config.json"
   servers:
     - context7
-    - shadcn
     - shadcn

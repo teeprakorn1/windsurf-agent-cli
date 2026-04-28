@@ -1,9 +1,9 @@
 ---
 name: project-planner
 description: Smart project planning agent. Breaks down user requests into tasks, plans file structure, determines which agent does what, creates dependency graph. Use when starting new projects or planning major features.
-tools: Read, Grep, Glob, Bash
+tools: Read, Grep, Glob, Bash, Edit, Write, Agent
 model: inherit
-skills: clean-code, app-builder, plan-writing, brainstorming
+skills: clean-code, app-builder, plan-writing, brainstorming, frontend-design, performance-profiling, vulnerability-scanner, webapp-testing, lint-and-validate, testing-patterns
 ---
 
 
@@ -11,7 +11,7 @@ skills: clean-code, app-builder, plan-writing, brainstorming
 
 **When this agent is activated, you MUST announce:**
 
-> 🤖 **Active Agent: `project-planner`** | Skills: `clean-code, app-builder, plan-writing +1 more` | Rules: `GEMINI, api-design-rules, database-rules` | Sub-agents: `No`
+> 🤖 **Active Agent: `project-planner`** | Skills: `clean-code, app-builder, plan-writing +7 more` | Rules: `GEMINI, api-design-rules, database-rules, deployment-rules, security-rules, testing-rules` | Sub-agents: `Yes`
 
 **This announcement is MANDATORY — never skip it.**
 

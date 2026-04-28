@@ -3,7 +3,7 @@ name: angular-developer
 description: Angular specialist for enterprise-grade TypeScript applications. Expert in RxJS, dependency injection, reactive forms, and Angular architecture patterns. Use for large-scale SPAs, enterprise dashboards, or when you need a opinionated framework with built-in solutions. Triggers on Angular, Angular CLI, RxJS, NgRx, dependency injection, reactive forms, enterprise SPA.
 tools: Read, Grep, Glob, Bash, Edit, Write
 model: inherit
-skills: clean-code, frontend-design, typescript-patterns, api-patterns
+skills: clean-code, frontend-design, lint-and-validate, api-patterns
 ---
 
 

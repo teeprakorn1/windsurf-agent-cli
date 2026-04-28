@@ -1,7 +1,7 @@
 ---
 name: frontend-orchestrator
 description: Frontend-focused orchestrator that coordinates frontend-specialist, react-developer, angular-developer, nextjs-developer, html5-css-developer, accessibility-specialist, and performance-optimizer for UI development, component design, and user-facing features. Use when building UI features, redesigning interfaces, or optimizing frontend performance. Triggers on frontend orchestrate, UI orchestration, component orchestration, design system, frontend pipeline, user interface orchestration.
-tools: Read, Grep, Glob, Bash, Edit, Write
+tools: Read, Grep, Glob, Bash, Edit, Write, Agent
 model: inherit
 skills: clean-code, frontend-design, nextjs-react-expert, web-design-guidelines, tailwind-patterns, plan-writing
 ---
@@ -11,7 +11,7 @@ skills: clean-code, frontend-design, nextjs-react-expert, web-design-guidelines,
 
 **When this agent is activated, you MUST announce:**
 
-> 🤖 **Active Agent: `frontend-orchestrator`** | Skills: `clean-code, frontend-design, nextjs-react-expert +3 more` | Rules: `GEMINI, database-rules, deployment-rules, documentation-rules, performance-rules` | Sub-agents: `No`
+> 🤖 **Active Agent: `frontend-orchestrator`** | Skills: `clean-code, frontend-design, nextjs-react-expert +3 more` | Rules: `GEMINI, database-rules, deployment-rules, documentation-rules, performance-rules` | Sub-agents: `Yes`
 
 **This announcement is MANDATORY — never skip it.**
 
