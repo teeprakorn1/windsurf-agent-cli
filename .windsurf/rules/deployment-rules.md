@@ -1,0 +1,209 @@
+---
+trigger: on_request
+keywords: [deploy, deployment, release, rollback, staging, production, ci, cd, pipeline, ship]
+---
+
+# Deployment Rules — Antigravity Kit
+
+> Ship with confidence. Deploy safely, rollback quickly, monitor always.
+
+---
+
+## 🔴 CRITICAL: Deployment Safety
+
+### 5-Phase Deployment
+
+```
+Phase 1: Pre-flight
+├── All tests pass
+├── Security scan clean
+├── Code reviewed and approved
+└── Migration scripts tested
+
+Phase 2: Staging
+├── Deploy to staging
+├── Run smoke tests
+├── Verify migrations
+└── Performance baseline
+
+Phase 3: Canary
+├── Deploy to 5% of production
+├── Monitor error rates
+├── Check latency metrics
+└── Verify business metrics
+
+Phase 4: Rollout
+├── Gradually increase to 100%
+├── Monitor at each step
+└── Automatic rollback triggers
+
+Phase 5: Post-deploy
+├── Verify all features working
+├── Update changelog
+├── Notify stakeholders
+└── Archive release branch
+```
+
+### Rollback Criteria
+
+| Metric | Threshold | Action |
+|--------|-----------|--------|
+| Error rate | > 1% of requests | Auto-rollback |
+| Latency p95 | > 2x baseline | Alert + manual decision |
+| CPU/Memory | > 90% for 5 min | Alert + scale |
+| Business metric | Revenue drop > 5% | Immediate rollback |
+
+---
+
+## 🟡 HIGH: Release Management
+
+### Semantic Versioning
+
+```
+MAJOR.MINOR.PATCH
+
+MAJOR — Breaking changes (incompatible API)
+MINOR — New features (backward compatible)
+PATCH — Bug fixes (backward compatible)
+
+Pre-release: 1.2.0-alpha.1, 1.2.0-beta.3, 1.2.0-rc.1
+Build:       1.2.0+build.123
+```
+
+### Changelog Format
+
+```markdown
+## [1.3.0] - 2025-04-28
+
+### Added
+- OAuth2 login with Google provider
+- Export reports as PDF
+
+### Changed
+- Improved search performance by 40%
+- Updated API rate limits from 100/min to 200/min
+
+### Fixed
+- Memory leak in WebSocket connections
+- Incorrect timezone in scheduled reports
+
+### Breaking
+- Removed deprecated `/api/v1/search` endpoint
+- Minimum Node.js version is now 18
+```
+
+### Environment Strategy
+
+```
+┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐
+│   Dev    │───►│  Staging │───►│  Pre-prod│───►│   Prod   │
+└──────────┘    └──────────┘    └──────────┘    └──────────┘
+  Developer       CI/CD          UAT/Load test    Production
+  testing         auto-deploy    validation       release
+```
+
+---
+
+## 🟢 MEDIUM: Deployment Patterns
+
+### Feature Flags
+
+```python
+# Deploy code without releasing features
+if feature_flags.is_enabled("new_checkout", user):
+    return new_checkout_flow(user)
+return legacy_checkout_flow(user)
+
+# Gradual rollout
+feature_flags.set_percentage("new_checkout", 10)  # 10% of users
+feature_flags.set_percentage("new_checkout", 50)  # 50% of users
+feature_flags.set_percentage("new_checkout", 100) # All users
+```
+
+### Health Check Endpoints
+
+```python
+@app.get("/health")
+def health_check():
+    return {"status": "healthy", "version": "1.3.0"}
+
+@app.get("/health/ready")
+def readiness_check():
+    checks = {
+        "database": db.is_connected(),
+        "cache": redis.ping(),
+        "queue": queue.is_healthy()
+    }
+    is_ready = all(checks.values())
+    status_code = 200 if is_ready else 503
+    return JSONResponse(checks, status_code=status_code)
+```
+
+### Deployment Checklist Template
+
+```markdown
+## Pre-Deployment
+- [ ] All tests pass (unit, integration, e2e)
+- [ ] Security scan clean
+- [ ] Code reviewed and approved
+- [ ] Migration scripts tested on staging
+- [ ] Feature flags configured
+- [ ] Rollback plan documented
+
+## Deployment
+- [ ] Deploy to staging
+- [ ] Smoke tests pass
+- [ ] Deploy to production (canary)
+- [ ] Monitor error rates (5 min)
+- [ ] Complete rollout
+- [ ] Verify business metrics
+
+## Post-Deployment
+- [ ] Changelog updated
+- [ ] Release tagged in git
+- [ ] Stakeholders notified
+- [ ] Monitoring dashboards checked
+```
+
+---
+
+## Secrets Management
+
+### Never Commit Secrets
+
+```bash
+# ✅ GOOD — Environment variables
+DATABASE_URL=${DATABASE_URL}
+API_KEY=${API_KEY}
+
+# ❌ BAD — Hardcoded
+DATABASE_URL=postgres://admin:password123@db:5432/mydb
+```
+
+### Secret Rotation
+
+| Secret Type | Rotation Frequency |
+|-------------|-------------------|
+| API keys | Every 90 days |
+| Database passwords | Every 90 days |
+| TLS certificates | Before expiry |
+| SSH keys | Every 180 days |
+| Service tokens | Every 90 days |
+
+---
+
+## Deployment Checklist
+
+- [ ] All tests pass before deploy
+- [ ] Staging deployment verified
+- [ ] Rollback plan documented
+- [ ] Health checks configured
+- [ ] Monitoring and alerting active
+- [ ] Feature flags for risky changes
+- [ ] Secrets properly managed
+- [ ] Changelog updated
+- [ ] Stakeholders notified
+
+---
+
+> 🚀 **Remember:** If deployment is scary, you're not deploying often enough. Automate everything.

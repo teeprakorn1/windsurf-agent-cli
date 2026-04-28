@@ -1,0 +1,192 @@
+---
+trigger: on_request
+keywords: [quality, clean code, refactoring, maintainable, readable, test, coverage, lint, format]
+---
+
+# Code Quality Rules — Antigravity Kit
+
+> Standards for maintainable, readable, and testable code.
+
+---
+
+## 🔴 CRITICAL: Code Fundamentals
+
+### Naming Conventions
+
+```python
+# ✅ GOOD — Clear, descriptive names
+def calculate_user_total_spending(user_id: int) -> float:
+    user_orders = get_orders_by_user(user_id)
+    return sum(order.amount for order in user_orders)
+
+# ❌ BAD — Abbreviations, unclear intent
+def calc(u_id):
+    o = get_o(u_id)
+    return sum(x.a for x in o)
+```
+
+**Naming standards:**
+- Functions/Methods: `verb_noun` format (`get_user`, `validate_input`)
+- Classes: `Noun` in PascalCase (`UserManager`, `PaymentGateway`)
+- Constants: `UPPER_SNAKE_CASE` (`MAX_RETRY_COUNT`)
+- Booleans: Prefix with `is_`, `has_`, `can_` (`is_active`, `has_permission`)
+
+### Function Design
+
+```python
+# ✅ GOOD — Single responsibility, clear purpose
+def validate_email(email: str) -> bool:
+    """Check if email format is valid."""
+    return re.match(r'^[\w\.-]+@[\w\.-]+\.\w+$', email) is not None
+
+def send_welcome_email(user: User) -> None:
+    """Send welcome email to new user."""
+    # Implementation
+
+# ❌ BAD — Multiple responsibilities
+def process_user(user_data):
+    validate_email(user_data['email'])
+    save_to_database(user_data)
+    send_welcome_email(user_data)
+    update_analytics(user_data)
+```
+
+**Function limits:**
+- Max 20 lines per function
+- Max 3 parameters (use objects for more)
+- Do one thing, do it well
+
+---
+
+## 🟡 HIGH: Maintainable Code
+
+### Comments & Documentation
+
+```python
+# ✅ GOOD — Explain WHY, not WHAT
+def calculate_discount(price: float, user: User) -> float:
+    """
+    Apply discount based on user tier.
+    
+    Premium users get 20% off as per business rule #123.
+    Regular users get 10% off during promotional periods.
+    """
+    if user.is_premium:
+        return price * 0.8  # 20% discount for premium
+    return price * 0.9  # 10% standard discount
+
+# ❌ BAD — Redundant comments
+def add(a, b):
+    # Add a and b together
+    return a + b
+```
+
+### Error Handling
+
+```python
+# ✅ GOOD — Specific exceptions, proper cleanup
+def read_config_file(path: str) -> dict:
+    try:
+        with open(path, 'r') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        logger.error(f"Config file not found: {path}")
+        return default_config()
+    except json.JSONDecodeError as e:
+        logger.error(f"Invalid JSON in {path}: {e}")
+        raise ConfigError(f"Invalid configuration: {e}")
+
+# ❌ BAD — Bare except, no context
+def read_config(path):
+    try:
+        return json.load(open(path))
+    except:
+        return {}
+```
+
+### Code Organization
+
+```
+src/
+├── domain/           # Business logic
+│   ├── models/
+│   ├── services/
+│   └── repositories/
+├── application/    # Use cases
+│   ├── commands/
+│   └── queries/
+├── infrastructure/ # External concerns
+│   ├── database/
+│   ├── api/
+│   └── cache/
+└── interface/      # UI/API layer
+    ├── controllers/
+    └── presenters/
+```
+
+---
+
+## 🟢 MEDIUM: Testing Standards
+
+### Test Pyramid
+
+```
+     /
+    / E2E Tests (few)
+   /─────────
+  /  Integration (some)
+ /──────────────
+/   Unit Tests (many)  ← Start here
+────────────────
+```
+
+### Test Quality
+
+```python
+# ✅ GOOD — AAA pattern, clear assertion
+def test_user_registration():
+    # Arrange
+    user_data = {"email": "test@example.com", "password": "secure123"}
+    
+    # Act
+    result = register_user(user_data)
+    
+    # Assert
+    assert result.status == "success"
+    assert result.user.email == "test@example.com"
+
+# ❌ BAD — Unclear purpose, multiple assertions
+def test_stuff():
+    r = register_user({"email": "a@b.c", "password": "x"})
+    assert r is not None
+    assert r.status == "success" or r.status == "pending"
+```
+
+---
+
+## Code Quality Metrics
+
+| Metric | Target | Minimum |
+|--------|--------|---------|
+| Test Coverage | > 80% | > 60% |
+| Cyclomatic Complexity | < 10 | < 15 |
+| Functions per File | < 10 | < 20 |
+| Lines per Function | < 20 | < 50 |
+| Comment Ratio | 10-20% | > 5% |
+
+---
+
+## Quality Checklist
+
+- [ ] Naming is clear and consistent
+- [ ] Functions are small and focused
+- [ ] Comments explain why, not what
+- [ ] Error handling is comprehensive
+- [ ] Tests cover happy path and edge cases
+- [ ] No code duplication (DRY principle)
+- [ ] Code is formatted consistently
+- [ ] Linter passes with no errors
+
+---
+
+> 🎯 **Remember:** Code is read 10x more than it's written. Write for humans first.

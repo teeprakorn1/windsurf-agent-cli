@@ -1,0 +1,140 @@
+---
+name: delphi-pascal
+description: Delphi and Pascal development patterns, Object Pascal best practices, VCL/FMX framework guidance, and legacy Pascal modernization. Use when building Windows desktop apps, maintaining legacy Delphi codebases, or migrating Pascal to modern platforms.
+---
+
+# Delphi & Pascal Development
+
+> Patterns and practices for Object Pascal / Delphi development.
+
+## When to Use This Skill
+
+- Building Windows desktop applications with VCL or FireMonkey (FMX)
+- Maintaining or modernizing legacy Delphi/Pascal codebases
+- Cross-platform development with Delphi (Windows, macOS, Linux, mobile)
+- Database applications with FireDAC or dbExpress
+- REST/JSON API development with Delphi
+
+## Modern Delphi Best Practices
+
+### Project Structure
+```
+MyProject/
+├── src/
+│   ├── Main.dpr           # Project file
+│   ├── Forms/             # UI forms
+│   │   ├── MainForm.pas
+│   │   └── MainForm.dfm
+│   ├── DataModules/       # Data access
+│   │   └── dmMain.pas
+│   ├── BusinessLogic/     # Domain logic
+│   │   └── UserService.pas
+│   └── Utils/             # Helpers
+│       └── CryptoUtils.pas
+├── tests/
+│   └── DUnitX/
+└── packages/              # Custom components
+```
+
+### Naming Conventions
+
+| Type | Prefix | Example |
+|------|--------|---------|
+| Type | T | `TUser` |
+| Class ref | Class | `TUserClass` |
+| Interface | I | `IUserService` |
+| Record | T | `TPoint` |
+| Enum | T | `TColorScheme` |
+| Enum value | 2-letter | `csDark` |
+| Field | F | `FUserName` |
+| Parameter | A | `AUserName` |
+| Local var | L | `LResult` |
+| Unit | 2-letter prefix | `uUserService` |
+| Form | Form | `frmMain` |
+| DataModule | dm | `dmDatabase` |
+| Component | Type prefix | `btnSave`, `edtName`, `grdUsers` |
+
+### Error Handling
+```pascal
+// ✅ GOOD - Proper exception handling
+try
+  Connection.Open;
+  Query.Execute;
+except
+  on E: EDatabaseError do
+  begin
+    Log.Error('Database error: %s', [E.Message]);
+    raise EServiceException.CreateFmt('Service unavailable: %s', [E.Message]);
+  end;
+end;
+
+// ❌ BAD - Swallowing exceptions
+try
+  DoSomething;
+except
+  // silent failure
+end;
+```
+
+### Memory Management
+```pascal
+// ✅ GOOD - RAII pattern with interfaces
+var
+  Service: IService;
+begin
+  Service := TService.Create;
+  Service.Process;  // Auto-freed when Service goes out of scope
+end;
+
+// ✅ GOOD - Try-finally for objects
+var
+  Stream: TFileStream;
+begin
+  Stream := TFileStream.Create('file.dat', fmCreate);
+  try
+    Stream.WriteBuffer(Data, SizeOf(Data));
+  finally
+    Stream.Free;
+  end;
+end;
+
+// ❌ BAD - No cleanup
+var
+  Obj: TObject;
+begin
+  Obj := TObject.Create;
+  Obj.DoSomething;
+  // Memory leak!
+end;
+```
+
+### Modern Features (Delphi 10.4+)
+
+- **Inline Variables**: `var X: Integer := 42;`
+- **Record Initialization**: `var R: TRec := (A: 1; B: 2);`
+- **Custom Managed Records**: Initialize/Finalize operators
+- **Multi-Platform**: Same code for Windows, macOS, Linux, iOS, Android
+
+## Framework Selection
+
+| Need | Framework | Notes |
+|------|-----------|-------|
+| Windows Desktop | VCL | Mature, rich component ecosystem |
+| Cross-Platform UI | FireMonkey (FMX) | Windows, macOS, Linux, mobile |
+| Console/Service | RTL only | No UI, lightweight |
+| Web API | RAD Server / DataSnap | REST/JSON endpoints |
+| Database | FireDAC | Multi-database, feature-rich |
+| ORM | TMS Aurelius | Full ORM for Delphi |
+| Testing | DUnitX | Modern test framework |
+
+## Migration Patterns (Legacy → Modern)
+
+| Legacy Pattern | Modern Equivalent |
+|---------------|------------------|
+| `StringList.CommaText` | `TJSONValue` / `System.JSON` |
+| `TClientDataSet` | FireDAC + LiveBindings |
+| `BDE` | FireDAC |
+| `Goto` statements | Structured control flow |
+| Global variables | Dependency injection |
+| `with` keyword | Explicit references |
+| `.dfm` streaming | Code-based UI creation |

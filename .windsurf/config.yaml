@@ -1,0 +1,203 @@
+# windsurf Agent Kit — Windsurf Workspace Configuration
+# Windsurf reads this to discover agents, skills, and workflows
+
+workspace:
+  name: "windsurf-agent-cli"
+  description: "windsurf Agent Kit — Multi-Agent AI Framework for Windsurf"
+  version: "1.0.0"
+
+paths:
+  agents: "./agents"
+  skills: "./skills"
+  workflows: "./workflows"
+  scripts: "./scripts"
+  rules: "./rules"
+
+agents:
+  # Core orchestration
+  - orchestrator
+  - junior-orchestrator
+  - senior-orchestrator
+  - elite-orchestrator
+  - backend-orchestrator
+  - frontend-orchestrator
+  - user-orchestrator
+  - project-planner
+  - explorer-agent
+  # Domain specialists
+  - frontend-specialist
+  - backend-specialist
+  - database-architect
+  - devops-engineer
+  - mobile-developer
+  - game-developer
+  # Quality & security
+  - security-auditor
+  - penetration-tester
+  - secure-coder
+  - threat-modeler
+  - incident-responder
+  - compliance-officer
+  - security-orchestrator
+  - test-engineer
+  - qa-automation-engineer
+  - debugger
+  - performance-optimizer
+  - seo-specialist
+  # Support
+  - documentation-writer
+  - code-archaeologist
+  - product-manager
+  - product-owner
+  # Protocol & integration
+  - protocol-architect
+  - protocol-orchestrator
+  # Data & analytics
+  - data-scientist
+  # UX & accessibility
+  - ux-researcher
+  - accessibility-specialist
+  # Infrastructure & reliability
+  - sre
+  - cloud-architect
+  - finops-analyst
+  # Internationalization
+  - i18n-specialist
+  # Desktop & legacy
+  - delphi-developer
+  # Offensive security
+  - ethical-hacker
+  - bypass-specialist
+  - pentest-planner
+  - business-logic-developer
+  - prompt-engineer
+  - creative-technologist
+  # Full-stack & specialized
+  - fullstack-developer
+  - staff-engineer
+  - platform-engineer
+  - nodejs-nest-developer
+  - express-developer
+  - python-api-developer
+  # Framework specialists
+  - angular-developer
+  - react-developer
+  - vbnet-developer
+  - php-developer
+  - html5-css-developer
+  - nextjs-developer
+  - network-engineer
+  - docker-developer
+  - linux-administrator
+  - windows-administrator
+  - n8n-automation
+  - data-layer-developer
+  - business-logic-developer
+  # Industrial & machine engineering
+  - mechatronic-specialist
+  - pneumatic-specialist
+  - electric-specialist
+  - chief-machine-engineer
+  - plc-specialist
+  - math-specialist
+  - iot-specialist
+  - elite-tech-leader
+  - package-finder
+  - go-developer
+  - sveltekit-developer
+  - migration-specialist
+  - load-balancer-specialist
+
+workflows:
+  available_commands:
+    - /backend
+    - /brainstorm
+    - /create
+    - /database
+    - /debug
+    - /deploy
+    - /enhance
+    - /frontend
+    - /orchestrate
+    - /junior-orchestrate
+    - /senior-orchestrate
+    - /elite-orchestrate
+    - /backend-orchestration
+    - /frontend-orchestration
+    - /user-orchestration
+    - /plan
+    - /preview
+    - /security
+    - /status
+    - /test
+    - /ui-ux-pro-max
+    - /secure-coding
+    - /threat-modeling
+    - /incident-response
+    - /compliance
+    - /security-orchestration
+    - /protocol
+    - /protocol-orchestration
+    - /data
+    - /ux-research
+    - /accessibility
+    - /reliability
+    - /cloud
+    - /i18n
+    - /finops
+    - /delphi
+    - /hack
+    - /bypass
+    - /pentest-plan
+    - /kali
+    - /fullstack
+    - /staff
+    - /platform
+    - /nestjs
+    - /express
+    - /python-api
+    - /angular
+    - /react
+    - /vbnet
+    - /php
+    - /html5-css
+    - /nextjs
+    - /network
+    - /docker
+    - /linux
+    - /windows
+    - /automation
+    - /backlog
+    - /legacy
+    - /product
+    - /n8n
+    - /data-layer
+    - /business-logic
+    - /prompt-engineering
+    - /creative-tech
+    - /mechatronic
+    - /pneumatic
+    - /electric
+    - /chief-machine
+    - /plc
+    - /math
+    - /iot
+    - /elite-tech-leader
+    - /package-finder
+    - /go
+    - /sveltekit
+    - /migrate
+    - /load-balancer
+
+scripts:
+  checklist: "./scripts/checklist.py"
+  verify_all: "./scripts/verify_all.py"
+  security_scan: "./skills/vulnerability-scanner/scripts/security_scan.py"
+  auto_preview: "./scripts/auto_preview.py"
+
+mcp:
+  config_file: "./mcp_config.json"
+  servers:
+    - context7
+    - shadcn
+    - shadcn

@@ -1,0 +1,26 @@
+# Antigravity Kit — Windsurf Workspace Rules
+# This file is auto-read by Windsurf IDE
+# It references the main rule system in .windsurf/rules/
+
+## 🎯 Overview
+This workspace uses the Antigravity Kit — a multi-agent AI framework for Windsurf.
+
+## 📁 Structure
+- `.windsurf/agents/` — 20 specialized AI agents
+- `.windsurf/skills/` — 38 domain-specific skills
+- `.windsurf/workflows/` — 15 slash-command workflows
+- `.windsurf/scripts/` — 4 validation scripts
+- `.windsurf/rules/` — Core rules (GEMINI.md, architecture.md)
+
+## 🚀 Quick Start
+Use slash commands in Windsurf chat:
+- `/create` — Create new application
+- `/orchestrate` — Multi-agent orchestration
+- `/security` — Security audit
+- `/deploy` — Deploy project
+- `/test` — Run tests
+
+## 🔗 References
+- Full rules: @.windsurf/rules/GEMINI.md
+- Architecture: @.windsurf/rules/architecture.md
+- Project plan: @docs/PLAN.md

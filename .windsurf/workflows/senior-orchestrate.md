@@ -1,0 +1,76 @@
+---
+description: Senior orchestration for complex tasks requiring 4-6 agents across domains. Manages dependencies, resolves conflicts, and makes architectural decisions for multi-service features and cross-team integration.
+---
+
+# /senior-orchestrate — Complex Cross-Domain Coordination
+
+$ARGUMENTS
+
+---
+
+
+## 🤖 Agent Activation
+
+> **MANDATORY:** Before starting any work, announce the active agent to the user.
+
+```
+🤖 **Active Agent: `senior-orchestrator`** | Skills: `clean-code, plan-writing, behavioral-modes, architecture +1 more`
+```
+
+## Task
+
+Coordinate 4-6 agents for complex, multi-domain tasks. Manage dependencies, resolve conflicts, and make technical decisions.
+
+### Patterns:
+
+#### A. Full-Stack Feature
+1. **project-planner** → Task breakdown + dependencies
+2. **database-architect** → Schema changes
+3. **backend-specialist** → API implementation
+4. **frontend-specialist** → UI implementation
+5. **test-engineer** → Integration tests
+6. **security-auditor** → Security scan
+
+#### B. Architecture Migration
+1. **code-archaeologist** → Current state analysis
+2. **staff-engineer** → Migration strategy
+3. **backend-specialist** → New architecture
+4. **frontend-specialist** → Client updates
+5. **test-engineer** → Compatibility tests
+6. **performance-optimizer** → Benchmark comparison
+
+#### C. Security Hardening
+1. **threat-modeler** → Threat analysis
+2. **secure-coder** → Implement fixes
+3. **security-auditor** → Validate
+4. **backend-specialist** → Server hardening
+5. **devops-engineer** → Infrastructure hardening
+6. **test-engineer** → Regression tests
+
+---
+
+## Usage Examples
+
+```
+/senior-orchestrate build multi-service feature
+/senior-orchestrate migrate REST to GraphQL
+/senior-orchestrate security hardening across stack
+/senior-orchestrate performance optimization (DB + API + frontend)
+/senior-orchestrate cross-team integration
+```
+
+---
+
+## Decision Framework
+
+| Situation | Decision |
+|-----------|----------|
+| Two valid approaches | Maintainability > Performance > Novelty |
+| Agent disagreement | Hear both, decide, document rationale |
+| Scope creep | Freeze scope, create follow-up |
+| Technical debt vs feature | Debt if blocks future; feature if urgent |
+
+## Escalation
+
+- Simplifies to < 3 agents → **junior-orchestrator**
+- Enterprise impact, >6 agents, strategic → **elite-orchestrator**

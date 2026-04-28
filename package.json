@@ -1,0 +1,54 @@
+{
+  "name": "windsurf-agent-cli",
+  "version": "1.0.0",
+  "description": "Antigravity Kit — AI Agent Framework for Windsurf IDE with 79 Agents, 46 Skills, 78 Workflows, and 10 Rules",
+  "bin": {
+    "windsurf-agent-cli": "./bin/cli.js"
+  },
+  "scripts": {
+    "checklist": "python3 .windsurf/scripts/checklist.py .",
+    "checklist:url": "python3 .windsurf/scripts/checklist.py . --url http://localhost:3000",
+    "security": "python3 .windsurf/skills/vulnerability-scanner/scripts/security_scan.py .",
+    "lint": "python3 .windsurf/skills/lint-and-validate/scripts/lint_runner.py .",
+    "test": "python3 .windsurf/skills/testing-patterns/scripts/test_runner.py .",
+    "ux": "python3 .windsurf/skills/frontend-design/scripts/ux_audit.py .",
+    "seo": "python3 .windsurf/skills/seo-fundamentals/scripts/seo_checker.py .",
+    "schema": "python3 .windsurf/skills/database-design/scripts/schema_validator.py .",
+    "postinstall": "node ./bin/postinstall.js"
+  },
+  "keywords": [
+    "windsurf",
+    "ai-agent",
+    "agent-framework",
+    "cli",
+    "codeium",
+    "multi-agent",
+    "orchestration",
+    "automation",
+    "developer-tools"
+  ],
+  "author": "teeprakorn1 <https://github.com/teeprakorn1>",
+  "contributors": [
+    "FrameHandsomez <https://github.com/FrameHandsomez>"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/teeprakorn1/windsurf-agent-cli.git"
+  },
+  "bugs": {
+    "url": "https://github.com/teeprakorn1/windsurf-agent-cli/issues"
+  },
+  "homepage": "https://github.com/teeprakorn1/windsurf-agent-cli#readme",
+  "files": [
+    ".windsurf/",
+    "bin/",
+    "docs/",
+    "LICENSE",
+    "README.md",
+    "CODEBASE.md"
+  ],
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
