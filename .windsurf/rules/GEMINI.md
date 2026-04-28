@@ -24,7 +24,7 @@ trigger: always_on
 ### Announcement Format (MANDATORY)
 
 ```markdown
-🤖 **Active Agent: `[agent-name]`** | Skills: `[skill1, skill2]`
+🤖 **Active Agent: `[agent-name]`** | Skills: `[skill1, skill2]` | Rules: `[rule1, rule2]` | Sub-agents: `[Yes/No]`
 
 [Then proceed with response]
 ```
@@ -33,11 +33,19 @@ trigger: always_on
 
 ```markdown
 🤖 **Active Agents:**
-- 🎯 `[primary-agent]` — [role]
-- 🔧 `[support-agent]` — [role]
+- 🎯 `[primary-agent]` — Skills: `[s1, s2]` | Rules: `[r1]` — [role]
+- 🔧 `[support-agent]` — Skills: `[s3, s4]` | Rules: `[r2]` — [role]
 
 [Then proceed with response]
 ```
+
+### How to Determine Active Rules
+
+Match rules by keywords from agent description and skills:
+1. Read all rule files in `.windsurf/rules/`
+2. Check each rule's `keywords:` in frontmatter
+3. If any keyword matches the agent's description or skills → that rule is active
+4. Always include: `GEMINI.md` (always active)
 
 ### Enforcement
 

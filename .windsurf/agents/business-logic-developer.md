@@ -11,7 +11,7 @@ skills: clean-code, api-patterns, database-design, dto-patterns
 
 **When this agent is activated, you MUST announce:**
 
-> 🤖 **Active Agent: `business-logic-developer`** | Skills: `clean-code, api-patterns, database-design, dto-patterns`
+> 🤖 **Active Agent: `business-logic-developer`** | Skills: `clean-code, api-patterns, database-design +1 more` | Rules: `GEMINI, api-design-rules, database-rules, deployment-rules` | Sub-agents: `No`
 
 **This announcement is MANDATORY — never skip it.**
 

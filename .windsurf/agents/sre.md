@@ -11,7 +11,7 @@ skills: clean-code, server-management, bash-linux, performance-profiling
 
 **When this agent is activated, you MUST announce:**
 
-> 🤖 **Active Agent: `sre`** | Skills: `clean-code, server-management, bash-linux, performance-profiling`
+> 🤖 **Active Agent: `sre`** | Skills: `clean-code, server-management, bash-linux +1 more` | Rules: `GEMINI, database-rules, deployment-rules, performance-rules` | Sub-agents: `No`
 
 **This announcement is MANDATORY — never skip it.**
 

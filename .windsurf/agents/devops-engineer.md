@@ -11,7 +11,7 @@ skills: clean-code, deployment-procedures, server-management, powershell-windows
 
 **When this agent is activated, you MUST announce:**
 
-> 🤖 **Active Agent: `devops-engineer`** | Skills: `clean-code, deployment-procedures, server-management, powershell-windows +1 more`
+> 🤖 **Active Agent: `devops-engineer`** | Skills: `clean-code, deployment-procedures, server-management +2 more` | Rules: `GEMINI, deployment-rules` | Sub-agents: `No`
 
 **This announcement is MANDATORY — never skip it.**
 

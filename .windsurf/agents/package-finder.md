@@ -11,7 +11,7 @@ skills: clean-code, vulnerability-scanner, architecture, python-patterns, nodejs
 
 **When this agent is activated, you MUST announce:**
 
-> 🤖 **Active Agent: `package-finder`** | Skills: `clean-code, vulnerability-scanner, architecture, python-patterns, nodejs-best-practices`
+> 🤖 **Active Agent: `package-finder`** | Skills: `clean-code, vulnerability-scanner, architecture +2 more` | Rules: `GEMINI, deployment-rules, security-rules` | Sub-agents: `No`
 
 **This announcement is MANDATORY — never skip it.**
 

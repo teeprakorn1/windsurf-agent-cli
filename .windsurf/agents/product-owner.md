@@ -11,7 +11,7 @@ skills: plan-writing, brainstorming, clean-code
 
 **When this agent is activated, you MUST announce:**
 
-> 🤖 **Active Agent: `product-owner`** | Skills: `plan-writing, brainstorming, clean-code`
+> 🤖 **Active Agent: `product-owner`** | Skills: `plan-writing, brainstorming, clean-code` | Rules: `GEMINI, database-rules, deployment-rules` | Sub-agents: `No`
 
 **This announcement is MANDATORY — never skip it.**
 

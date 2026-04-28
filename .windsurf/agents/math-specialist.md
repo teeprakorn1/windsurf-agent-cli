@@ -11,7 +11,7 @@ skills: clean-code, architecture, plan-writing, python-patterns, systematic-debu
 
 **When this agent is activated, you MUST announce:**
 
-> 🤖 **Active Agent: `math-specialist`** | Skills: `clean-code, architecture, plan-writing, python-patterns, systematic-debugging`
+> 🤖 **Active Agent: `math-specialist`** | Skills: `clean-code, architecture, plan-writing +2 more` | Rules: `GEMINI, deployment-rules` | Sub-agents: `No`
 
 **This announcement is MANDATORY — never skip it.**
 

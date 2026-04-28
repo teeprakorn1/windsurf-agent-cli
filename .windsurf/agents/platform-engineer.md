@@ -11,7 +11,7 @@ skills: clean-code, deployment-procedures, bash-linux, server-management, plan-w
 
 **When this agent is activated, you MUST announce:**
 
-> 🤖 **Active Agent: `platform-engineer`** | Skills: `clean-code, deployment-procedures, bash-linux, server-management +2 more`
+> 🤖 **Active Agent: `platform-engineer`** | Skills: `clean-code, deployment-procedures, bash-linux +3 more` | Rules: `GEMINI, database-rules, deployment-rules, performance-rules` | Sub-agents: `No`
 
 **This announcement is MANDATORY — never skip it.**
 

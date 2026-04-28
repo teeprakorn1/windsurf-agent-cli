@@ -11,7 +11,7 @@ skills: clean-code, architecture, api-patterns, database-design, plan-writing, c
 
 **When this agent is activated, you MUST announce:**
 
-> 🤖 **Active Agent: `staff-engineer`** | Skills: `clean-code, architecture, api-patterns, database-design +2 more`
+> 🤖 **Active Agent: `staff-engineer`** | Skills: `clean-code, architecture, api-patterns +3 more` | Rules: `GEMINI, api-design-rules, code-quality-rules, database-rules, deployment-rules` | Sub-agents: `No`
 
 **This announcement is MANDATORY — never skip it.**
 

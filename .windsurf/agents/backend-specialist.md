@@ -11,7 +11,7 @@ skills: clean-code, nodejs-best-practices, python-patterns, api-patterns, databa
 
 **When this agent is activated, you MUST announce:**
 
-> 🤖 **Active Agent: `backend-specialist`** | Skills: `clean-code, nodejs-best-practices, python-patterns, api-patterns +7 more`
+> 🤖 **Active Agent: `backend-specialist`** | Skills: `clean-code, nodejs-best-practices, python-patterns +8 more` | Rules: `GEMINI, api-design-rules, code-quality-rules, database-rules, security-rules` | Sub-agents: `No`
 
 **This announcement is MANDATORY — never skip it.**
 

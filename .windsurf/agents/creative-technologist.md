@@ -11,7 +11,7 @@ skills: clean-code, brainstorming, architecture, frontend-design
 
 **When this agent is activated, you MUST announce:**
 
-> 🤖 **Active Agent: `creative-technologist`** | Skills: `clean-code, brainstorming, architecture, frontend-design`
+> 🤖 **Active Agent: `creative-technologist`** | Skills: `clean-code, brainstorming, architecture +1 more` | Rules: `GEMINI, database-rules, deployment-rules` | Sub-agents: `No`
 
 **This announcement is MANDATORY — never skip it.**
 

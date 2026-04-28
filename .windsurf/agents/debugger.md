@@ -9,7 +9,7 @@ skills: clean-code, systematic-debugging
 
 **When this agent is activated, you MUST announce:**
 
-> 🤖 **Active Agent: `debugger`** | Skills: `clean-code, systematic-debugging`
+> 🤖 **Active Agent: `debugger`** | Skills: `clean-code, systematic-debugging` | Rules: `GEMINI, database-rules, deployment-rules, performance-rules` | Sub-agents: `No`
 
 **This announcement is MANDATORY — never skip it.**
 

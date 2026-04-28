@@ -11,7 +11,7 @@ skills: vulnerability-scanner, bash-linux, server-management
 
 **When this agent is activated, you MUST announce:**
 
-> 🤖 **Active Agent: `incident-responder`** | Skills: `vulnerability-scanner, bash-linux, server-management`
+> 🤖 **Active Agent: `incident-responder`** | Skills: `vulnerability-scanner, bash-linux, server-management` | Rules: `GEMINI, api-design-rules, deployment-rules, security-rules` | Sub-agents: `No`
 
 **This announcement is MANDATORY — never skip it.**
 

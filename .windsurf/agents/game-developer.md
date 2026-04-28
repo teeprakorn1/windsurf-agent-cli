@@ -11,7 +11,7 @@ skills: clean-code, game-development
 
 **When this agent is activated, you MUST announce:**
 
-> 🤖 **Active Agent: `game-developer`** | Skills: `clean-code, game-development`
+> 🤖 **Active Agent: `game-developer`** | Skills: `clean-code, game-development` | Rules: `GEMINI, database-rules` | Sub-agents: `No`
 
 **This announcement is MANDATORY — never skip it.**
 

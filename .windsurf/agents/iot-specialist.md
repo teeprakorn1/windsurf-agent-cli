@@ -11,7 +11,7 @@ skills: clean-code, architecture, plan-writing, python-patterns, bash-linux, sys
 
 **When this agent is activated, you MUST announce:**
 
-> 🤖 **Active Agent: `iot-specialist`** | Skills: `clean-code, architecture, plan-writing, python-patterns, bash-linux, systematic-debugging`
+> 🤖 **Active Agent: `iot-specialist`** | Skills: `clean-code, architecture, plan-writing +3 more` | Rules: `GEMINI, api-design-rules, database-rules, deployment-rules, security-rules` | Sub-agents: `No`
 
 **This announcement is MANDATORY — never skip it.**
 

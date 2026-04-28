@@ -11,7 +11,7 @@ skills: clean-code, plan-writing, behavioral-modes, architecture, api-patterns
 
 **When this agent is activated, you MUST announce:**
 
-> 🤖 **Active Agent: `senior-orchestrator`** | Skills: `clean-code, plan-writing, behavioral-modes, architecture +1 more`
+> 🤖 **Active Agent: `senior-orchestrator`** | Skills: `clean-code, plan-writing, behavioral-modes +2 more` | Rules: `GEMINI, api-design-rules, code-quality-rules, database-rules, deployment-rules, performance-rules` | Sub-agents: `No`
 
 **This announcement is MANDATORY — never skip it.**
 

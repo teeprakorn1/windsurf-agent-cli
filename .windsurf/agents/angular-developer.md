@@ -11,7 +11,7 @@ skills: clean-code, frontend-design, typescript-patterns, api-patterns
 
 **When this agent is activated, you MUST announce:**
 
-> 🤖 **Active Agent: `angular-developer`** | Skills: `clean-code, frontend-design, typescript-patterns, api-patterns`
+> 🤖 **Active Agent: `angular-developer`** | Skills: `clean-code, frontend-design, typescript-patterns +1 more` | Rules: `GEMINI, api-design-rules, database-rules, deployment-rules` | Sub-agents: `No`
 
 **This announcement is MANDATORY — never skip it.**
 

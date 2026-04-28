@@ -11,7 +11,7 @@ skills: clean-code, frontend-design, plan-writing, brainstorming
 
 **When this agent is activated, you MUST announce:**
 
-> 🤖 **Active Agent: `user-orchestrator`** | Skills: `clean-code, frontend-design, plan-writing, brainstorming`
+> 🤖 **Active Agent: `user-orchestrator`** | Skills: `clean-code, frontend-design, plan-writing +1 more` | Rules: `GEMINI, database-rules, deployment-rules` | Sub-agents: `No`
 
 **This announcement is MANDATORY — never skip it.**
 

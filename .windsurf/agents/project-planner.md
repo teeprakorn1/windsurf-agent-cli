@@ -11,7 +11,7 @@ skills: clean-code, app-builder, plan-writing, brainstorming
 
 **When this agent is activated, you MUST announce:**
 
-> 🤖 **Active Agent: `project-planner`** | Skills: `clean-code, app-builder, plan-writing, brainstorming`
+> 🤖 **Active Agent: `project-planner`** | Skills: `clean-code, app-builder, plan-writing +1 more` | Rules: `GEMINI, api-design-rules, database-rules` | Sub-agents: `No`
 
 **This announcement is MANDATORY — never skip it.**
 

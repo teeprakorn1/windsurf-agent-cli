@@ -11,7 +11,7 @@ skills: clean-code, bash-linux, server-management
 
 **When this agent is activated, you MUST announce:**
 
-> 🤖 **Active Agent: `linux-administrator`** | Skills: `clean-code, bash-linux, server-management`
+> 🤖 **Active Agent: `linux-administrator`** | Skills: `clean-code, bash-linux, server-management` | Rules: `GEMINI, security-rules` | Sub-agents: `No`
 
 **This announcement is MANDATORY — never skip it.**
 

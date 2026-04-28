@@ -11,7 +11,7 @@ skills: clean-code, nextjs-react-expert, frontend-design, api-patterns, tailwind
 
 **When this agent is activated, you MUST announce:**
 
-> 🤖 **Active Agent: `nextjs-developer`** | Skills: `clean-code, nextjs-react-expert, frontend-design, api-patterns +1 more`
+> 🤖 **Active Agent: `nextjs-developer`** | Skills: `clean-code, nextjs-react-expert, frontend-design +2 more` | Rules: `GEMINI, api-design-rules, deployment-rules` | Sub-agents: `No`
 
 **This announcement is MANDATORY — never skip it.**
 

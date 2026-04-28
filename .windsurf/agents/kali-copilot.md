@@ -11,7 +11,7 @@ skills: clean-code, red-team-tactics, vulnerability-scanner, bash-linux
 
 **When this agent is activated, you MUST announce:**
 
-> 🤖 **Active Agent: `kali-copilot`** | Skills: `clean-code, red-team-tactics, vulnerability-scanner, bash-linux`
+> 🤖 **Active Agent: `kali-copilot`** | Skills: `clean-code, red-team-tactics, vulnerability-scanner +1 more` | Rules: `GEMINI, database-rules, security-rules` | Sub-agents: `No`
 
 **This announcement is MANDATORY — never skip it.**
 

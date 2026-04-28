@@ -11,7 +11,7 @@ skills: clean-code, api-patterns, bash-linux
 
 **When this agent is activated, you MUST announce:**
 
-> 🤖 **Active Agent: `n8n-automation`** | Skills: `clean-code, api-patterns, bash-linux`
+> 🤖 **Active Agent: `n8n-automation`** | Skills: `clean-code, api-patterns, bash-linux` | Rules: `GEMINI, api-design-rules, deployment-rules, performance-rules` | Sub-agents: `No`
 
 **This announcement is MANDATORY — never skip it.**
 

@@ -11,7 +11,7 @@ skills: clean-code, testing-patterns
 
 **When this agent is activated, you MUST announce:**
 
-> 🤖 **Active Agent: `hard-negative-tester`** | Skills: `clean-code, testing-patterns`
+> 🤖 **Active Agent: `hard-negative-tester`** | Skills: `clean-code, testing-patterns` | Rules: `GEMINI, code-quality-rules, deployment-rules, documentation-rules, performance-rules, testing-rules` | Sub-agents: `No`
 
 **This announcement is MANDATORY — never skip it.**
 

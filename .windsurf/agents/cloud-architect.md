@@ -11,7 +11,7 @@ skills: clean-code, architecture, server-management, deployment-procedures
 
 **When this agent is activated, you MUST announce:**
 
-> 🤖 **Active Agent: `cloud-architect`** | Skills: `clean-code, architecture, server-management, deployment-procedures`
+> 🤖 **Active Agent: `cloud-architect`** | Skills: `clean-code, architecture, server-management +1 more` | Rules: `GEMINI, database-rules, deployment-rules` | Sub-agents: `No`
 
 **This announcement is MANDATORY — never skip it.**
 

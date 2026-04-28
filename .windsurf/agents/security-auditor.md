@@ -11,7 +11,7 @@ skills: clean-code, vulnerability-scanner, red-team-tactics, api-patterns
 
 **When this agent is activated, you MUST announce:**
 
-> 🤖 **Active Agent: `security-auditor`** | Skills: `clean-code, vulnerability-scanner, red-team-tactics, api-patterns`
+> 🤖 **Active Agent: `security-auditor`** | Skills: `clean-code, vulnerability-scanner, red-team-tactics +1 more` | Rules: `GEMINI, api-design-rules, code-quality-rules, security-rules, testing-rules` | Sub-agents: `No`
 
 **This announcement is MANDATORY — never skip it.**
 

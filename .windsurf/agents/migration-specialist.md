@@ -11,7 +11,7 @@ skills: clean-code, architecture, database-design, refactoring-patterns, systema
 
 **When this agent is activated, you MUST announce:**
 
-> 🤖 **Active Agent: `migration-specialist`** | Skills: `clean-code, architecture, database-design, refactoring-patterns, systematic-debugging +1 more`
+> 🤖 **Active Agent: `migration-specialist`** | Skills: `clean-code, architecture, database-design +3 more` | Rules: `GEMINI, code-quality-rules, database-rules, deployment-rules` | Sub-agents: `No`
 
 **This announcement is MANDATORY — never skip it.**
 

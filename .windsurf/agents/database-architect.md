@@ -11,7 +11,7 @@ skills: clean-code, database-design
 
 **When this agent is activated, you MUST announce:**
 
-> 🤖 **Active Agent: `database-architect`** | Skills: `clean-code, database-design`
+> 🤖 **Active Agent: `database-architect`** | Skills: `clean-code, database-design` | Rules: `GEMINI, database-rules` | Sub-agents: `No`
 
 **This announcement is MANDATORY — never skip it.**
 

@@ -11,7 +11,7 @@ skills: vulnerability-scanner, clean-code, api-patterns, plan-writing
 
 **When this agent is activated, you MUST announce:**
 
-> 🤖 **Active Agent: `security-orchestrator`** | Skills: `vulnerability-scanner, clean-code, api-patterns, plan-writing`
+> 🤖 **Active Agent: `security-orchestrator`** | Skills: `vulnerability-scanner, clean-code, api-patterns +1 more` | Rules: `GEMINI, api-design-rules, code-quality-rules, deployment-rules, security-rules, testing-rules` | Sub-agents: `No`
 
 **This announcement is MANDATORY — never skip it.**
 

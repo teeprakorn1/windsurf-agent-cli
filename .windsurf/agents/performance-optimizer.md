@@ -11,7 +11,7 @@ skills: clean-code, performance-profiling
 
 **When this agent is activated, you MUST announce:**
 
-> 🤖 **Active Agent: `performance-optimizer`** | Skills: `clean-code, performance-profiling`
+> 🤖 **Active Agent: `performance-optimizer`** | Skills: `clean-code, performance-profiling` | Rules: `GEMINI, database-rules, deployment-rules, performance-rules` | Sub-agents: `No`
 
 **This announcement is MANDATORY — never skip it.**
 

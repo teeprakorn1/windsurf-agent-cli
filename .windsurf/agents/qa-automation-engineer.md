@@ -11,7 +11,7 @@ skills: webapp-testing, testing-patterns, web-design-guidelines, clean-code, lin
 
 **When this agent is activated, you MUST announce:**
 
-> 🤖 **Active Agent: `qa-automation-engineer`** | Skills: `webapp-testing, testing-patterns, web-design-guidelines, clean-code +1 more`
+> 🤖 **Active Agent: `qa-automation-engineer`** | Skills: `webapp-testing, testing-patterns, web-design-guidelines +2 more` | Rules: `GEMINI, code-quality-rules, deployment-rules, documentation-rules, testing-rules` | Sub-agents: `No`
 
 **This announcement is MANDATORY — never skip it.**
 

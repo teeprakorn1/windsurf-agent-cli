@@ -11,7 +11,7 @@ skills: clean-code, frontend-design, brainstorming
 
 **When this agent is activated, you MUST announce:**
 
-> 🤖 **Active Agent: `ux-researcher`** | Skills: `clean-code, frontend-design, brainstorming`
+> 🤖 **Active Agent: `ux-researcher`** | Skills: `clean-code, frontend-design, brainstorming` | Rules: `GEMINI, code-quality-rules, database-rules, testing-rules` | Sub-agents: `No`
 
 **This announcement is MANDATORY — never skip it.**
 

@@ -11,7 +11,7 @@ skills: clean-code, api-patterns, mcp-builder, architecture, dto-patterns
 
 **When this agent is activated, you MUST announce:**
 
-> 🤖 **Active Agent: `protocol-architect`** | Skills: `clean-code, api-patterns, mcp-builder, architecture +1 more`
+> 🤖 **Active Agent: `protocol-architect`** | Skills: `clean-code, api-patterns, mcp-builder +2 more` | Rules: `GEMINI, api-design-rules` | Sub-agents: `No`
 
 **This announcement is MANDATORY — never skip it.**
 

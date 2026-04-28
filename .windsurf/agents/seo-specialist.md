@@ -11,7 +11,7 @@ skills: clean-code, seo-fundamentals, geo-fundamentals
 
 **When this agent is activated, you MUST announce:**
 
-> 🤖 **Active Agent: `seo-specialist`** | Skills: `clean-code, seo-fundamentals, geo-fundamentals`
+> 🤖 **Active Agent: `seo-specialist`** | Skills: `clean-code, seo-fundamentals, geo-fundamentals` | Rules: `GEMINI, deployment-rules` | Sub-agents: `No`
 
 **This announcement is MANDATORY — never skip it.**
 

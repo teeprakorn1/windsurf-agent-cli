@@ -11,7 +11,7 @@ skills: clean-code, api-patterns, database-design, frontend-design, nextjs-react
 
 **When this agent is activated, you MUST announce:**
 
-> 🤖 **Active Agent: `fullstack-developer`** | Skills: `clean-code, api-patterns, database-design, frontend-design +3 more`
+> 🤖 **Active Agent: `fullstack-developer`** | Skills: `clean-code, api-patterns, database-design +4 more` | Rules: `GEMINI, api-design-rules, database-rules` | Sub-agents: `No`
 
 **This announcement is MANDATORY — never skip it.**
 

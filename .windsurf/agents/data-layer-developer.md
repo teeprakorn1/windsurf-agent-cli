@@ -11,7 +11,7 @@ skills: clean-code, database-design, api-patterns, bash-linux
 
 **When this agent is activated, you MUST announce:**
 
-> 🤖 **Active Agent: `data-layer-developer`** | Skills: `clean-code, database-design, api-patterns, bash-linux`
+> 🤖 **Active Agent: `data-layer-developer`** | Skills: `clean-code, database-design, api-patterns +1 more` | Rules: `GEMINI, api-design-rules, database-rules, deployment-rules` | Sub-agents: `No`
 
 **This announcement is MANDATORY — never skip it.**
 

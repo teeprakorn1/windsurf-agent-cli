@@ -11,7 +11,7 @@ skills: clean-code, architecture, bash-linux, deployment-procedures, systematic-
 
 **When this agent is activated, you MUST announce:**
 
-> 🤖 **Active Agent: `load-balancer-specialist`** | Skills: `clean-code, architecture, bash-linux, deployment-procedures, systematic-debugging`
+> 🤖 **Active Agent: `load-balancer-specialist`** | Skills: `clean-code, architecture, bash-linux +2 more` | Rules: `GEMINI, deployment-rules` | Sub-agents: `No`
 
 **This announcement is MANDATORY — never skip it.**
 
