@@ -1,26 +1,32 @@
-# Sub-Agent Kit — Windsurf Workspace Rules
-# This file is auto-read by Windsurf IDE
-# It references the main rule system in .windsurf/rules/
+# Aiyu MultiAgent V2 — AI Agent Platform
+# Auto-read by Windsurf IDE
 
 ## 🎯 Overview
-This workspace uses the Sub-Agent Kit — a multi-agent AI framework for Windsurf.
+Production-grade AI Agent Platform with Smart Init, Plugin System, Agent Testing, and Publishing.
 
 ## 📁 Structure
-- `.windsurf/agents/` — 79 specialized AI agents
+- `.windsurf/agents/` — 80 specialized AI agents
 - `.windsurf/skills/` — 46 domain-specific skills
 - `.windsurf/workflows/` — 78 slash-command workflows
 - `.windsurf/scripts/` — 4 validation scripts
-- `.windsurf/rules/` — 10 rules (GEMINI.md, architecture.md + 8 domain rules)
+- `.windsurf/rules/` — 10 rules (GEMINI.md + 9 domain rules)
+- `.windsurf/tests/` — Agent test files (*.test.md)
+- `lib/core/` — config, plugin, guardrails, runtime, logger
+- `lib/commands/` — init, add, remove, test, publish
+- `lib/test/` — runner, assertions, simulator, reporter
+- `lib/publish/` — packager, validator, registry
+- `templates/` — agent + skill scaffolds
 
-## 🚀 Quick Start
-Use slash commands in Windsurf chat:
-- `/create` — Create new application
-- `/orchestrate` — Multi-agent orchestration
-- `/security` — Security audit
-- `/deploy` — Deploy project
-- `/test` — Run tests
+## 🚀 CLI Commands
+- `aiyu-multi-agent init` — Interactive agent generator
+- `aiyu-multi-agent add skill <name>` — Install skill from npm
+- `aiyu-multi-agent remove skill <name>` — Uninstall skill
+- `aiyu-multi-agent test` — Run agent test suite
+- `aiyu-multi-agent publish` — Publish agent to npm
+- `aiyu-multi-agent status` — Project statistics
+- `aiyu-multi-agent checklist` — Quality verification
 
 ## 🔗 References
 - Full rules: @.windsurf/rules/GEMINI.md
 - Architecture: @.windsurf/rules/architecture.md
-- Project plan: @docs/PLAN.md
+- V2 Architecture: @docs/ARCHITECTURE-V2.md

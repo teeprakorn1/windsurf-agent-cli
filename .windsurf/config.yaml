@@ -1,10 +1,10 @@
-# windsurf Agent Kit — Windsurf Workspace Configuration
+# Aiyu MultiAgent — Windsurf Workspace Configuration
 # Windsurf reads this to discover agents, skills, and workflows
 
 workspace:
-  name: "windsurf-agent-cli"
-  description: "windsurf Agent Kit — Multi-Agent AI Framework for Windsurf"
-  version: "1.0.0"
+  name: "aiyu-multi-agent"
+  description: "Aiyu MultiAgent — Multi-Agent AI Framework"
+  version: "2.0.0"
 
 paths:
   agents: "./agents"

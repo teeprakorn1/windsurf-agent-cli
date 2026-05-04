@@ -1,16 +1,32 @@
-# Windsurf Agent CLI — Sub-Agent Kit
+# Aiyu MultiAgent — AI Agent Platform
 
-> Workspace configuration for AI Agent Framework on Windsurf IDE — 79 Agents, 46 Skills, 78 Workflows, 10 Rules
+> Production-grade AI Agent Platform with Smart Init, Plugin System, Agent Testing, and Publishing — 80 Agents, 46 Skills, 78 Workflows, 10 Rules
+>
+> **v2.1.0** — Security hardening, command injection fix, path traversal fix, unit tests, compliance tests, observability
 
 ---
 
 ## ✨ Features
 
-- **79 Specialized AI Agents** — From frontend to IoT, security to mechatronics
+### Platform Features (V2)
+- **Smart Init** — Interactive agent generator (use case, provider, memory, guardrails)
+- **🔥 Execution Engine** — ReAct loop, tool calling, 4 LLM providers (OpenAI, Claude, Ollama, mock)
+- **🔥 `aiyu-multi-agent run`** — Execute agent with input, JSON output for CI/CD
+- **🔥 `aiyu-multi-agent chat`** — Interactive session mode, continuous context
+- **Plugin System** — `aiyu-multi-agent add skill X` installs from npm with permission checks
+- **Agent Testing** — `aiyu-multi-agent test` runs prompt/output assertions
+- **Publish/Install** — `aiyu-multi-agent publish` → others can `npx your-agent`
+- **Hybrid Config** — `.agent/` universal + `.windsurf/` symlink for Windsurf IDE
+- **Node + Bun** — Dual runtime support
+- **Built-in Guardrails** — Path traversal protection, safe write, rate limit, sandbox exec
+- **Permission System** — Skills declare permissions, user approves on install
+- **Usage Tracking** — Local statistics, deployment history, no external telemetry
+
+### Agent Framework
+- **80 Specialized AI Agents** — From frontend to IoT, security to mechatronics
 - **46 Skills** — Modular capabilities loaded on-demand per agent
 - **78 Slash Commands** — Activate agents instantly with `/command`
 - **10 Rules** — Auto-triggered guidelines for security, performance, testing, and more
-- **5 Verification Scripts** — Automated quality checks for every code change
 - **Agent Auto-Routing** — The system automatically selects the right agent for your request
 - **Multi-Agent Orchestration** — Coordinate 2-7+ agents for complex tasks
 
@@ -18,29 +34,31 @@
 
 ## 🚀 Quick Start
 
-### Option A: Use `npx` (Recommended — No Install Needed)
+### Option A: Interactive Init (Recommended)
 
 ```bash
 # 1. Go to your project
 cd your-project
 
-# 2. Initialize Sub-Agent Kit
-npx windsurf-agent-cli init
+# 2. Initialize with interactive setup
+npx aiyu-multi-agent init
 
-# 3. Open in Windsurf IDE
-windsurf .
+# 3. Answer prompts:
+#    - Use case (Backend / Automation / Dev Assistant / Custom)
+#    - LLM provider (OpenAI / Claude / Local / Multi-provider)
+#    - Memory strategy (None / File / Vector)
+#    - Guardrails (Yes/No)
+
+# 4. Open in Windsurf IDE
+aiyu-multi-agent .
 ```
-
-That's it! The `init` command will:
-- Copy `.windsurf/` config (agents, skills, workflows, rules) into your project
-- Update `.gitignore` with `# AG Kit` + `.windsurf` automatically
 
 ### Option B: Clone This Repo
 
 ```bash
-git clone https://github.com/teeprakorn1/windsurf-agent-cli.git
-cd windsurf-agent-cli
-windsurf .
+git clone https://github.com/teeprakorn1/aiyu-multi-agent.git
+cd aiyu-multi-agent
+aiyu-multi-agent .
 ```
 
 ### Start Using Commands
@@ -53,46 +71,205 @@ Type any slash command in the Windsurf chat panel:
 /security Audit my codebase for vulnerabilities
 ```
 
-### CLI Commands
+---
+
+## 📋 CLI Commands
+
+### Core Commands
 
 ```bash
-npx windsurf-agent-cli init           # First-time setup — copy .windsurf/ to your project
-npx windsurf-agent-cli update         # Update .windsurf/ to latest version
-npx windsurf-agent-cli status         # Show project statistics
-npx windsurf-agent-cli list           # List all available slash commands
-npx windsurf-agent-cli checklist      # Run master checklist
-npx windsurf-agent-cli checklist --url http://localhost:3000  # Checklist with performance + E2E
-npx windsurf-agent-cli help           # Show help message
+aiyu-multi-agent init                        # Interactive agent generator (first-time setup)
+aiyu-multi-agent init --dry-run              # Preview without writing files
+aiyu-multi-agent update                      # Update config to latest version
+aiyu-multi-agent update --dry-run            # Preview update
+aiyu-multi-agent version                     # Show version + check for updates
+aiyu-multi-agent status                      # Show project statistics
+aiyu-multi-agent list                        # List all available slash commands
+aiyu-multi-agent info <agent>                # Show agent details
+aiyu-multi-agent checklist                   # Run master checklist
+aiyu-multi-agent checklist http://localhost:3000  # Checklist with performance + E2E
+aiyu-multi-agent inspect                     # Observability — stats, tool usage, latency, errors
+aiyu-multi-agent uninstall                   # Remove config directories
+```
+
+### Plugin System
+
+```bash
+aiyu-multi-agent add skill <name>            # Install skill from npm
+aiyu-multi-agent remove skill <name>         # Uninstall skill
+```
+
+Skill packages follow the naming convention: `aiyu-multi-agent-skill-<name>` on npm.
+
+### Agent Testing
+
+```bash
+aiyu-multi-agent test                        # Run agent test suite
+aiyu-multi-agent test --watch                # Watch mode (auto re-run)
+aiyu-multi-agent test --tap                  # TAP format output
+aiyu-multi-agent test --compliance           # Spec compliance tests (15 checks)
+aiyu-multi-agent test --unit                 # Core module unit tests (29 tests)
+```
+
+Test files are markdown: `.agent/tests/*.test.md`
+
+### Publishing
+
+```bash
+aiyu-multi-agent publish                     # Publish agent to npm
+aiyu-multi-agent publish --dry-run           # Validate + package without publishing
+aiyu-multi-agent publish --name my-agent     # Override package name
+aiyu-multi-agent publish --access public     # npm access level
+```
+
+Published agents can be installed by anyone:
+```bash
+npx your-agent-name                  # Installs agent config into project
+```
+
+### Execution Engine
+
+```bash
+aiyu-multi-agent run "Create REST API"       # Run agent with input (core engine)
+aiyu-multi-agent run "Fix bug" --agent backend-specialist  # Specify agent
+aiyu-multi-agent run "..." --provider openai # Use OpenAI (needs OPENAI_API_KEY)
+aiyu-multi-agent run "..." --provider claude # Use Claude (needs ANTHROPIC_API_KEY)
+aiyu-multi-agent run "..." --provider local  # Use Ollama (local LLM)
+aiyu-multi-agent run "..." --provider mock   # Mock responses (testing)
+aiyu-multi-agent run "..." --json            # JSON output (CI/CD)
+aiyu-multi-agent run "..." --max-steps 20    # Override max ReAct steps
+aiyu-multi-agent run "..." --verbose          # Streaming step-by-step output
+aiyu-multi-agent run "..." --dry-run          # Preview without executing
+aiyu-multi-agent run "..." --no-cache         # Skip cache, fresh execution
+
+aiyu-multi-agent chat                        # Interactive chat session
+aiyu-multi-agent chat --agent backend-specialist  # Chat with specific agent
+aiyu-multi-agent chat --provider openai      # Chat with real LLM
+```
+
+**LLM Providers:**
+
+| Provider | Env Var | Models |
+|----------|---------|--------|
+| `openai` | `OPENAI_API_KEY` | gpt-4, gpt-4o, gpt-3.5-turbo |
+| `claude` | `ANTHROPIC_API_KEY` | claude-sonnet-4-20250514, claude-haiku-4-20250414 |
+| `local` | (none — needs Ollama) | llama3, mistral, codellama |
+| `mock` | (none) | Returns canned responses for testing |
+
+**Built-in Tools (Namespaced):**
+
+| Namespace | Tool | Required Args |
+|-----------|------|---------------|
+| `fs.read` | Read file | `path` |
+| `fs.write` | Write file | `path`, `content` |
+| `fs.edit` | Find & replace | `path`, `old_string`, `new_string` |
+| `fs.glob` | Find files | `pattern` |
+| `search.grep` | Search content | `pattern` |
+| `shell.exec` | Run command | `command` |
+
+Legacy names (`Read`, `Write`, `Edit`, `Grep`, `Glob`, `Bash`) auto-alias to namespaced versions. Custom tools must use namespace format (e.g., `custom.tool`).
+
+**Runtime Correctness:**
+
+- **Parser Fallback Chain** — 4 strategies: structured JSON → TOOL_CALL regex → JSON code blocks → final answer
+- **Arg Validation** — Required args checked before tool execution, missing args return error
+- **Step Logging** — Standard shape: `{ step, thought, action, result, error, duration_ms }`
+- **Output Contract** — `outputFormat: json` enforces JSON output
+- **Deterministic Mode** — `temperature: 0` for stable test results
+- **Tool Timeout** — Default 30s per tool call
+- **LLM Retry/Backoff** — Exponential backoff (max 3 retries) for 429, 503, timeout errors
+- **Claude/Ollama Tool Use** — `callClaude` parses `tool_use` blocks; `callOllama` parses `tool_calls` response
+- **Chat ReAct Loop** — Chat sessions run full ReAct loop (max 5 steps), not just single follow-up
+- **Cross-Platform Tools** — `fs.glob` and `search.grep` use Node.js native (no grep/find dependency — works on Windows)
+- **Safe Write EXDEV** — Atomic write handles cross-partition rename with copy+unlink fallback
+- **Agent Name Validation** — Rejects path traversal chars (`/ \ : * ? " < > |`)
+
+### Permission System
+
+Skills declare required permissions in `config.json`:
+```json
+{ "permissions": { "fs": true, "network": true, "exec": false } }
+```
+
+When installing a skill that requires permissions:
+```
+⚠️ Skill requires: filesystem access, network access
+Allow? (y/N)
+```
+
+```bash
+aiyu-multi-agent add skill my-skill           # Prompts for permissions
+aiyu-multi-agent add skill my-skill --auto-approve  # Auto-approve all
 ```
 
 ---
 
 ## 📁 Project Structure
 
+### V2 Hybrid Config
+
 ```
-.windsurf/
-├── agents/          # 79 AI Agents (e.g., frontend-specialist, mechatronic-specialist)
-│   └── *.md         # Each agent has frontmatter (name, skills, tools, description)
-├── skills/          # 46 Skills (e.g., clean-code, vulnerability-scanner)
-│   └── skill-name/
-│       ├── SKILL.md       # Skill metadata + guidelines
-│       ├── scripts/       # Optional Python/Bash scripts
-│       └── references/    # Optional templates, docs
-├── workflows/       # 78 Workflows (e.g., /orchestrate, /create, /deploy)
-│   └── *.md         # Each workflow activates an agent
-├── scripts/         # 5 Python Scripts (checklist, verify_all, security_scan)
-├── rules/           # 10 Rules (auto-triggered by keywords)
-│   ├── GEMINI.md              # Core behavior rules (always active)
-│   ├── architecture.md        # System architecture
-│   ├── security-rules.md      # Security best practices
-│   ├── performance-rules.md   # Performance optimization
-│   ├── code-quality-rules.md  # Code quality standards
-│   ├── documentation-rules.md # Documentation standards
-│   ├── testing-rules.md       # Testing standards
-│   ├── api-design-rules.md    # API design conventions
-│   ├── database-rules.md      # Database best practices
-│   └── deployment-rules.md    # Deployment safety
-└── mcp_config.json  # MCP Server Configurations
+.agent/                          # Universal config (primary)
+├── agents/                      # AI Agents
+├── skills/
+│   ├── core/                    # Built-in skills
+│   └── installed/               # npm-installed skills
+├── workflows/                   # Slash command workflows
+├── rules/                       # Auto-triggered rules
+├── tests/                       # Agent test files (*.test.md)
+├── scripts/                     # Verification scripts
+└── config.yaml                  # Agent configuration
+
+.windsurf/                       # Symlink → .agent/ (if Windsurf IDE detected)
+```
+
+### Package Structure
+
+```
+aiyu-multi-agent/
+├── bin/
+│   ├── cli.js                   # CLI entry (Commander.js)
+│   └── postinstall.js           # Post-install script
+├── lib/
+│   ├── utils.js                 # Shared utilities
+│   ├── core/
+│   │   ├── config.js            # Config loader (.agent/ + .windsurf/ symlink)
+│   │   ├── agent-runtime.js     # 🔥 ReAct loop + tool calling (imports llm-providers, tool-registry)
+│   │   ├── tool-registry.js     # 🔥 Namespaced tools, schemas, arg validation, parseCommandArgs
+│   │   ├── llm-providers.js     # 🔥 OpenAI, Claude, Ollama, Mock + retry/backoff
+│   │   ├── tool-runner.js       # Isolated tool runner (child process)
+│   │   ├── plugin.js            # Plugin lifecycle + permission system
+│   │   ├── guardrails.js        # Security & safety layer (pathTraversal, safeWrite, rateLimit, sandboxExec)
+│   │   ├── runtime.js           # Node/Bun detection
+│   │   ├── logger.js            # Structured logging
+│   │   └── usage.js             # Usage statistics + deployment tracking
+│   ├── commands/
+│   │   ├── init.js              # Smart Init (interactive)
+│   │   ├── add.js               # aiyu-multi-agent add skill (with permission check)
+│   │   ├── remove.js            # aiyu-multi-agent remove skill
+│   │   ├── run.js               # 🔥 aiyu-multi-agent run (--verbose, --dry-run, --no-cache)
+│   │   ├── chat.js              # 🔥 aiyu-multi-agent chat (sliding window context)
+│   │   ├── test.js              # aiyu-multi-agent test (--compliance, --unit, --watch, --tap)
+│   │   ├── inspect.js           # aiyu-multi-agent inspect (observability)
+│   │   └── publish.js           # aiyu-multi-agent publish
+│   ├── test/
+│   │   ├── runner.js            # Test runner
+│   │   ├── assertions.js        # Assertion parser + evaluator
+│   │   ├── simulator.js         # Tool call + LLM simulator
+│   │   ├── reporter.js          # Pretty + TAP output
+│   │   ├── compliance.js        # Spec compliance tests (15 checks)
+│   │   └── unit/
+│   │       └── core.test.js     # Unit tests for guardrails, tool-registry, llm-providers (29 tests)
+│   └── publish/
+│       ├── packager.js          # Bundle agent for npm
+│       ├── validator.js         # Pre-publish validation
+│       └── registry.js          # npm publish wrapper
+├── templates/
+│   ├── agent/                   # Agent templates (backend, automation, etc.)
+│   └── skill/                   # Skill scaffold template
+├── docs/
+│   └── ARCHITECTURE-V2.md       # Architecture document
+└── .windsurf/                   # 80 Agents, 46 Skills, 78 Workflows, 10 Rules
 ```
 
 ---
@@ -124,27 +301,9 @@ Just describe what you need — the system auto-selects the right agent:
 
 "Check my code for security vulnerabilities"
 → 🤖 Active Agent: security-auditor
-
-"Design a pneumatic circuit for a press machine"
-→ 🤖 Active Agent: pneumatic-specialist
-
-"Configure nginx load balancer with health checks"
-→ 🤖 Active Agent: load-balancer-specialist
 ```
 
 ### Method 3: Orchestration (Multi-Agent)
-
-For complex tasks, use orchestration commands to coordinate multiple agents:
-
-```
-/orchestrate Build an e-commerce platform with payment, inventory, and user management
-→ Coordinates: backend-specialist + frontend-specialist + database-architect + security-auditor
-
-/senior-orchestrate Migrate monolith to microservices on AWS
-→ Coordinates: backend-specialist + devops-engineer + cloud-architect + migration-specialist
-```
-
-**Orchestration Levels:**
 
 | Level | Agents | Use Case |
 |-------|--------|----------|
@@ -154,83 +313,123 @@ For complex tasks, use orchestration commands to coordinate multiple agents:
 
 ---
 
+## 🧪 Agent Testing
+
+### Write Tests
+
+Create `.agent/tests/your-agent.test.md`:
+
+```markdown
+---
+name: your-agent-test
+description: "Test suite for your-agent"
+---
+
+## Test 1: Agent loads correctly
+- assert: config exists
+- assert: agent name is "your-agent"
+- assert: provider is "openai"
+
+## Test 2: Guardrails active
+- assert: path traversal protection enabled
+- assert: safe write enabled
+- assert: rate limit enabled
+
+## Test 3: Skills loaded
+- assert: skill clean-code loaded
+```
+
+### Available Assertions
+
+| Assertion | Description |
+|-----------|-------------|
+| `config exists` | Config directory exists |
+| `agent name is "X"` | Agent name matches |
+| `provider is "X"` | LLM provider matches |
+| `memory strategy is "X"` | Memory strategy matches |
+| `guardrails active/enabled` | Guardrails are enabled |
+| `path traversal protection enabled` | Path traversal guard works |
+| `safe write enabled` | Atomic write enabled |
+| `rate limit enabled` | Rate limiting enabled |
+| `tool X available` | Tool is in agent's tool list |
+| `skill X loaded` | Skill directory exists |
+| `- skip: reason` | Skip this test |
+
+---
+
+## 🔌 Plugin System
+
+### Install a Skill
+
+```bash
+aiyu-multi-agent add skill postgres        # installs aiyu-multi-agent-skill-postgres
+aiyu-multi-agent add skill @org/custom     # scoped package
+```
+
+### Create a Skill Package
+
+1. Create npm package with name `aiyu-multi-agent-skill-<name>`:
+
+```
+aiyu-multi-agent-skill-my-skill/
+├── SKILL.md          # Required: metadata + guidelines
+├── config.json       # Optional: plugin manifest
+├── scripts/          # Optional: tool functions
+└── references/       # Optional: templates, docs
+```
+
+2. Publish to npm: `npm publish`
+
+3. Users install: `aiyu-multi-agent add skill my-skill`
+
+---
+
+## 🛡️ Built-in Guardrails
+
+| Guardrail | Description |
+|-----------|-------------|
+| **Path Traversal** | Blocks `../`, absolute paths, double slashes, dot segments escaping project root. Uses explicit `projectRoot` param + `path.normalize()` |
+| **Safe Write** | Atomic file writes (temp → rename) with EXDEV fallback |
+| **Rate Limit** | In-memory rate limiting (configurable per key, auto-cleanup) |
+| **Sandbox Exec** | `execFileSync` only (no shell), whitelist-only, `parseCommandArgs` with escape sequences, dangerous pattern detection (command substitution, destructive commands) |
+| **Command Injection** | `shell.exec` uses `execFileSync` + parsed args (no `shell: true`). Blocks `$()`, `` ` ``, `rm -rf`, `mkfs`, etc. |
+| **File Limits** | `search.grep`: maxDepth=10, maxFileSize=1MB, maxFiles=1000. `fetchJSON`: 1MB response limit |
+
+---
+
 ## 🔧 Adding New Components
 
 ### Add a New Agent
 
-1. Create `.windsurf/agents/your-agent.md`:
+1. Create `.agent/agents/your-agent.md`:
 
 ```markdown
 ---
 name: your-agent
-description: What this agent does and when to trigger it
+description: What this agent does
 tools: Read, Grep, Glob, Bash, Edit, Write
 model: inherit
 skills: clean-code, architecture
+provider: openai
+memory: none
+guardrails: true
 ---
 
-## 🤖 Agent Identity
-> 🤖 **Active Agent: `your-agent`** | Skills: `clean-code, architecture`
-
-# Your Agent Title
-Your agent instructions here...
+# Your Agent
+Instructions here...
 ```
-
-2. Register in `.windsurf/config.yaml` under `agents:`
-
-### Add a New Workflow
-
-1. Create `.windsurf/workflows/your-command.md`:
-
-```markdown
----
-description: What this workflow does
-skills:
-  - clean-code
-  - architecture
----
-
-# /your-command - Title
-
-$ARGUMENTS
-
-## 🤖 Agent Activation
-> 🤖 **Active Agent: `your-agent`** | Skills: `clean-code, architecture`
-
-## Task
-Load `.windsurf/agents/your-agent.md` and execute tasks.
-
-## Examples
-\`\`\`
-/your-command example task 1
-/your-command example task 2
-\`\`\`
-```
-
-2. Register in `.windsurf/config.yaml` under `workflows.available_commands:`
 
 ### Add a New Skill
 
-1. Create `.windsurf/skills/your-skill/SKILL.md`:
-
-```markdown
----
-name: your-skill
-description: What this skill provides
-allowed-tools: Read, Write, Edit
-version: 1.0
-priority: HIGH
----
-
-# Your Skill Title
-Your skill guidelines here...
+```bash
+aiyu-multi-agent add skill your-skill
 ```
 
-2. Reference it in agent frontmatter `skills:` field
+Or create manually in `.agent/skills/your-skill/SKILL.md`.
 
 ### Add a New Rule
 
-1. Create `.windsurf/rules/your-rules.md`:
+Create `.agent/rules/your-rules.md`:
 
 ```markdown
 ---
@@ -239,36 +438,20 @@ keywords: [keyword1, keyword2]
 ---
 
 # Your Rule Title
-Your rule guidelines here...
+Guidelines here...
 ```
 
 ---
 
 ## ✅ Verification & Quality
 
-### Run All Checks
-
 ```bash
-python3 .windsurf/scripts/checklist.py .
+aiyu-multi-agent test                        # Run agent test suite
+aiyu-multi-agent checklist                   # Run master checklist
+aiyu-multi-agent checklist http://localhost:3000  # With performance + E2E
 ```
 
-### Run with URL (includes performance + E2E)
-
-```bash
-python3 .windsurf/scripts/checklist.py . --url http://localhost:3000
-```
-
-### Available Scripts
-
-| Script | Purpose |
-|--------|---------|
-| `checklist.py` | Master checklist runner (all checks) |
-| `verify_all.py` | Run all verifications |
-| `security_scan.py` | Vulnerability scanning |
-| `auto_preview.py` | Auto preview server |
-| `session_manager.py` | Session management |
-
-### Skill-Specific Scripts
+### Python Scripts
 
 ```bash
 python3 .windsurf/skills/vulnerability-scanner/scripts/security_scan.py .
@@ -276,9 +459,6 @@ python3 .windsurf/skills/lint-and-validate/scripts/lint_runner.py .
 python3 .windsurf/skills/testing-patterns/scripts/test_runner.py .
 python3 .windsurf/skills/database-design/scripts/schema_validator.py .
 python3 .windsurf/skills/frontend-design/scripts/ux_audit.py .
-python3 .windsurf/skills/seo-fundamentals/scripts/seo_checker.py .
-python3 .windsurf/skills/performance-profiling/scripts/lighthouse_audit.py --url http://localhost:3000
-python3 .windsurf/skills/webapp-testing/scripts/playwright_runner.py --url http://localhost:3000
 ```
 
 ---
@@ -287,15 +467,27 @@ python3 .windsurf/skills/webapp-testing/scripts/playwright_runner.py --url http:
 
 | Component | Count |
 |-----------|-------|
-| Agents | 79 |
+| Agents | 80 |
 | Skills | 46 |
 | Workflows | 78 |
 | Rules | 10 |
-| Scripts | 5 |
+| Scripts | 4 |
 
 ---
 
 ## 🤝 Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, code style, and PR guidelines.
+
+### Quick Links
+
+| Document | Description |
+|----------|-------------|
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Development guide, code style, testing |
+| [SECURITY.md](SECURITY.md) | Vulnerability reporting and security policy |
+| [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) | Community standards (Contributor Covenant 2.1) |
+| [CHANGELOG.md](CHANGELOG.md) | Version history and release notes |
+| [CODEBASE.md](CODEBASE.md) | Architecture and module documentation |
 
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature/my-feature`
@@ -313,4 +505,4 @@ python3 .windsurf/skills/webapp-testing/scripts/playwright_runner.py --url http:
 - [@FrameHandsomez](https://github.com/FrameHandsomez)
 
 ---
-*Created: 2026-04-27*
+*Created: 2026-04-27 | V2: 2026-05-04 | V2.1: 2026-05-04*

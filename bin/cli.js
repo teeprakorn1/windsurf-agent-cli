@@ -1,69 +1,63 @@
 #!/usr/bin/env node
 
 /**
- * Windsurf Agent CLI — Sub-Agent Kit
- * AI Agent Framework for Windsurf IDE
+ * Aiyu MultiAgent — AI Agent Platform
+ * Production-grade AI Agent CLI with Smart Init, Plugin System, Testing, and Publishing
  */
 
-const { execSync } = require("child_process");
+const { Command } = require("commander");
+const chalk = require("chalk");
+const fs = require("fs");
+const path = require("path");
+const { execFileSync } = require("child_process");
 const http = require("http");
 const https = require("https");
-const path = require("path");
-const fs = require("fs");
+const utils = require("../lib/utils");
+
 const { countFiles, countDirs, updateGitignore } = require("../lib/utils");
+const config = require("../lib/core/config");
+const logger = require("../lib/core/logger");
+const guardrails = require("../lib/core/guardrails");
 
 const PROJECT_ROOT = path.resolve(__dirname, "..");
 const WINDSURF_DIR = path.join(PROJECT_ROOT, ".windsurf");
 const PKG = JSON.parse(fs.readFileSync(path.join(PROJECT_ROOT, "package.json"), "utf-8"));
 const CURRENT_VERSION = PKG.version;
 
-function runCommand(cmd, cwd = PROJECT_ROOT) {
-  try {
-    const result = execSync(cmd, { cwd, encoding: "utf-8", stdio: "pipe" });
-    return result.trim();
-  } catch (error) {
-    console.error(`Error running: ${cmd}`);
-    console.error(error.message);
-    return null;
-  }
-}
+// ── Helpers ──────────────────────────────────────────────────────────
 
 function fetchJSON(url, redirects = 0) {
+  const MAX_RESPONSE_SIZE = 1024 * 1024; // 1MB
   return new Promise((resolve, reject) => {
     if (redirects > 5) return reject(new Error("too many redirects"));
     const client = url.startsWith("https") ? https : http;
-    client.get(url, { timeout: 5000 }, (res) => {
+    const req = client.get(url, { timeout: 5000 }, (res) => {
       if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
         return fetchJSON(res.headers.location, redirects + 1).then(resolve, reject);
       }
       let data = "";
-      res.on("data", chunk => data += chunk);
+      res.on("data", chunk => {
+        data += chunk;
+        if (data.length > MAX_RESPONSE_SIZE) {
+          req.destroy();
+          reject(new Error("Response too large"));
+        }
+      });
       res.on("end", () => {
         try { resolve(JSON.parse(data)); }
         catch (e) { reject(e); }
       });
-    }).on("error", reject).on("timeout", () => { reject(new Error("timeout")); });
+    });
+    req.on("error", reject);
+    req.on("timeout", () => { req.destroy(); reject(new Error("timeout")); });
   });
 }
 
 async function getLatestVersion() {
   try {
-    const data = await fetchJSON("https://registry.npmjs.org/windsurf-agent-cli/latest");
+    const data = await fetchJSON("https://registry.npmjs.org/aiyu-multi-agent/latest");
     return data.version || null;
   } catch { return null; }
-}
-
-function getInstalledVersion() {
-  const targetDir = process.cwd();
-  const versionFile = path.join(targetDir, ".windsurf", ".version");
-  try { return fs.readFileSync(versionFile, "utf-8").trim(); }
-  catch { return null; }
-}
-
-function saveInstalledVersion() {
-  const targetDir = process.cwd();
-  const versionFile = path.join(targetDir, ".windsurf", ".version");
-  fs.writeFileSync(versionFile, CURRENT_VERSION, "utf-8");
 }
 
 function getComponentCounts() {
@@ -74,143 +68,6 @@ function getComponentCounts() {
   };
 }
 
-function showBanner() {
-  const c = getComponentCounts();
-  console.log(`
-  Windsurf Agent CLI — Sub-Agent Kit v${CURRENT_VERSION}
-  ${c.agents} Agents | ${c.skills} Skills | ${c.workflows} Workflows
-`);
-}
-
-function showStatus() {
-  console.log("📊 Project Status:\n");
-
-  const scriptsDir = path.join(WINDSURF_DIR, "scripts");
-
-  console.log(`  Agents:    ${countFiles(path.join(WINDSURF_DIR, "agents"), ".md")}`);
-  console.log(`  Skills:    ${countDirs(path.join(WINDSURF_DIR, "skills"))}`);
-  console.log(`  Workflows: ${countFiles(path.join(WINDSURF_DIR, "workflows"), ".md")}`);
-  console.log(`  Scripts:   ${fs.existsSync(scriptsDir) ? fs.readdirSync(scriptsDir).filter(f => f.endsWith(".py")).length : 0}`);
-  console.log(`  Rules:     ${countFiles(path.join(WINDSURF_DIR, "rules"), ".md")}`);
-  console.log("");
-}
-
-function copyRecursive(src, dest, options = {}) {
-  const { merge = false, dryRun = false, overwritten = [] } = options;
-  if (!fs.existsSync(dest)) {
-    if (!dryRun) fs.mkdirSync(dest, { recursive: true });
-  }
-  const entries = fs.readdirSync(src, { withFileTypes: true });
-  for (const entry of entries) {
-    const srcPath = path.join(src, entry.name);
-    const destPath = path.join(dest, entry.name);
-    if (entry.isDirectory()) {
-      copyRecursive(srcPath, destPath, { merge, dryRun, overwritten });
-    } else {
-      if (merge && fs.existsSync(destPath)) {
-        overwritten.push(path.relative(process.cwd(), destPath));
-        continue;
-      }
-      if (!dryRun) fs.copyFileSync(srcPath, destPath);
-    }
-  }
-  return overwritten;
-}
-
-// updateGitignore is now imported from lib/utils
-
-function initProject(dryRun = false) {
-  const targetDir = process.cwd();
-  const targetWindsurf = path.join(targetDir, ".windsurf");
-
-  if (fs.existsSync(targetWindsurf)) {
-    console.log(".windsurf/ already exists. Run `npx windsurf-agent-cli update` instead.\n");
-    return;
-  }
-
-  if (dryRun) {
-    console.log("[DRY RUN] Would copy .windsurf/ to project:\n");
-    const entries = fs.readdirSync(WINDSURF_DIR, { withFileTypes: true });
-    entries.forEach(e => console.log("  .windsurf/" + e.name + (e.isDirectory() ? "/" : "")));
-    console.log("\n[DRY RUN] No files were written.\n");
-    return;
-  }
-
-  console.log("Copying .windsurf/ to project...\n");
-  copyRecursive(WINDSURF_DIR, targetWindsurf);
-  saveInstalledVersion();
-  updateGitignore(process.cwd());
-
-  console.log("\nDone! .windsurf/ v" + CURRENT_VERSION + " installed.\n");
-  console.log("Next steps:");
-  console.log("  1. Open in Windsurf IDE: windsurf .");
-  console.log("  2. Use slash commands (e.g., /backend, /security)");
-  console.log("");
-}
-
-async function updateProject(dryRun = false) {
-  const targetDir = process.cwd();
-  const targetWindsurf = path.join(targetDir, ".windsurf");
-
-  if (!fs.existsSync(targetWindsurf)) {
-    console.log(".windsurf/ not found. Run `npx windsurf-agent-cli init` first.\n");
-    return;
-  }
-
-  const installed = getInstalledVersion();
-  console.log("Installed version: " + (installed || "unknown"));
-  console.log("Package version:   " + CURRENT_VERSION);
-
-  if (installed === CURRENT_VERSION) {
-    console.log("\nAlready up to date! v" + CURRENT_VERSION + "\n");
-    return;
-  }
-
-  // Check npm registry for newer
-  console.log("\nChecking npm for latest version...");
-  const latest = await getLatestVersion();
-  if (latest && latest !== CURRENT_VERSION) {
-    console.log("Newer version available on npm: v" + latest);
-    console.log("Run: npx windsurf-agent-cli@latest update\n");
-    return;
-  }
-
-  console.log("\nUpdating .windsurf/ from v" + (installed || "?") + " to v" + CURRENT_VERSION + "...");
-  const overwritten = copyRecursive(WINDSURF_DIR, targetWindsurf, { merge: true, dryRun });
-  if (overwritten.length > 0) {
-    console.log("\n  Preserved user-modified files (not overwritten):");
-    overwritten.forEach(f => console.log("    " + f));
-  }
-  if (!dryRun) {
-    saveInstalledVersion();
-    updateGitignore(process.cwd());
-  }
-  if (dryRun) {
-    console.log("\n[DRY RUN] No files were written.\n");
-  } else {
-    console.log("\nUpdated to v" + CURRENT_VERSION + "!\n");
-  }
-}
-
-async function showVersion() {
-  console.log("windsurf-agent-cli v" + CURRENT_VERSION);
-  const installed = getInstalledVersion();
-  if (installed) console.log("Project .windsurf/ version: v" + installed);
-  console.log("\nChecking npm for latest...");
-  const latest = await getLatestVersion();
-  if (latest) {
-    if (latest === CURRENT_VERSION) {
-      console.log("You are on the latest version: v" + latest);
-    } else {
-      console.log("Latest on npm: v" + latest);
-      console.log("Update with: npx windsurf-agent-cli@latest update");
-    }
-  } else {
-    console.log("Could not reach npm registry.");
-  }
-  console.log("");
-}
-
 function isValidUrl(str) {
   try {
     const u = new URL(str);
@@ -218,255 +75,365 @@ function isValidUrl(str) {
   } catch { return false; }
 }
 
-function runChecklist(url) {
-  if (url && !isValidUrl(url)) {
-    console.error("Invalid URL provided. Only http:// and https:// URLs are allowed.\n");
-    return;
-  }
-  const cmd = url 
-    ? `python3 .windsurf/scripts/checklist.py . --url ${url}`
-    : `python3 .windsurf/scripts/checklist.py .`;
-  console.log("Running Master Checklist...\n");
-  const result = runCommand(cmd);
-  if (result === null) {
-    console.error("Checklist failed. See errors above.\n");
-  }
+// ── Command Implementations ──────────────────────────────────────────
+
+async function cmdInit(options) {
+  const initCmd = require("../lib/commands/init");
+  await initCmd.run(process.cwd(), { dryRun: options.dryRun });
+  const usage = require("../lib/core/usage");
+  usage.trackCommand(process.cwd(), "init");
 }
 
-function parseFrontmatter(content) {
-  const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
-  if (!match) return {};
-  const fm = {};
-  match[1].split("\n").forEach(line => {
-    const idx = line.indexOf(":");
-    if (idx === -1) return;
-    const key = line.slice(0, idx).trim();
-    let val = line.slice(idx + 1).trim();
-    if (val.startsWith("[") && val.endsWith("]")) {
-      val = val.slice(1, -1).split(",").map(v => v.trim().replace(/^["']|["']$/g, ""));
-    } else if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
-      val = val.slice(1, -1);
-    }
-    fm[key] = val;
-  });
-  return fm;
-}
+async function cmdUpdate(options) {
+  const targetDir = process.cwd();
+  const targetAgent = config.getAgentDir(targetDir);
+  const targetWindsurf = config.getWindsurfDir(targetDir);
 
-function loadAllRules() {
-  const rulesDir = path.join(WINDSURF_DIR, "rules");
-  if (!fs.existsSync(rulesDir)) return [];
-  return fs.readdirSync(rulesDir)
-    .filter(f => f.endsWith(".md"))
-    .map(f => {
-      const content = fs.readFileSync(path.join(rulesDir, f), "utf-8");
-      const fm = parseFrontmatter(content);
-      const keywords = Array.isArray(fm.keywords) ? fm.keywords : [];
-      return { file: f, name: f.replace(".md", ""), keywords, trigger: fm.trigger || "" };
-    });
-}
-
-function findMatchingRules(agentDesc, agentSkills) {
-  const rules = loadAllRules();
-  const text = (agentDesc + " " + agentSkills).toLowerCase();
-  return rules.filter(r => r.keywords.some(k => text.includes(k.toLowerCase())));
-}
-
-function showAgentInfo(agentName) {
-  const agentsDir = path.join(WINDSURF_DIR, "agents");
-  const filePath = path.join(agentsDir, `${agentName}.md`);
-
-  if (!fs.existsSync(filePath)) {
-    // Try partial match
-    const files = fs.readdirSync(agentsDir).filter(f => f.endsWith(".md"));
-    const match = files.find(f => f.replace(".md", "").includes(agentName));
-    if (match) {
-      return showAgentInfo(match.replace(".md", ""));
-    }
-    console.log(`Agent not found: ${agentName}\n`);
-    console.log("Available agents:");
-    files.sort().forEach(f => console.log(`  ${f.replace(".md", "")}`));
-    console.log("");
+  if (!fs.existsSync(targetAgent) && !fs.existsSync(targetWindsurf)) {
+    console.log(chalk.yellow(".agent/ or .windsurf/ not found. Run `aiyu-multi-agent init` first.\n"));
     return;
   }
 
-  const content = fs.readFileSync(filePath, "utf-8");
-  const fm = parseFrontmatter(content);
-  const skills = Array.isArray(fm.skills) ? fm.skills : (fm.skills ? fm.skills.split(",").map(s => s.trim()) : []);
-  const tools = Array.isArray(fm.tools) ? fm.tools : (fm.tools ? fm.tools.split(",").map(t => t.trim()) : []);
-  const hasSubAgents = tools.includes("Agent");
-  const matchingRules = findMatchingRules(fm.description || "", fm.skills || "");
+  const installed = config.getVersion(targetDir);
+  console.log(`Installed version: ${installed || "unknown"}`);
+  console.log(`Package version:   ${CURRENT_VERSION}`);
 
-  console.log(`Agent: ${fm.name || agentName}\n`);
-  console.log(`  Description: ${fm.description || 'N/A'}\n`);
-  console.log(`  Tools:       ${tools.join(', ')}`);
-  console.log(`  Skills:      ${skills.join(', ')}`);
-  console.log(`  Sub-agents:  ${hasSubAgents ? 'Yes (can spawn other agents)' : 'No'}`);
-  console.log(`  Rules:       ${matchingRules.length > 0 ? matchingRules.map(r => r.name).join(', ') : 'None matched'}`);
-
-  // Show skill details
-  if (skills.length > 0) {
-    console.log(`\n  Skill Details:`);
-    skills.forEach(skill => {
-      const skillPath = path.join(WINDSURF_DIR, "skills", skill, "SKILL.md");
-      if (fs.existsSync(skillPath)) {
-        const sc = fs.readFileSync(skillPath, "utf-8");
-        const sfm = parseFrontmatter(sc);
-        console.log(`     ${skill.padEnd(25)} ${sfm.description || 'Loaded'}`);
-      } else {
-        console.log(`     ${skill.padEnd(25)} (built-in)`);
-      }
-    });
+  if (installed === CURRENT_VERSION) {
+    console.log(chalk.green(`\nAlready up to date! v${CURRENT_VERSION}\n`));
+    return;
   }
 
-  // Show rule details
-  if (matchingRules.length > 0) {
-    console.log(`\n  Matched Rules:`);
-    matchingRules.forEach(r => {
-      console.log(`     ${r.name.padEnd(25)} keywords: ${r.keywords.slice(0, 5).join(', ')}${r.keywords.length > 5 ? '...' : ''}`);
-    });
+  console.log("\nChecking npm for latest version...");
+  const latest = await getLatestVersion();
+  if (latest && latest !== CURRENT_VERSION) {
+    console.log(chalk.yellow(`Newer version available on npm: v${latest}`));
+    console.log("Run: npx aiyu-multi-agent@latest update\n");
+    return;
   }
 
-  // Show which workflow activates this agent
-  const workflowsDir = path.join(WINDSURF_DIR, "workflows");
-  if (fs.existsSync(workflowsDir)) {
-    const activatingWorkflows = fs.readdirSync(workflowsDir)
-      .filter(f => f.endsWith(".md"))
-      .filter(f => {
-        const wc = fs.readFileSync(path.join(workflowsDir, f), "utf-8");
-        return wc.includes(agentName);
-      });
-    if (activatingWorkflows.length > 0) {
-      console.log(`\n  Activated by: ${activatingWorkflows.map(f => '/' + f.replace('.md', '')).join(', ')}`);
-    }
+  const targetConfig = config.getConfigDir(targetDir);
+  console.log(`\nUpdating from v${installed || "?"} to v${CURRENT_VERSION}...`);
+  const preserved = utils.copyRecursive(WINDSURF_DIR, targetConfig, { merge: true, dryRun: options.dryRun });
+  if (preserved.length > 0) {
+    console.log("\n  Preserved user-modified files (not overwritten):");
+    preserved.forEach(f => console.log(`    ${f}`));
   }
+  if (!options.dryRun) {
+    config.saveVersion(targetDir, CURRENT_VERSION);
+    updateGitignore(targetDir);
+  }
+  console.log(options.dryRun ? "\n[DRY RUN] No files were written.\n" : chalk.green(`\nUpdated to v${CURRENT_VERSION}!\n`));
+}
 
+async function cmdVersion() {
+  console.log(`aiyu-multi-agent v${CURRENT_VERSION}`);
+  const installed = config.getVersion(process.cwd());
+  if (installed) console.log(`Project config version: v${installed}`);
+  console.log("\nChecking npm for latest...");
+  const latest = await getLatestVersion();
+  if (latest) {
+    console.log(latest === CURRENT_VERSION ? chalk.green(`You are on the latest: v${latest}`) : `Latest on npm: v${latest}\nUpdate: npx aiyu-multi-agent@latest update`);
+  } else {
+    console.log("Could not reach npm registry.");
+  }
   console.log("");
 }
 
-function listCommands() {
-  console.log("📋 Available Commands:\n");
+function cmdStatus() {
+  const cfgDir = config.getConfigDir(process.cwd()) || WINDSURF_DIR;
+  const scriptsDir = path.join(cfgDir, "scripts");
+  console.log("📊 Project Status:\n");
+  console.log(`  Agents:    ${countFiles(path.join(cfgDir, "agents"), ".md")}`);
+  console.log(`  Skills:    ${countDirs(path.join(cfgDir, "skills"))}`);
+  console.log(`  Workflows: ${countFiles(path.join(cfgDir, "workflows"), ".md")}`);
+  console.log(`  Scripts:   ${fs.existsSync(scriptsDir) ? fs.readdirSync(scriptsDir).filter(f => f.endsWith(".py")).length : 0}`);
+  console.log(`  Rules:     ${countFiles(path.join(cfgDir, "rules"), ".md")}`);
+  console.log(`  Config:    ${cfgDir}`);
+  console.log("");
+}
 
+function cmdList() {
+  console.log("📋 Available Commands:\n");
   const workflowsDir = path.join(WINDSURF_DIR, "workflows");
   if (!fs.existsSync(workflowsDir)) {
     console.log("  No workflows found.");
     return;
   }
 
-  const files = fs.readdirSync(workflowsDir).filter(f => f.endsWith(".md")).sort();
-  files.forEach(f => {
-    const name = f.replace(".md", "");
-    const filePath = path.join(workflowsDir, f);
-    const content = fs.readFileSync(filePath, "utf-8");
-    const descMatch = content.match(/description:\s*(.+)/);
-    const desc = descMatch ? descMatch[1].trim() : "No description";
-    console.log(`  /${name.padEnd(25)} ${desc}`);
+  // Cache workflow descriptions for 30s
+  if (!global._wfCache || Date.now() - global._wfCache.ts > 30000) {
+    const entries = [];
+    fs.readdirSync(workflowsDir).filter(f => f.endsWith(".md")).sort().forEach(f => {
+      const content = fs.readFileSync(path.join(workflowsDir, f), "utf-8");
+      const descMatch = content.match(/description:\s*(.+)/);
+      entries.push({ name: f.replace(".md", ""), desc: descMatch ? descMatch[1].trim() : "No description" });
+    });
+    global._wfCache = { entries, ts: Date.now() };
+  }
+
+  global._wfCache.entries.forEach(e => {
+    console.log(`  /${e.name.padEnd(25)} ${e.desc}`);
   });
   console.log("");
 }
 
-function uninstallProject() {
-  const targetDir = process.cwd();
-  const targetWindsurf = path.join(targetDir, ".windsurf");
+function cmdInfo(agentName) {
+  const agentsDir = path.join(WINDSURF_DIR, "agents");
+  const filePath = path.join(agentsDir, `${agentName}.md`);
+  if (!fs.existsSync(filePath)) {
+    const files = fs.readdirSync(agentsDir).filter(f => f.endsWith(".md"));
+    const match = files.find(f => f.replace(".md", "").includes(agentName));
+    if (match) return cmdInfo(match.replace(".md", ""));
+    console.log(`Agent not found: ${agentName}\n`);
+    console.log("Available agents:");
+    files.sort().forEach(f => console.log(`  ${f.replace(".md", "")}`));
+    return;
+  }
+  const content = fs.readFileSync(filePath, "utf-8");
+  const fm = utils.parseFrontmatter(content);
+  const skills = Array.isArray(fm.skills) ? fm.skills : (fm.skills ? fm.skills.split(",").map(s => s.trim()) : []);
+  const tools = Array.isArray(fm.tools) ? fm.tools : (fm.tools ? fm.tools.split(",").map(t => t.trim()) : []);
+  console.log(`Agent: ${fm.name || agentName}\n`);
+  console.log(`  Description: ${fm.description || "N/A"}\n`);
+  console.log(`  Tools:       ${tools.join(", ")}`);
+  console.log(`  Skills:      ${skills.join(", ")}`);
+  console.log(`  Sub-agents:  ${tools.includes("Agent") ? "Yes" : "No"}`);
+  if (skills.length > 0) {
+    console.log("\n  Skill Details:");
+    skills.forEach(skill => {
+      const skillPath = path.join(WINDSURF_DIR, "skills", skill, "SKILL.md");
+      if (fs.existsSync(skillPath)) {
+        const sfm = utils.parseFrontmatter(fs.readFileSync(skillPath, "utf-8"));
+        console.log(`     ${skill.padEnd(25)} ${sfm.description || "Loaded"}`);
+      } else {
+        console.log(`     ${skill.padEnd(25)} (built-in)`);
+      }
+    });
+  }
+  console.log("");
+}
 
-  if (!fs.existsSync(targetWindsurf)) {
-    console.log(".windsurf/ not found. Nothing to uninstall.\n");
+function cmdChecklist(url) {
+  if (url && !isValidUrl(url)) {
+    console.error(chalk.red("Invalid URL. Only http:// and https:// allowed.\n"));
+    return;
+  }
+  const args = url
+    ? [".windsurf/scripts/checklist.py", ".", "--url", url]
+    : [".windsurf/scripts/checklist.py", "."];
+  console.log("Running Master Checklist...\n");
+  try {
+    execFileSync("python3", args, { cwd: process.cwd(), encoding: "utf-8", stdio: "inherit" });
+  } catch {
+    console.error(chalk.red("Checklist failed. See errors above.\n"));
+  }
+}
+
+function cmdUninstall() {
+  const targetDir = process.cwd();
+  const agentDir = config.getAgentDir(targetDir);
+  const windsurfDir = config.getWindsurfDir(targetDir);
+
+  if (!fs.existsSync(agentDir) && !fs.existsSync(windsurfDir)) {
+    console.log(chalk.yellow("No config directory found. Nothing to uninstall.\n"));
     return;
   }
 
-  console.log("Removing .windsurf/ from project...\n");
-  fs.rmSync(targetWindsurf, { recursive: true, force: true });
-  console.log("Done! .windsurf/ has been removed.\n");
-  console.log("Note: .gitignore entries were left intact. Remove '# AG Kit' and '.windsurf' manually if desired.\n");
-}
-
-// CLI
-const args = process.argv.slice(2);
-const command = args[0];
-
-showBanner();
-
-(async () => {
-switch (command) {
-  case "version":
-  case "-v":
-  case "--version":
-    await showVersion();
-    break;
-  case "info":
-    if (!args[1]) {
-      console.log("Usage: npx windsurf-agent-cli info <agent-name>\n");
-      console.log("Example:");
-      console.log("  npx windsurf-agent-cli info frontend-specialist");
-      console.log("  npx windsurf-agent-cli info orchestrator");
-      console.log("  npx windsurf-agent-cli info security");
-      console.log("");
-    } else {
-      showAgentInfo(args[1]);
+  console.log("Removing config directories...\n");
+  [agentDir, windsurfDir].forEach(dir => {
+    if (fs.existsSync(dir)) {
+      const stat = fs.lstatSync(dir);
+      if (stat.isSymbolicLink()) {
+        fs.unlinkSync(dir);
+      } else {
+        fs.rmSync(dir, { recursive: true, force: true });
+      }
     }
-    break;
-  case "init":
-    initProject(args.includes("--dry-run"));
-    break;
-  case "update":
-    await updateProject(args.includes("--dry-run"));
-    break;
-  case "uninstall":
-    uninstallProject();
-    break;
-  case "status":
-    showStatus();
-    break;
-  case "checklist":
-    runChecklist(args[1]);
-    break;
-  case "list":
-    listCommands();
-    break;
-  case "help":
-  case "--help":
-  case "-h":
-    console.log(`Usage: npx windsurf-agent-cli <command>
-
-Commands:
-  init                Copy .windsurf/ config to current project (first-time setup)
-  init --dry-run      Preview what init would copy (no files written)
-  update              Update .windsurf/ config (preserves user-modified files)
-  update --dry-run    Preview what update would change (no files written)
-  uninstall           Remove .windsurf/ from current project
-  version             Show current version + check for updates
-  info <agent>        Show agent details: skills, sub-agents, rules, workflow
-  status              Show project statistics (agents, skills, workflows, etc.)
-  list                List all available slash commands
-  checklist           Run master checklist for quality verification
-  checklist --url <U> Run checklist with URL (includes performance + E2E)
-  help                Show this help message
-
-Examples:
-  npx windsurf-agent-cli init                        # First-time setup
-  npx windsurf-agent-cli update                      # Update to latest config
-  npx windsurf-agent-cli version                     # Check current + latest version
-  npx windsurf-agent-cli info frontend-specialist    # Show agent details
-  npx windsurf-agent-cli status
-  npx windsurf-agent-cli list
-
-How It Works:
-  After installing, .windsurf/ config is loaded by Windsurf IDE.
-  Use slash commands (e.g., /backend, /security) in Windsurf chat
-  or let the system auto-route to the right agent.
-
-  Orchestration levels:
-    /junior-orchestrate   2-3 agents  Simple tasks
-    /senior-orchestrate   4-6 agents  Complex features
-    /elite-orchestrate    7+ agents   Mission-critical
-
-Documentation:
-  https://github.com/teeprakorn1/windsurf-agent-cli#readme
-`);
-    break;
-  default:
-    showStatus();
-    listCommands();
-    console.log("Run `npx windsurf-agent-cli help` for more commands.\n");
-    break;
+  });
+  console.log(chalk.green("Done! Config directories removed.\n"));
+  console.log("Note: .gitignore entries were left intact. Remove '# Aiyu MultiAgent' and '.windsurf' manually if desired.\n");
 }
-})();
+
+// ── CLI Program ──────────────────────────────────────────────────────
+
+const program = new Command();
+
+program
+  .name("aiyu-multi-agent")
+  .description("Production-grade AI Agent Platform")
+  .version(CURRENT_VERSION)
+  .addHelpText("before", `\n  ${chalk.cyan(`Aiyu MultiAgent v${CURRENT_VERSION}`)} — ${getComponentCounts().agents} Agents | ${getComponentCounts().skills} Skills | ${getComponentCounts().workflows} Workflows\n`)
+  .addHelpText("after", `\n  Documentation: https://github.com/teeprakorn1/aiyu-multi-agent#readme\n`);
+
+program
+  .command("init")
+  .description("Interactive agent generator (first-time setup)")
+  .option("--dry-run", "Preview without writing files")
+  .action(cmdInit);
+
+program
+  .command("update")
+  .description("Update config to latest version (preserves user-modified files)")
+  .option("--dry-run", "Preview without writing files")
+  .action(async (options) => {
+    await cmdUpdate(options);
+    const usage = require("../lib/core/usage");
+    usage.trackCommand(process.cwd(), "update");
+  });
+
+program
+  .command("version")
+  .description("Show current version + check for updates")
+  .action(async () => {
+    await cmdVersion();
+    const usage = require("../lib/core/usage");
+    usage.trackCommand(process.cwd(), "version");
+  });
+
+program
+  .command("status")
+  .description("Show project statistics")
+  .action(() => {
+    cmdStatus();
+    const usage = require("../lib/core/usage");
+    usage.trackCommand(process.cwd(), "status");
+  });
+
+program
+  .command("list")
+  .description("List all available slash commands")
+  .action(cmdList);
+
+program
+  .command("info <agent>")
+  .description("Show agent details: skills, tools, rules, workflow")
+  .action(cmdInfo);
+
+program
+  .command("checklist [url]")
+  .description("Run master checklist (optionally with URL for perf + E2E)")
+  .action(cmdChecklist);
+
+program
+  .command("uninstall")
+  .description("Remove config directories from project")
+  .action(cmdUninstall);
+
+program
+  .command("add <type> <name>")
+  .description("Add a skill/plugin from npm")
+  .option("--auto-approve", "Auto-approve skill permissions")
+  .action(async (type, name, cmdOpts) => {
+    const addCmd = require("../lib/commands/add");
+    await addCmd.run(type, name, { autoApprove: cmdOpts.autoApprove });
+    const usage = require("../lib/core/usage");
+    usage.trackCommand(process.cwd(), "add", { type, name });
+  });
+
+program
+  .command("remove <type> <name>")
+  .description("Remove an installed skill/plugin")
+  .action(async (type, name) => {
+    const removeCmd = require("../lib/commands/remove");
+    await removeCmd.run(type, name);
+    const usage = require("../lib/core/usage");
+    usage.trackCommand(process.cwd(), "remove", { type, name });
+  });
+
+program
+  .command("test")
+  .description("Run agent test suite")
+  .option("--watch", "Watch for changes and re-run")
+  .option("--tap", "Output in TAP format")
+  .option("--compliance", "Run spec compliance tests (validates runtime behavior)")
+  .option("--unit", "Run core module unit tests")
+  .action(async (options) => {
+    const testCmd = require("../lib/commands/test");
+    const results = await testCmd.run(options);
+    const usage = require("../lib/core/usage");
+    usage.trackCommand(process.cwd(), "test", { passed: results?.passed || 0, failed: results?.failed || 0 });
+  });
+
+program
+  .command("publish")
+  .description("Publish agent to npm")
+  .option("--dry-run", "Validate and package without publishing")
+  .option("--name <name>", "Override package name")
+  .option("--version <version>", "Override version")
+  .option("--author <author>", "Set author")
+  .option("--license <license>", "Set license (default: MIT)")
+  .option("--access <access>", "npm access level (public/restricted)", "public")
+  .option("--tag <tag>", "npm dist-tag (default: latest)")
+  .action(async (options) => {
+    const publishCmd = require("../lib/commands/publish");
+    await publishCmd.run(options);
+    const usage = require("../lib/core/usage");
+    usage.trackCommand(process.cwd(), "publish");
+  });
+
+program
+  .command("usage")
+  .description("Show usage statistics and deployment history")
+  .action(() => {
+    const usage = require("../lib/core/usage");
+    console.log(usage.formatSummary(process.cwd()));
+  });
+
+program
+  .command("run <input>")
+  .description("Execute agent with input (the core execution engine)")
+  .option("-a, --agent <name>", "Agent to run (default: first found)")
+  .option("-p, --provider <provider>", "LLM provider: openai, claude, local, mock")
+  .option("-m, --model <model>", "LLM model name")
+  .option("--max-steps <n>", "Max ReAct loop steps", "10")
+  .option("--json", "Output as JSON")
+  .option("--verbose", "Show step-by-step thinking and tool results")
+  .option("--dry-run", "Preview execution without running")
+  .option("--no-cache", "Skip cache, always re-run")
+  .action(async (input, options) => {
+    const runCmd = require("../lib/commands/run");
+    await runCmd.run(input, options);
+    const usage = require("../lib/core/usage");
+    usage.trackCommand(process.cwd(), "run");
+  });
+
+program
+  .command("chat")
+  .description("Interactive chat session with an agent")
+  .option("-a, --agent <name>", "Agent to chat with (default: first found)")
+  .option("-p, --provider <provider>", "LLM provider: openai, claude, local, mock")
+  .option("-m, --model <model>", "LLM model name")
+  .action(async (options) => {
+    const chatCmd = require("../lib/commands/chat");
+    await chatCmd.run(options);
+    const usage = require("../lib/core/usage");
+    usage.trackCommand(process.cwd(), "chat");
+  });
+
+program
+  .command("inspect")
+  .description("Observability — agent stats, tool usage, latency, errors")
+  .option("--agent <name>", "Inspect specific agent")
+  .action(async (options) => {
+    const inspectCmd = require("../lib/commands/inspect");
+    await inspectCmd.run(options);
+  });
+
+program
+  .command("dev")
+  .description("[experimental] Dev mode — live reload, debug reasoning, log tool calls")
+  .action(() => {
+    console.log(chalk.yellow('\n  ⚠️ "aiyu-multi-agent dev" is experimental and not yet implemented\n'));
+  });
+
+program
+  .command("generate <type> [subtype]")
+  .description("[experimental] Generate MCP server / config")
+  .action((type, subtype) => {
+    console.log(chalk.yellow(`\n  ⚠️ "aiyu-multi-agent generate ${type} ${subtype || ""}" is experimental and not yet implemented\n`));
+  });
+
+program.parseAsync().catch((err) => {
+  logger.error(err.message);
+  process.exitCode = 1;
+});

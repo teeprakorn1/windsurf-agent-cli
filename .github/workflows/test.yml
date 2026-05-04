@@ -1,0 +1,71 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18, 20, 22]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.version }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Syntax check
+        run: |
+          node -c bin/cli.js
+          node -c lib/core/agent-runtime.js
+          node -c lib/core/tool-registry.js
+          node -c lib/core/guardrails.js
+          node -c lib/core/llm-providers.js
+          node -c lib/utils.js
+
+      - name: Unit tests
+        run: node lib/test/unit/core.test.js
+
+      - name: Compliance tests
+        run: node bin/cli.js test --compliance
+
+      - name: Agent tests
+        run: node bin/cli.js test
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check for common issues
+        run: |
+          # Check for debug/deprecated patterns
+          ! grep -rn "console\.log\|debugger\|TODO:" lib/core/ bin/cli.js --include="*.js" || \
+          echo "⚠️ Found console.log/debugger/TODO in production code"
+
+      - name: Version consistency
+        run: |
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          CLI_VERSION=$(node bin/cli.js --version)
+          echo "package.json: $PKG_VERSION, CLI: $CLI_VERSION"
+          test "$PKG_VERSION" = "$CLI_VERSION"

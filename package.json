@@ -1,9 +1,9 @@
 {
-  "name": "windsurf-agent-cli",
-  "version": "1.2.2",
-  "description": "Sub-Agent Kit — AI Agent Framework for Windsurf IDE with 79 Agents, 46 Skills, 78 Workflows, and 10 Rules",
+  "name": "aiyu-multi-agent",
+  "version": "2.1.0",
+  "description": "Production-grade AI Agent Platform — Smart Init, Plugin System, Agent Testing, Publish/Install",
   "bin": {
-    "windsurf-agent-cli": "./bin/cli.js"
+    "aiyu-multi-agent": "./bin/cli.js"
   },
   "scripts": {
     "checklist": "python3 .windsurf/scripts/checklist.py .",
@@ -16,16 +16,27 @@
     "schema": "python3 .windsurf/skills/database-design/scripts/schema_validator.py .",
     "postinstall": "node ./bin/postinstall.js"
   },
+  "dependencies": {
+    "commander": "^12.1.0",
+    "inquirer": "^9.2.23",
+    "chalk": "^4.1.2",
+    "ora": "^5.4.1",
+    "yaml": "^2.4.1",
+    "glob": "^10.3.16"
+  },
   "keywords": [
-    "windsurf",
+    "aiyu-multi-agent",
     "ai-agent",
     "agent-framework",
     "cli",
-    "codeium",
+    "agent-forge",
     "multi-agent",
     "orchestration",
     "automation",
-    "developer-tools"
+    "developer-tools",
+    "agent-platform",
+    "agent-testing",
+    "plugin-system"
   ],
   "author": "teeprakorn1 <https://github.com/teeprakorn1>",
   "contributors": [
@@ -34,17 +45,17 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/teeprakorn1/windsurf-agent-cli.git"
+    "url": "git+https://github.com/teeprakorn1/aiyu-multi-agent.git"
   },
   "bugs": {
-    "url": "https://github.com/teeprakorn1/windsurf-agent-cli/issues"
+    "url": "https://github.com/teeprakorn1/aiyu-multi-agent/issues"
   },
-  "homepage": "https://github.com/teeprakorn1/windsurf-agent-cli#readme",
+  "homepage": "https://github.com/teeprakorn1/aiyu-multi-agent#readme",
   "files": [
     ".windsurf/",
     "bin/",
     "lib/",
-    "docs/",
+    "templates/",
     "LICENSE",
     "README.md",
     "CODEBASE.md",
