@@ -1,8 +1,8 @@
 # Aiyu MultiAgent — AI Agent Platform
 
-> Production-grade AI Agent Platform with Smart Init, Plugin System, Agent Testing, and Publishing — 80 Agents, 46 Skills, 78 Workflows, 10 Rules
+> Production-grade AI Agent Platform with Smart Init, Plugin System, Agent Testing, and Publishing — 83 Agents, 46 Skills, 78 Workflows, 10 Rules
 >
-> **v2.1.5** — Quick Init, full library copy, inquirer fix, legacy .gitignore migration
+> **v2.1.8** — Security fixes (projectRoot in safeWrite/tool calls), 3 design agents, Quick Init, 83 agents total
 
 ---
 

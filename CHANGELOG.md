@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.1.8] - 2026-05-04
+
+### Fixed
+
+- **🔴 Critical: safeWrite missing projectRoot** — `guardrails.safeWrite()` was not receiving `projectRoot` parameter, causing path traversal checks to use `process.cwd()` instead of the actual project root. Now passes `projectRoot` through from all tool handlers
+- **🔴 Critical: tool calls missing projectRoot** — `runAgent()` and `createChatSession()` were not injecting `projectRoot` into tool call args, so tools like `fs.write` and `fs.edit` could bypass path traversal protection. Now injects `{ ...args, projectRoot: projectDir }`
+- **🟡 Stale temp file prefix** — `safeWrite()` temp files used `windsurf-agent-` prefix (old name). Changed to `aiyu-multi-agent-`
+- **🟡 Dead code** — Removed unused `selectedUseCase` variable in `init.js`
+
+## [2.1.7] - 2026-05-04
+
+### Added
+
+- **3 Design Agents** — `uiux-designer` (UI/UX, wireframes, color, typography), `design-system-architect` (tokens, component API, theming), `visual-designer` (brand, icons, motion, illustration) — 83 agents total
+
+---
+
 ## [2.1.5] - 2026-05-04
 
 ### Fixed
@@ -310,6 +327,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+[2.1.8]: https://github.com/teeprakorn1/aiyu-multi-agent/compare/v2.1.7...v2.1.8
+[2.1.7]: https://github.com/teeprakorn1/aiyu-multi-agent/compare/v2.1.6...v2.1.7
+[2.1.6]: https://github.com/teeprakorn1/aiyu-multi-agent/compare/v2.1.5...v2.1.6
 [2.1.5]: https://github.com/teeprakorn1/aiyu-multi-agent/compare/v2.1.4...v2.1.5
 [2.1.4]: https://github.com/teeprakorn1/aiyu-multi-agent/compare/v2.1.3...v2.1.4
 [2.1.3]: https://github.com/teeprakorn1/aiyu-multi-agent/compare/v2.1.2...v2.1.3
