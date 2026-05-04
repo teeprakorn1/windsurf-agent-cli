@@ -79,7 +79,7 @@ Production-grade AI Agent Platform — Smart Init, Plugin System, Agent Testing,
 - `lib/core/tool-registry.js` — 🔥 Namespaced tools (fs.read/shell.exec), schemas, validation, parseCommandArgs (escape sequences), cross-platform fs.glob/search.grep (maxDepth, maxFileSize, maxFiles limits)
 - `lib/core/llm-providers.js` — 🔥 OpenAI, Claude (tool_use), Ollama (tools), Mock (respects outputFormat), retry/backoff
 - `lib/core/tool-runner.js` — Isolated tool runner (forked child process, restricted env)
-- `lib/core/config.js` — .agent/ primary, .windsurf/ symlink
+- `lib/core/config.js` — Config loader (.agent/ primary, .windsurf/ symlink). initConfigDir supports windsurfOnly and agentOnly options
 - `lib/core/plugin.js` — npm skill install/remove + permission system (writeFileSync for config, no safeWrite)
 - `lib/core/guardrails.js` — pathTraversal (projectRoot param + path.normalize + fs.realpathSync symlink protection), safeWrite (EXDEV fallback + temp file cleanup on error), rateLimit (cleanup), sandboxExec (execFileSync, no curl/wget)
 - `lib/core/usage.js` — Usage statistics + deployment tracking + agentRuns counter + Prometheus metrics export (formatPrometheusMetrics) + getMetrics
@@ -92,7 +92,7 @@ Production-grade AI Agent Platform — Smart Init, Plugin System, Agent Testing,
 - `lib/utils.js` — Shared utilities: parseFrontmatter (YAML.parse only, no fallback), copyRecursive (with skipDirs), findDefaultAgent, isValidAgentName, updateGitignore
 - `lib/commands/run.js` — 🔥 Agent execution entry (--verbose, --dry-run, --no-cache, streaming output)
 - `lib/commands/chat.js` — 🔥 Interactive chat session (sliding window MAX_CONTEXT_MESSAGES=20)
-- `lib/commands/init.js` — Interactive agent generator (with agent name validation, utils import)
+- `lib/commands/init.js` — Interactive agent generator (with agent name validation, utils import). Supports `--windsurf-only` (.windsurf/ only) and `--agent-only` (.agent/ only, no symlink)
 - `lib/commands/add.js` — Skill installer (with permission check)
 - `lib/commands/remove.js` — Skill remover
 - `lib/commands/test.js` — Test runner (--compliance, --unit, --production, --integration, --watch, --tap)

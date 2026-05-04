@@ -79,7 +79,7 @@ function isValidUrl(str) {
 
 async function cmdInit(options) {
   const initCmd = require("../lib/commands/init");
-  await initCmd.run(process.cwd(), { dryRun: options.dryRun, interactive: options.interactive });
+  await initCmd.run(process.cwd(), { dryRun: options.dryRun, interactive: options.interactive, windsurfOnly: options.windsurfOnly, agentOnly: options.agentOnly });
   const usage = require("../lib/core/usage");
   usage.trackCommand(process.cwd(), "init");
 }
@@ -270,6 +270,8 @@ program
   .description("Quick setup with smart defaults (use --interactive for full prompts)")
   .option("--interactive", "Full interactive setup with all prompts")
   .option("--dry-run", "Preview without writing files")
+  .option("--windsurf-only", "Create .windsurf/ only (no .agent/ directory)")
+  .option("--agent-only", "Create .agent/ only (no .windsurf/ symlink)")
   .action(cmdInit);
 
 program

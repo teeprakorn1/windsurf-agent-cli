@@ -2,7 +2,7 @@
 
 > Production-grade AI Agent Platform with Smart Init, Plugin System, Agent Testing, and Publishing — 83 Agents, 46 Skills, 78 Workflows, 10 Rules
 >
-> **v2.2.1** — Production upgrade + 20 bug fixes: circuit breaker, request queue, distributed tracing, health check, Prometheus metrics, structured logging
+> **v2.2.3** — Production upgrade + 20 bug fixes + init mode flags
 
 ---
 
@@ -86,6 +86,8 @@ Type any slash command in the Windsurf chat panel:
 aiyu-multi-agent init                        # Quick setup (smart defaults, no prompts)
 aiyu-multi-agent init --interactive          # Full interactive setup
 aiyu-multi-agent init --dry-run              # Preview without writing files
+aiyu-multi-agent init --windsurf-only        # Create .windsurf/ only (no .agent/)
+aiyu-multi-agent init --agent-only           # Create .agent/ only (no .windsurf/ symlink)
 aiyu-multi-agent update                      # Update config to latest version
 aiyu-multi-agent update --dry-run            # Preview update
 aiyu-multi-agent version                     # Show version + check for updates

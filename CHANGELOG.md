@@ -7,7 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [2.2.1] - 2026-05-05
+## [2.2.3] - 2026-05-05
+
+### Added
+
+- **`--windsurf-only` flag** — `aiyu-multi-agent init --windsurf-only` creates `.windsurf/` only (no `.agent/` directory). Useful for Windsurf IDE projects that don't need the `.agent/` hybrid config
+- **`--agent-only` flag** — `aiyu-multi-agent init --agent-only` creates `.agent/` only (no `.windsurf/` symlink). Useful for non-Windsurf environments or CI/CD
+
+---
+
+## [2.2.2] - 2026-05-05
 
 ### Fixed — Full System Audit (20 bugs)
 
@@ -412,6 +421,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+[2.2.3]: https://github.com/teeprakorn1/aiyu-multi-agent/compare/v2.2.2...v2.2.3
+[2.2.2]: https://github.com/teeprakorn1/aiyu-multi-agent/compare/v2.2.1...v2.2.2
 [2.2.1]: https://github.com/teeprakorn1/aiyu-multi-agent/compare/v2.2.0...v2.2.1
 [2.2.0]: https://github.com/teeprakorn1/aiyu-multi-agent/compare/v2.1.8...v2.2.0
 [2.1.8]: https://github.com/teeprakork1/aiyu-multi-agent/compare/v2.1.7...v2.1.8
