@@ -1,6 +1,6 @@
 {
   "name": "aiyu-multi-agent",
-  "version": "2.1.5",
+  "version": "2.1.6",
   "description": "Production-grade AI Agent Platform — Smart Init, Plugin System, Agent Testing, Publish/Install",
   "bin": {
     "aiyu-multi-agent": "./bin/cli.js"
