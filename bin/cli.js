@@ -267,7 +267,8 @@ program
 
 program
   .command("init")
-  .description("Interactive agent generator (first-time setup)")
+  .description("Quick setup with smart defaults (use --interactive for full prompts)")
+  .option("--interactive", "Full interactive setup with all prompts")
   .option("--dry-run", "Preview without writing files")
   .action(cmdInit);
 
