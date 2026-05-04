@@ -24,6 +24,7 @@
     "glob": "^10.3.16",
     "inquirer": "^9.2.23",
     "ora": "^5.4.1",
+    "tweetsodium": "^0.0.4",
     "yaml": "^2.4.1"
   },
   "keywords": [
