@@ -44,3 +44,6 @@ credentials.json
 service-account.json
 
 # DO NOT ignore .windsurf/ — it IS the package payload
+
+# Internal roadmap — not for public
+ROADMAP-PRODUCTION.md

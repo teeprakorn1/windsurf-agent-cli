@@ -4,7 +4,8 @@
 
 | Version | Supported |
 | ------- | --------- |
-| 2.1.x   | ✅ Active |
+| 2.2.x   | ✅ Active |
+| 2.1.x   | ⚠️ Critical fixes only |
 | 2.0.x   | ⚠️ Critical fixes only |
 | < 2.0   | ❌ End of life |
 
@@ -59,7 +60,7 @@ This project implements defense-in-depth for shell execution:
 2. **No shell** — `execFileSync` with parsed args (no `shell: true`)
 3. **Arg parsing** — `parseCommandArgs` with escape sequence support
 4. **Pattern detection** — Blocks command substitution (`$()`, `` ` ``) and destructive commands
-5. **Path validation** — `pathTraversal()` with `path.normalize()` and explicit `projectRoot`
+5. **Path validation** — `pathTraversal()` with `path.normalize()`, explicit `projectRoot`, and `fs.realpathSync()` for symlink resolution
 6. **File limits** — `maxFileSize`, `maxFiles`, `maxDepth` prevent OOM
 7. **Rate limiting** — Prevents abuse of tool calls
 8. **Result truncation** — 100KB limit prevents memory exhaustion
@@ -68,5 +69,6 @@ This project implements defense-in-depth for shell execution:
 
 | Version | Fix |
 |---------|-----|
+| 2.2.0 | Symlink traversal attack fix (fs.realpathSync), init.js guardrails bypass fix (safeWrite), circuit breaker null state guard, JSON.stringify circular ref crash fix, safeWrite temp file leak fix, publish dry-run temp file leak fix, queue operations after destroy guard |
 | 2.1.0 | Command injection fix (execFileSync), path traversal fix (path.normalize), removed curl/wget, dangerous pattern detection |
 | 2.0.0 | Initial security layer (guardrails, sandboxExec, safeWrite, rateLimit) |

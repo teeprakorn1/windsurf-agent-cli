@@ -43,3 +43,6 @@ service-account.json
 # Aiyu-multi-agent — .windsurf/ is tracked in git (it IS the package payload)
 # Use .npmignore to control npm publish exclusions
 .windsurf/.version
+# Aiyu MultiAgent
+ROADMAP-PRODUCTION.md
+.npmrc

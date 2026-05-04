@@ -2,7 +2,7 @@
 
 > Production-grade AI Agent Platform with Smart Init, Plugin System, Agent Testing, and Publishing — 83 Agents, 46 Skills, 78 Workflows, 10 Rules
 >
-> **v2.1.8** — Security fixes (projectRoot in safeWrite/tool calls), 3 design agents, Quick Init, 83 agents total
+> **v2.2.1** — Production upgrade + 20 bug fixes: circuit breaker, request queue, distributed tracing, health check, Prometheus metrics, structured logging
 
 ---
 
@@ -21,6 +21,14 @@
 - **Built-in Guardrails** — Path traversal protection, safe write, rate limit, sandbox exec
 - **Permission System** — Skills declare permissions, user approves on install
 - **Usage Tracking** — Local statistics, deployment history, no external telemetry
+
+### Production Features (V2.2)
+- **Circuit Breaker** — Prevents cascade failures when LLM providers are down
+- **Request Queue** — Concurrency control, priority ordering, backpressure
+- **Distributed Tracing** — Trace every agent run, OpenTelemetry export
+- **Health Check** — `aiyu-multi-agent health` system status
+- **Prometheus Metrics** — `aiyu-multi-agent usage` gauge format export
+- **Structured Logging** — JSON log output via `LOG_FORMAT=json`
 
 ### Agent Framework
 - **80 Specialized AI Agents** — From frontend to IoT, security to mechatronics
@@ -150,7 +158,7 @@ aiyu-multi-agent chat --provider openai      # Chat with real LLM
 | Provider | Env Var | Models |
 |----------|---------|--------|
 | `openai` | `OPENAI_API_KEY` | gpt-4, gpt-4o, gpt-3.5-turbo |
-| `claude` | `ANTHROPIC_API_KEY` | claude-sonnet-4-20250514, claude-haiku-4-20250414 |
+| `claude` | `ANTHROPIC_API_KEY` | claude-3-5-sonnet-20241022, claude-3-5-haiku-20241022 |
 | `local` | (none — needs Ollama) | llama3, mistral, codellama |
 | `mock` | (none) | Returns canned responses for testing |
 
@@ -386,8 +394,8 @@ aiyu-multi-agent-skill-my-skill/
 
 | Guardrail | Description |
 |-----------|-------------|
-| **Path Traversal** | Blocks `../`, absolute paths, double slashes, dot segments escaping project root. Uses explicit `projectRoot` param + `path.normalize()` |
-| **Safe Write** | Atomic file writes (temp → rename) with EXDEV fallback |
+| **Path Traversal** | Blocks `../`, absolute paths, double slashes, dot segments, symlink attacks escaping project root. Uses explicit `projectRoot` param + `path.normalize()` + `fs.realpathSync()` |
+| **Safe Write** | Atomic file writes (temp → rename) with EXDEV fallback + temp file cleanup on error |
 | **Rate Limit** | In-memory rate limiting (configurable per key, auto-cleanup) |
 | **Sandbox Exec** | `execFileSync` only (no shell), whitelist-only, `parseCommandArgs` with escape sequences, dangerous pattern detection (command substitution, destructive commands) |
 | **Command Injection** | `shell.exec` uses `execFileSync` + parsed args (no `shell: true`). Blocks `$()`, `` ` ``, `rm -rf`, `mkfs`, etc. |

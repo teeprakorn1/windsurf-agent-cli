@@ -7,6 +7,91 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.2.1] - 2026-05-05
+
+### Fixed — Full System Audit (20 bugs)
+
+- **🔴 Circuit breaker null lastFailureTime** — `canExecute()` OPEN state now guards against `null` `lastFailureTime` (e.g. after manual reset). Previously, `Date.now() - null` evaluated to `Date.now()`, causing instant OPEN→HALF_OPEN transition
+- **🔴 Hardcoded resetTimeoutMs in error message** — `agent-runtime.js` circuit breaker error message now reads `breaker.options.resetTimeoutMs` instead of hardcoded `30000`
+- **🔴 Invalid Claude model name** — `llm-providers.js` default Claude model changed from nonexistent `claude-sonnet-4-20250514` to valid `claude-3-5-sonnet-20241022`
+- **🔴 Symlink traversal attack** — `guardrails.pathTraversal()` now uses `fs.realpathSync()` to resolve symlinks before checking path prefix
+- **🔴 init.js bypasses guardrails** — `generateWindsurfrules()` now uses `guardrails.safeWrite()` instead of `fs.writeFileSync()`
+- **🔴 --interactive flag ignored** — `cli.js cmdInit()` now passes `options.interactive` to `initCmd.run()`
+- **🟡 || instead of ??** — `agent-runtime.js` changed `||` to `??` for `maxSteps`, `outputFormat`, `deterministic`, `provider`, `model`
+- **🟡 RequestQueue operations after destroy** — `enqueue()` and `waitFor()` now check `_destroyed` flag
+- **🟡 JSON.stringify crash on circular references** — Added `safeStringify()` helper and try/catch in `truncateResult()`
+- **🟡 safeWrite temp file leak** — `guardrails.safeWrite()` now cleans up temp file on all error paths
+- **🟡 publish dry-run temp file leak** — `publish.js` now cleans up tmpDir before returning in dry-run mode
+- **🟡 fs.cpSync Node <16.7 incompatibility** — `packager.js` generated `bin/run.js` now uses `utils.copyRecursive()`
+- **🟢 Tracing Map cleanup logic** — `tracing.js` cleanup now sorts entries and breaks when under limit
+- **🟢 Health check memory calculation** — `health-check.js` now uses `heapTotal` instead of `os.totalmem()`
+- **🟢 Production test isolation** — `production.test.js` now calls `resetBreaker()` between tests
+- **🟢 Plugin duplicate path logic** — `plugin.js` consolidated duplicate path construction
+- **🟢 Chat trace step count** — `createChatSession` now tracks actual step count
+- **🟢 Deterministic compliance test** — `compliance.js` test now actually runs an agent
+
+### Changed
+
+- **Version** — Bumped from 2.2.0 to 2.2.1
+
+---
+
+## [2.2.0] - 2026-05-05
+
+### Added — Production Infrastructure
+
+- **Circuit Breaker** — `lib/core/circuit-breaker.js` — Prevents cascade failures when LLM providers are down. States: CLOSED→OPEN→HALF_OPEN→CLOSED. Configurable failure threshold (default 5) and reset timeout (default 30s). Per-service breakers
+- **Request Queue** — `lib/core/request-queue.js` — Async job queue with concurrency control (default 5 concurrent, 100 queue). Priority ordering, job timeout (5min), backpressure (QUEUE_FULL error), metrics tracking, destroy() for cleanup
+- **Distributed Tracing** — `lib/core/tracing.js` — Every agent run gets a traceId. Spans for each step and tool call. OpenTelemetry export format. Trace metrics (avg/p95 duration). In-memory storage (max 500 traces, 30min TTL)
+- **Health Check** — `lib/core/health-check.js` — System health monitoring: liveness, readiness, component-level checks (config, memory, queue, circuit breakers, LLM providers). `aiyu-multi-agent health` and `aiyu-multi-agent health --json`
+- **Traces CLI** — `aiyu-multi-agent traces` — View recent traces, specific trace details (`--id`), trace metrics (`--metrics`), OpenTelemetry export (`--otel`)
+- **Structured JSON Logging** — `LOG_FORMAT=json` env var for JSON log output. `setJsonOutput()` API. Meta field for structured context
+- **Prometheus Metrics** — `usage.formatPrometheusMetrics()` — Gauge format for `aiyu_*` metrics (agent_runs, total_commands, error_rate, commands_per_day, etc.)
+- **Context Size Limit** — `MAX_CONTEXT_CHARS=200000` (~50k tokens). Prevents memory overflow from unbounded context growth. Applied in both `runAgent` and chat session
+- **Production Unit Tests** — `lib/test/unit/production.test.js` — 25 tests for circuit-breaker, request-queue, tracing, health-check
+- **Integration Tests** — `lib/test/integration/flow.test.js` — 12 tests for full agent flow with tracing, breaker, queue, health, metrics
+- **Test CLI flags** — `aiyu-multi-agent test --production` and `aiyu-multi-agent test --integration`
+
+### Fixed
+
+- **🔴 Chat session missing circuit breaker** — `createChatSession.send()` now checks `circuitBreaker.canExecute("llm")` before LLM calls and records success/failure. Previously, only `runAgent` had circuit breaker protection, leaving chat sessions vulnerable to cascade failures
+- **🔴 Chat session missing tracing** — Chat turns now create traces with `tracing.startTrace/endTrace` and spans. Chat entries include `traceId`. Previously, chat sessions had zero observability
+- **🟠 Circuit breaker HALF_OPEN probe leak** — `canExecute()` now increments `halfOpenAttempts` when allowing a probe request in HALF_OPEN state. Previously, the counter was never incremented, allowing unlimited probe requests instead of the configured `halfOpenMaxAttempts`
+- **🟠 Step duration_ms excluded LLM time** — `stepStart = Date.now()` moved before the LLM call instead of after. Previously, `duration_ms` only measured tool execution time, not the full step including LLM response
+- **🟠 Context trim too aggressive** — Changed `messages.slice(-6)` to `messages.slice(-10)` in context trimming. Previously, only 3 exchanges were preserved when trimming, which could lose important tool result messages
+- **🟠 RequestQueue timer leak** — Added `_activeTimers` Set to track all setTimeout references. `destroy()` now clears all timers. Previously, job timeout timers were never cleaned up, causing Node.js process to hang indefinitely
+- **🟡 Health readiness logic confused config vs LLM** — `checkReadiness()` now distinguishes config `not_configured` (→ `not_ready`) from LLM provider `not_configured` (→ `limited`). Previously, missing API keys could incorrectly report `limited` even when the project itself wasn't initialized
+- **🟡 Test process hanging** — Production and integration tests now use `jobTimeoutMs: 1000` (was default 300000/5min), call `queue.destroy()`, and use `process.exit(0)` to ensure clean exit
+
+### Fixed — Full System Audit (20 bugs)
+
+- **🔴 Circuit breaker null lastFailureTime** — `canExecute()` OPEN state now guards against `null` `lastFailureTime` (e.g. after manual reset). Previously, `Date.now() - null` evaluated to `Date.now()`, causing instant OPEN→HALF_OPEN transition
+- **🔴 Hardcoded resetTimeoutMs in error message** — `agent-runtime.js` circuit breaker error message now reads `breaker.options.resetTimeoutMs` instead of hardcoded `30000`. Previously, error showed wrong retry time if custom timeout was configured
+- **🔴 Invalid Claude model name** — `llm-providers.js` default Claude model changed from nonexistent `claude-sonnet-4-20250514` to valid `claude-3-5-sonnet-20241022`
+- **🔴 Symlink traversal attack** — `guardrails.pathTraversal()` now uses `fs.realpathSync()` to resolve symlinks before checking path prefix. Previously, symlinks could bypass path traversal protection and escape project root
+- **🔴 init.js bypasses guardrails** — `generateWindsurfrules()` now uses `guardrails.safeWrite()` instead of `fs.writeFileSync()`. Previously, `.windsurfrules` creation skipped all security checks
+- **🔴 --interactive flag ignored** — `cli.js cmdInit()` now passes `options.interactive` to `initCmd.run()`. Previously, `aiyu-multi-agent init --interactive` always used quick defaults
+- **🟡 || instead of ?? for maxSteps/outputFormat** — `agent-runtime.js` changed `||` to `??` for `maxSteps`, `outputFormat`, `deterministic`, `provider`, `model` in both `runAgent` and `createChatSession`. Previously, falsy-but-valid values like `0` or empty string fell back to defaults
+- **🟡 RequestQueue operations after destroy** — `enqueue()` and `waitFor()` now check `_destroyed` flag and throw `QUEUE_DESTROYED` error. Previously, operations on a destroyed queue caused undefined behavior
+- **🟡 JSON.stringify crash on circular references** — `tool-registry.js truncateResult()` and `agent-runtime.js safeStringify()` now wrap `JSON.stringify` in try/catch. Previously, circular references in tool results caused uncaught TypeError crashes
+- **🟡 safeWrite temp file leak** — `guardrails.safeWrite()` now cleans up temp file on all error paths (EXDEV fallback and non-EXDEV errors). Previously, failed writes left orphan temp files in `os.tmpdir()`
+- **🟡 publish dry-run temp file leak** — `publish.js` now cleans up `pkgResult.tmpDir` before returning in dry-run mode. Previously, `--dry-run` left temp package directories on disk
+- **🟡 fs.cpSync Node <16.7 incompatibility** — `packager.js` generated `bin/run.js` now uses `utils.copyRecursive()` instead of `fs.cpSync()`. Previously, published packages failed on Node 16.0–16.6
+- **🟢 Tracing Map cleanup logic** — `tracing.js` cleanup now sorts entries by startTime and breaks when `size <= MAX_TRACES`. Previously, cleanup could leave excess traces or skip entries
+- **🟢 Health check memory calculation** — `health-check.js` now divides `heapUsed` by `heapTotal` (not `os.totalmem()`). Previously, memory percentage was misleadingly low (e.g. 0.1% instead of 45%)
+- **🟢 Production test isolation** — `production.test.js` now calls `resetBreaker()` between shared-state tests. Previously, test order could affect `getAllBreakerStatuses` assertions
+- **🟢 Plugin duplicate path logic** — `plugin.js` consolidated duplicate `pkgDir`/`altDir`/`sourceDir` construction into single determination. Previously, path was constructed in 2 separate blocks with inconsistent error handling
+- **🟢 Chat trace step count** — `createChatSession` now tracks `actualSteps` counter and passes it to `endTrace`. Previously, `maxChatSteps` constant (5) was used, always reporting 5 steps regardless of actual count
+- **🟢 Deterministic compliance test** — `compliance.js` deterministic mode test now actually runs an agent with `deterministic: true` and validates completion. Previously, test was hardcoded `passed: true`
+
+### Changed
+
+- **Version** — Bumped from 2.1.10 to 2.2.0
+- **CODEBASE.md** — Updated to V2.2 with all new production modules, CLI commands, and connections
+- **package.json** — Version updated to 2.2.0
+
+---
+
 ## [2.1.8] - 2026-05-04
 
 ### Fixed
@@ -327,7 +412,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[2.1.8]: https://github.com/teeprakorn1/aiyu-multi-agent/compare/v2.1.7...v2.1.8
+[2.2.1]: https://github.com/teeprakorn1/aiyu-multi-agent/compare/v2.2.0...v2.2.1
+[2.2.0]: https://github.com/teeprakorn1/aiyu-multi-agent/compare/v2.1.8...v2.2.0
+[2.1.8]: https://github.com/teeprakork1/aiyu-multi-agent/compare/v2.1.7...v2.1.8
 [2.1.7]: https://github.com/teeprakorn1/aiyu-multi-agent/compare/v2.1.6...v2.1.7
 [2.1.6]: https://github.com/teeprakorn1/aiyu-multi-agent/compare/v2.1.5...v2.1.6
 [2.1.5]: https://github.com/teeprakorn1/aiyu-multi-agent/compare/v2.1.4...v2.1.5

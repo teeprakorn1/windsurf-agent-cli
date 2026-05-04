@@ -79,7 +79,7 @@ function isValidUrl(str) {
 
 async function cmdInit(options) {
   const initCmd = require("../lib/commands/init");
-  await initCmd.run(process.cwd(), { dryRun: options.dryRun });
+  await initCmd.run(process.cwd(), { dryRun: options.dryRun, interactive: options.interactive });
   const usage = require("../lib/core/usage");
   usage.trackCommand(process.cwd(), "init");
 }
@@ -348,6 +348,8 @@ program
   .option("--tap", "Output in TAP format")
   .option("--compliance", "Run spec compliance tests (validates runtime behavior)")
   .option("--unit", "Run core module unit tests")
+  .option("--production", "Run production module unit tests (circuit breaker, queue, tracing, health)")
+  .option("--integration", "Run integration tests (full agent flow with production modules)")
   .action(async (options) => {
     const testCmd = require("../lib/commands/test");
     const results = await testCmd.run(options);
@@ -418,6 +420,91 @@ program
   .action(async (options) => {
     const inspectCmd = require("../lib/commands/inspect");
     await inspectCmd.run(options);
+  });
+
+program
+  .command("health")
+  .description("System health check — liveness, readiness, component status")
+  .option("--json", "Output as JSON")
+  .action((options) => {
+    const healthCheck = require("../lib/core/health-check");
+    const report = healthCheck.getFullHealthReport(process.cwd());
+    if (options.json) {
+      console.log(JSON.stringify(report, null, 2));
+    } else {
+      console.log(chalk.cyan(`\n🏥 System Health Report\n`));
+      console.log(chalk.gray("─".repeat(50)));
+      const statusIcon = report.readiness === "ready" ? chalk.green("✓") : report.readiness === "degraded" ? chalk.yellow("⚠") : chalk.red("✗");
+      console.log(`  Overall:     ${statusIcon} ${report.readiness}`);
+      console.log(`  Uptime:      ${Math.round(report.uptimeMs / 1000)}s`);
+      console.log(`  Version:     v${report.version}`);
+      console.log(`  Node:        ${report.nodeVersion}`);
+      console.log(`  PID:         ${report.pid}`);
+      console.log(chalk.gray("\n  Components:"));
+      for (const [name, check] of Object.entries(report.checks)) {
+        const icon = check.status === "ok" || check.status === "ready" || check.status === "configured" || check.status === "available" ? chalk.green("✓") : check.status === "degraded" || check.status === "warning" || check.status === "limited" ? chalk.yellow("⚠") : chalk.red("✗");
+        console.log(`    ${icon} ${name.padEnd(18)} ${check.status}`);
+        if (check.message) console.log(`      ${chalk.gray(check.message)}`);
+        if (check.heapUsedMB) console.log(`      ${chalk.gray(`heap: ${check.heapUsedMB}MB / ${check.heapTotalMB}MB`)}`);
+      }
+      console.log(chalk.gray("\n  System:"));
+      console.log(`    CPUs:       ${report.system.cpuCount}`);
+      console.log(`    Memory:     ${report.system.freeMemoryMB}MB free / ${report.system.totalMemoryMB}MB total`);
+      console.log(`    Load:       ${report.system.loadAvg.map(l => l.toFixed(2)).join(", ")}`);
+      console.log(chalk.gray("─".repeat(50)));
+      console.log("");
+    }
+  });
+
+program
+  .command("traces")
+  .description("View recent distributed traces")
+  .option("--id <traceId>", "Get specific trace details")
+  .option("--metrics", "Show trace metrics summary")
+  .option("--otel <traceId>", "Export trace in OpenTelemetry format")
+  .option("-n, --limit <n>", "Number of recent traces to show", "20")
+  .action((options) => {
+    const tracing = require("../lib/core/tracing");
+    if (options.otel) {
+      const otel = tracing.exportOpenTelemetry(options.otel);
+      if (otel) console.log(JSON.stringify(otel, null, 2));
+      else console.log(chalk.red(`Trace ${options.otel} not found`));
+      return;
+    }
+    if (options.id) {
+      const trace = tracing.getTrace(options.id);
+      if (!trace) { console.log(chalk.red(`Trace ${options.id} not found`)); return; }
+      console.log(chalk.cyan(`\n🔍 Trace: ${trace.traceId}\n`));
+      console.log(`  Operation:  ${trace.operationName}`);
+      console.log(`  Status:     ${trace.status}`);
+      console.log(`  Duration:   ${trace.durationMs ?? "running"}ms`);
+      console.log(`  Spans:      ${trace.spans.length}`);
+      for (const span of trace.spans) {
+        const icon = span.status === "ok" ? chalk.green("✓") : chalk.red("✗");
+        console.log(`    ${icon} ${span.operationName.padEnd(30)} ${span.durationMs ?? "..."}ms`);
+      }
+      console.log("");
+      return;
+    }
+    if (options.metrics) {
+      const metrics = tracing.getTraceMetrics();
+      console.log(chalk.cyan(`\n📊 Trace Metrics\n`));
+      console.log(`  Total traces:  ${metrics.total}`);
+      console.log(`  Completed:     ${metrics.completed}`);
+      console.log(`  Failed:        ${metrics.failed}`);
+      console.log(`  Avg duration:  ${metrics.avgDurationMs}ms`);
+      console.log(`  P95 duration:  ${metrics.p95DurationMs}ms`);
+      console.log(`  Total spans:   ${metrics.totalSpans}`);
+      console.log("");
+      return;
+    }
+    const recent = tracing.getRecentTraces(parseInt(options.limit, 10));
+    console.log(chalk.cyan(`\n📋 Recent Traces (last ${recent.length})\n`));
+    for (const t of recent) {
+      const icon = t.status === "ok" ? chalk.green("✓") : t.status === "error" ? chalk.red("✗") : chalk.yellow("⏳");
+      console.log(`  ${icon} ${t.traceId}  ${t.operationName.padEnd(35)} ${t.durationMs ?? "..."}ms  spans:${t.spanCount}`);
+    }
+    console.log("");
   });
 
 program
