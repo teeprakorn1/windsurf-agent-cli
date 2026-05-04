@@ -2,14 +2,14 @@
 
 > Production-grade AI Agent Platform with Smart Init, Plugin System, Agent Testing, and Publishing — 80 Agents, 46 Skills, 78 Workflows, 10 Rules
 >
-> **v2.1.0** — Security hardening, command injection fix, path traversal fix, unit tests, compliance tests, observability
+> **v2.1.5** — Quick Init, full library copy, inquirer fix, legacy .gitignore migration
 
 ---
 
 ## ✨ Features
 
 ### Platform Features (V2)
-- **Smart Init** — Interactive agent generator (use case, provider, memory, guardrails)
+- **Smart Init** — Quick setup with smart defaults (`--interactive` for full prompts)
 - **🔥 Execution Engine** — ReAct loop, tool calling, 4 LLM providers (OpenAI, Claude, Ollama, mock)
 - **🔥 `aiyu-multi-agent run`** — Execute agent with input, JSON output for CI/CD
 - **🔥 `aiyu-multi-agent chat`** — Interactive session mode, continuous context
@@ -40,16 +40,13 @@
 # 1. Go to your project
 cd your-project
 
-# 2. Initialize with interactive setup
+# 2. Initialize (one command, no prompts!)
 npx aiyu-multi-agent init
 
-# 3. Answer prompts:
-#    - Use case (Backend / Automation / Dev Assistant / Custom)
-#    - LLM provider (OpenAI / Claude / Local / Multi-provider)
-#    - Memory strategy (None / File / Vector)
-#    - Guardrails (Yes/No)
+# Or use interactive mode for full setup:
+# npx aiyu-multi-agent init --interactive
 
-# 4. Open in Windsurf IDE
+# 3. Open in Windsurf IDE
 aiyu-multi-agent .
 ```
 
@@ -78,7 +75,8 @@ Type any slash command in the Windsurf chat panel:
 ### Core Commands
 
 ```bash
-aiyu-multi-agent init                        # Interactive agent generator (first-time setup)
+aiyu-multi-agent init                        # Quick setup (smart defaults, no prompts)
+aiyu-multi-agent init --interactive          # Full interactive setup
 aiyu-multi-agent init --dry-run              # Preview without writing files
 aiyu-multi-agent update                      # Update config to latest version
 aiyu-multi-agent update --dry-run            # Preview update

@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.1.5] - 2026-05-04
+
+### Fixed
+
+- **Legacy .gitignore headers** — `updateGitignore` now auto-replaces old section headers (`# windsurf-agent-cli`, `# Aiyu AgentForge`, `# Aiyu SubAgent`, `# Aiyu-subagent`) with `# Aiyu MultiAgent` instead of adding a duplicate section
+
+## [2.1.4] - 2026-05-04
+
+### Changed
+
+- **Quick Init** — `aiyu-multi-agent init` no longer prompts by default. Uses smart defaults: auto-detect provider from env vars, agent name from folder name, guardrails on, memory none
+- **Interactive mode** — `aiyu-multi-agent init --interactive` for full 5-question setup (previous default behavior)
+- **Auto-detect provider** — Checks `ANTHROPIC_API_KEY` → claude, `OPENAI_API_KEY` → openai, else mock
+
+## [2.1.3] - 2026-05-04
+
+### Fixed
+
+- **Full library on init** — `init` now copies all 80 agents, 46+ skills, 78 workflows, rules, and scripts from the package (previously only copied 3 core skills)
+- **`.windsurf/` symlink always created** — No longer requires `.windsurfrules` to exist beforehand
+- **`.windsurfrules` auto-generated** — Created during init for Windsurf IDE compatibility
+
+## [2.1.2] - 2026-05-04
+
+### Fixed
+
+- **`.windsurf/` symlink on init** — Symlink created unconditionally during init (was conditional on `.windsurfrules` existing)
+- **`.windsurfrules` generation** — Auto-generated during init with project-specific content
+
+## [2.1.1] - 2026-05-04
+
+### Fixed
+
+- **inquirer v9 ESM import** — Fixed `inquirer.prompt is not a function` error by using `require("inquirer").default` for CommonJS compatibility. Affected `init.js`, `chat.js`, and `plugin.js`
+
+---
+
 ## [2.1.0] - 2026-05-04
 
 ### Security — Critical Fixes
@@ -273,6 +310,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+[2.1.5]: https://github.com/teeprakorn1/aiyu-multi-agent/compare/v2.1.4...v2.1.5
+[2.1.4]: https://github.com/teeprakorn1/aiyu-multi-agent/compare/v2.1.3...v2.1.4
+[2.1.3]: https://github.com/teeprakorn1/aiyu-multi-agent/compare/v2.1.2...v2.1.3
+[2.1.2]: https://github.com/teeprakorn1/aiyu-multi-agent/compare/v2.1.1...v2.1.2
+[2.1.1]: https://github.com/teeprakorn1/aiyu-multi-agent/compare/v2.1.0...v2.1.1
 [2.1.0]: https://github.com/teeprakorn1/aiyu-multi-agent/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/teeprakorn1/aiyu-multi-agent/compare/v1.2.2...v2.0.0
 [1.2.2]: https://github.com/teeprakorn1/aiyu-multi-agent/compare/v1.2.1...v1.2.2
