@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-05-04T04:48:09.509Z",
-  "lastUsedAt": "2026-05-04T07:50:48.428Z",
+  "lastUsedAt": "2026-05-04T09:02:53.985Z",
   "commands": {
     "status": {
       "count": 2,
@@ -16,10 +16,15 @@
       "count": 31,
       "firstUsedAt": "2026-05-04T04:55:30.306Z",
       "lastUsedAt": "2026-05-04T07:50:48.426Z"
+    },
+    "init": {
+      "count": 1,
+      "firstUsedAt": "2026-05-04T09:02:53.985Z",
+      "lastUsedAt": "2026-05-04T09:02:53.985Z"
     }
   },
   "deployments": [],
-  "sessions": 0,
+  "sessions": 1,
   "agentRuns": 23,
   "skillInstalls": 0,
   "testRuns": 24,
