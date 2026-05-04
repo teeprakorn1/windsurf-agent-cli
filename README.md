@@ -2,7 +2,7 @@
 
 > Production-grade AI Agent Platform with Smart Init, Plugin System, Agent Testing, and Publishing — 83 Agents, 46 Skills, 78 Workflows, 10 Rules
 >
-> **v2.2.3** — Production upgrade + 20 bug fixes + init mode flags
+> **v2.2.4** — 14 bug fixes (security, correctness, performance)
 
 ---
 

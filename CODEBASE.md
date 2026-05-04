@@ -77,10 +77,10 @@ Production-grade AI Agent Platform — Smart Init, Plugin System, Agent Testing,
 ### V2 Modules
 - `lib/core/agent-runtime.js` — 🔥 ReAct loop, chat session (sliding window + char-based context limit MAX_CONTEXT_CHARS=200000), agent loader, circuit breaker integration, distributed tracing (traceId in state)
 - `lib/core/tool-registry.js` — 🔥 Namespaced tools (fs.read/shell.exec), schemas, validation, parseCommandArgs (escape sequences), cross-platform fs.glob/search.grep (maxDepth, maxFileSize, maxFiles limits)
-- `lib/core/llm-providers.js` — 🔥 OpenAI, Claude (tool_use), Ollama (tools), Mock (respects outputFormat), retry/backoff
+- `lib/core/llm-providers.js` — 🔥 OpenAI, Claude (tool_use), Ollama (tools), Mock (respects outputFormat), retry/backoff, 1MB response size limit
 - `lib/core/tool-runner.js` — Isolated tool runner (forked child process, restricted env)
 - `lib/core/config.js` — Config loader (.agent/ primary, .windsurf/ symlink). initConfigDir supports windsurfOnly and agentOnly options
-- `lib/core/plugin.js` — npm skill install/remove + permission system (writeFileSync for config, no safeWrite)
+- `lib/core/plugin.js` — npm skill install/remove + permission system (guardrails.safeWrite for config.yaml writes)
 - `lib/core/guardrails.js` — pathTraversal (projectRoot param + path.normalize + fs.realpathSync symlink protection), safeWrite (EXDEV fallback + temp file cleanup on error), rateLimit (cleanup), sandboxExec (execFileSync, no curl/wget)
 - `lib/core/usage.js` — Usage statistics + deployment tracking + agentRuns counter + Prometheus metrics export (formatPrometheusMetrics) + getMetrics
 - `lib/core/runtime.js` — Node/Bun dual

@@ -13,8 +13,6 @@ const { execFileSync } = require("child_process");
 const http = require("http");
 const https = require("https");
 const utils = require("../lib/utils");
-
-const { countFiles, countDirs, updateGitignore } = require("../lib/utils");
 const config = require("../lib/core/config");
 const logger = require("../lib/core/logger");
 const guardrails = require("../lib/core/guardrails");
@@ -62,9 +60,9 @@ async function getLatestVersion() {
 
 function getComponentCounts() {
   return {
-    agents: countFiles(path.join(WINDSURF_DIR, "agents"), ".md"),
-    skills: countDirs(path.join(WINDSURF_DIR, "skills")),
-    workflows: countFiles(path.join(WINDSURF_DIR, "workflows"), ".md"),
+    agents: utils.countFiles(path.join(WINDSURF_DIR, "agents"), ".md"),
+    skills: utils.countDirs(path.join(WINDSURF_DIR, "skills")),
+    workflows: utils.countFiles(path.join(WINDSURF_DIR, "workflows"), ".md"),
   };
 }
 
@@ -120,7 +118,7 @@ async function cmdUpdate(options) {
   }
   if (!options.dryRun) {
     config.saveVersion(targetDir, CURRENT_VERSION);
-    updateGitignore(targetDir);
+    utils.updateGitignore(targetDir);
   }
   console.log(options.dryRun ? "\n[DRY RUN] No files were written.\n" : chalk.green(`\nUpdated to v${CURRENT_VERSION}!\n`));
 }
@@ -143,11 +141,11 @@ function cmdStatus() {
   const cfgDir = config.getConfigDir(process.cwd()) || WINDSURF_DIR;
   const scriptsDir = path.join(cfgDir, "scripts");
   console.log("📊 Project Status:\n");
-  console.log(`  Agents:    ${countFiles(path.join(cfgDir, "agents"), ".md")}`);
-  console.log(`  Skills:    ${countDirs(path.join(cfgDir, "skills"))}`);
-  console.log(`  Workflows: ${countFiles(path.join(cfgDir, "workflows"), ".md")}`);
+  console.log(`  Agents:    ${utils.countFiles(path.join(cfgDir, "agents"), ".md")}`);
+  console.log(`  Skills:    ${utils.countDirs(path.join(cfgDir, "skills"))}`);
+  console.log(`  Workflows: ${utils.countFiles(path.join(cfgDir, "workflows"), ".md")}`);
   console.log(`  Scripts:   ${fs.existsSync(scriptsDir) ? fs.readdirSync(scriptsDir).filter(f => f.endsWith(".py")).length : 0}`);
-  console.log(`  Rules:     ${countFiles(path.join(cfgDir, "rules"), ".md")}`);
+  console.log(`  Rules:     ${utils.countFiles(path.join(cfgDir, "rules"), ".md")}`);
   console.log(`  Config:    ${cfgDir}`);
   console.log("");
 }

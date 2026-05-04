@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.2.4] - 2026-05-05
+
+### Fixed — Bug Audit (14 bugs)
+
+- **🔴 packager.js: bin/run.js ReferenceError** — Generated `bin/run.js` called `utils.copyRecursive` without importing `utils`. Now includes inline `copyRecursive` implementation
+- **🔴 plugin.js: config.yaml writes bypass guardrails** — `registerSkill`/`unregisterSkill` used `fs.writeFileSync` instead of `guardrails.safeWrite`. Now uses safe write with path traversal protection
+- **🔴 test.js: misleading variable name** — `chokidar = require("fs")` renamed to `fs = require("fs")` — was working by accident but confusing
+- **🟡 agent-runtime.js: operator precedence** — `Math.round(x) / 1000` → `Math.round(x / 1000)` for circuit breaker retry-seconds display
+- **🟡 plugin.js: inconsistent inquirer import** — Dynamic `import("inquirer")` → `require("inquirer").default` matching rest of codebase
+- **🟡 validator.js: false .gitignore warning** — Removed incorrect warning about `.agent`/`.windsurf` not in `.gitignore` (they're project config, should be tracked)
+- **🟡 cli.js: duplicate import** — Removed redundant `const { countFiles, countDirs, updateGitignore } = require(...)` — now uses `utils.*` consistently
+- **🟡 config.js: saveVersion ignores windsurf-only** — `saveVersion` fallback `getAgentDir()` could write `.version` to wrong directory. Now uses `getConfigDir()` only
+- **🟡 packager.js: .version in skipDirs** — `.version` is a file not a dir, `skipDirs` only filters directories. Removed from list
+- **🟢 agent-runtime.js: cache eviction O(n log n)** — Sorted all entries on every `_cacheSet`. Changed to O(1) random eviction
+- **🟢 llm-providers.js: unlimited response accumulation** — Added 1MB size limit to OpenAI, Claude, and Ollama response handlers to prevent OOM
+- **🟢 request-queue.js: waitFor double reject** — `setInterval` + `setTimeout` could both fire. Added `settled` flag + proper cleanup
+
+---
+
 ## [2.2.3] - 2026-05-05
 
 ### Added
