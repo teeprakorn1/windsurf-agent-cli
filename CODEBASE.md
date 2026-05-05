@@ -1,6 +1,6 @@
-# CODEBASE.md — Aiyu MultiAgent V2.4.1
+# CODEBASE.md — Aiyu MultiAgent V2.4.2
 
-> **V2.4.1** — 98 bugs fixed across 4 audit rounds.
+> **V2.4.2** — CI fix + 98 bugs fixed across 4 audit rounds.
 
 ## System Overview
 

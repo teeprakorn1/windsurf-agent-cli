@@ -2,7 +2,7 @@
 
 > Production-grade AI Agent Platform with Smart Init, Plugin System, Agent Testing, and Publishing — 83 Agents, 46 Skills, 78 Workflows, 10 Rules
 >
-> **v2.4.1** — Bug fix release (98 bugs fixed across 4 audit rounds) | v2.4.0 — HTTP API + Operational Readiness + MCP Server + security hardening
+> **v2.4.2** — CI fix + 98 bugs fixed | v2.4.0 — HTTP API + Operational Readiness + MCP Server + security hardening
 
 ---
 
@@ -30,6 +30,16 @@
 - **Health Check** — `aiyu-multi-agent health` system status (with Ollama reachability check)
 - **Prometheus Metrics** — `aiyu-multi-agent usage` gauge format export
 - **Structured Logging** — JSON log output via `LOG_FORMAT=json`
+
+### HTTP API & Docker (V2.4)
+- **🔥 `aiyu-multi-agent serve`** — HTTP API server with `/health`, `/metrics`, `/traces`, `/jobs`
+- **Async Jobs** — `POST /jobs` enqueues agent runs, `GET /jobs/:id` polls status
+- **Graceful Shutdown** — SIGTERM/SIGINT with 10s drain, 503 guard during shutdown
+- **Rate Limiting** — 10 req/s per IP with X-Forwarded-For support
+- **MCP Authorization** — `mcp.allowedAgents` config restricts which agents MCP can run
+- **Secret Scanning** — Detects leaked API keys on `aiyu-multi-agent publish` (blocks with `--strict`)
+- **Docker** — Multi-stage Dockerfile + docker-compose.yml with healthcheck
+- **Persistent Traces** — `--trace-dir .traces/` appends JSONL, rotates at 10MB
 
 ### Agent Framework
 - **80 Specialized AI Agents** — From frontend to IoT, security to mechatronics
@@ -566,5 +576,13 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, code style, and PR
 - [@teeprakorn1](https://github.com/teeprakorn1)
 - [@FrameHandsomez](https://github.com/FrameHandsomez)
 
+## Community
+
+- [Code of Conduct](CODE_OF_CONDUCT.md)
+- [Contributing Guide](CONTRIBUTING.md)
+- [Security Policy](SECURITY.md)
+- [Changelog](CHANGELOG.md)
+- [Codebase Reference](CODEBASE.md)
+
 ---
-*Created: 2026-04-27 | V2: 2026-05-04 | V2.1: 2026-05-04 | V2.4.0: 2026-05-05 | V2.4.1: 2026-05-05*
+*Created: 2026-04-27 | V2: 2026-05-04 | V2.1: 2026-05-04 | V2.4.0: 2026-05-05 | V2.4.2: 2026-05-05*

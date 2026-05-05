@@ -4,10 +4,10 @@
 
 | Version | Supported |
 | ------- | --------- |
-| 2.2.x   | ✅ Active |
-| 2.1.x   | ⚠️ Critical fixes only |
-| 2.0.x   | ⚠️ Critical fixes only |
-| < 2.0   | ❌ End of life |
+| 2.4.x   | ✅ Active |
+| 2.3.x   | ✅ Active |
+| 2.2.x   | ⚠️ Critical fixes only |
+| < 2.2   | ❌ End of life |
 
 ## Reporting a Vulnerability
 
@@ -69,6 +69,8 @@ This project implements defense-in-depth for shell execution:
 
 | Version | Fix |
 |---------|-----|
+| 2.4.1 | BLOCKED_FLAGS bypass fix (`--eval=code`, `-ecode` patterns), `_isBlockedFlag()`, sandboxExec `path.basename` for full paths, rateLimits Map unbounded growth fix (time-based cleanup), safeWrite temp file leak on writeFileSync failure, ReDoS protection (`_safeRegex`), truncateResult deep clone (mutation prevention), glob regex metacharacter escaping, fs.glob fallback depth limit (stack overflow fix), maxSteps hard cap (MAX_ALLOWED_STEPS=50), API /jobs agent_name validation + max_steps validation, rate limit X-Forwarded-For support, secret scanning in publish (OpenAI/AWS/GitHub/npm/Slack keys) |
+| 2.4.0 | MCP host authorization (allowedAgents), secret scanning in publish, rate limiting middleware, graceful shutdown |
 | 2.2.0 | Symlink traversal attack fix (fs.realpathSync), init.js guardrails bypass fix (safeWrite), circuit breaker null state guard, JSON.stringify circular ref crash fix, safeWrite temp file leak fix, publish dry-run temp file leak fix, queue operations after destroy guard |
 | 2.1.0 | Command injection fix (execFileSync), path traversal fix (path.normalize), removed curl/wget, dangerous pattern detection |
 | 2.0.0 | Initial security layer (guardrails, sandboxExec, safeWrite, rateLimit) |

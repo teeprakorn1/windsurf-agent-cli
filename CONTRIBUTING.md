@@ -100,10 +100,13 @@ When modifying security-related code (`guardrails.js`, `tool-registry.js`):
 
 ```
 lib/
-├── core/           # Engine modules (no CLI dependencies)
+├── api/             # HTTP API server (Express)
+├── core/            # Engine modules (no CLI dependencies)
 ├── commands/        # CLI command handlers (one file per command)
+├── mcp/             # MCP server (stdio transport)
 ├── test/            # Test framework
 │   ├── unit/        # Unit tests (one file per module group)
+│   ├── smoke/       # API smoke tests
 │   └── compliance/  # Spec compliance tests
 ├── publish/         # Publishing system
 └── utils.js         # Shared utilities (single source of truth)
@@ -140,6 +143,9 @@ node bin/cli.js test --compliance
 # Agent tests (markdown-based)
 node bin/cli.js test
 
+# API smoke tests (requires server running)
+node lib/test/smoke/api.test.js
+
 # All at once
 node lib/test/unit/core.test.js && node bin/cli.js test --compliance && node bin/cli.js test
 ```
@@ -172,11 +178,13 @@ Add to `lib/test/compliance.js` following the existing pattern.
 Read `CODEBASE.md` and `docs/ARCHITECTURE-V2.md` for full details.
 
 **Key modules:**
-- `lib/core/guardrails.js` — Security layer (pathTraversal, safeWrite, rateLimit, sandboxExec)
-- `lib/core/tool-registry.js` — Tool definitions, schemas, validation, parseCommandArgs
+- `lib/core/guardrails.js` — Security layer (pathTraversal, safeWrite, rateLimit, sandboxExec, _isBlockedFlag)
+- `lib/core/tool-registry.js` — Tool definitions, schemas, validation, parseCommandArgs, _safeRegex
 - `lib/core/llm-providers.js` — OpenAI, Claude, Ollama, Mock providers
-- `lib/core/agent-runtime.js` — ReAct loop, chat session, agent loader
-- `lib/utils.js` — Shared utilities (parseFrontmatter, copyRecursive, etc.)
+- `lib/core/agent-runtime.js` — ReAct loop, chat session, agent loader (MAX_ALLOWED_STEPS=50)
+- `lib/api/server.js` — HTTP API (Express) with /health, /metrics, /traces, /jobs
+- `lib/api/jobs.js` — Async job model with request-queue integration
+- `lib/utils.js` — Shared utilities (parseFrontmatter, copyRecursive, isValidAgentName, etc.)
 
 ---
 
