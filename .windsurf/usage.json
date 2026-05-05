@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-05-04T04:48:09.509Z",
-  "lastUsedAt": "2026-05-05T07:03:22.655Z",
+  "lastUsedAt": "2026-05-05T17:29:01.870Z",
   "commands": {
     "status": {
       "count": 2,
@@ -8,14 +8,14 @@
       "lastUsedAt": "2026-05-04T05:05:30.803Z"
     },
     "test": {
-      "count": 27,
+      "count": 30,
       "firstUsedAt": "2026-05-04T04:48:09.615Z",
-      "lastUsedAt": "2026-05-05T07:03:22.655Z"
+      "lastUsedAt": "2026-05-05T17:29:01.870Z"
     },
     "run": {
-      "count": 34,
+      "count": 37,
       "firstUsedAt": "2026-05-04T04:55:30.306Z",
-      "lastUsedAt": "2026-05-05T07:03:22.651Z"
+      "lastUsedAt": "2026-05-05T17:29:01.856Z"
     },
     "init": {
       "count": 1,
@@ -25,9 +25,9 @@
   },
   "deployments": [],
   "sessions": 1,
-  "agentRuns": 26,
+  "agentRuns": 29,
   "skillInstalls": 0,
-  "testRuns": 27,
-  "testPasses": 204,
-  "testFails": 4
+  "testRuns": 30,
+  "testPasses": 247,
+  "testFails": 6
 }
