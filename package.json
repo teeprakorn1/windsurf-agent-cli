@@ -1,6 +1,6 @@
 {
   "name": "aiyu-multi-agent",
-  "version": "2.3.0",
+  "version": "2.4.0",
   "description": "Production-grade AI Agent Platform — 83 Agents, 46 Skills, 78 Workflows, Smart Init, Plugin System, Agent Testing, Publishing",
   "bin": {
     "aiyu-multi-agent": "./bin/cli.js"
@@ -14,6 +14,9 @@
     "ux": "python3 .windsurf/skills/frontend-design/scripts/ux_audit.py .",
     "seo": "python3 .windsurf/skills/seo-fundamentals/scripts/seo_checker.py .",
     "schema": "python3 .windsurf/skills/database-design/scripts/schema_validator.py .",
+    "start": "node bin/server.js",
+    "docker:build": "docker build -t aiyu-multi-agent .",
+    "docker:run": "docker run -p 3000:3000 -e LLM_PROVIDER=mock aiyu-multi-agent",
     "postinstall": "node ./bin/postinstall.js"
   },
   "dependencies": {

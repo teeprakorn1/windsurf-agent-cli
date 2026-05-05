@@ -2,276 +2,21 @@
 
 /**
  * Aiyu MultiAgent — AI Agent Platform
- * Production-grade AI Agent CLI with Smart Init, Plugin System, Testing, and Publishing
+ * Production-grade AI Agent CLI — thin router, commands in lib/commands/
  */
 
 const { Command } = require("commander");
 const chalk = require("chalk");
-const fs = require("fs");
-const path = require("path");
-const { execFileSync } = require("child_process");
-const http = require("http");
-const https = require("https");
-const utils = require("../lib/utils");
-const config = require("../lib/core/config");
 const logger = require("../lib/core/logger");
-const guardrails = require("../lib/core/guardrails");
-
-const PROJECT_ROOT = path.resolve(__dirname, "..");
-const WINDSURF_DIR = path.join(PROJECT_ROOT, ".windsurf");
-const PKG = JSON.parse(fs.readFileSync(path.join(PROJECT_ROOT, "package.json"), "utf-8"));
-const CURRENT_VERSION = PKG.version;
-
-// ── Helpers ──────────────────────────────────────────────────────────
-
-function fetchJSON(url, redirects = 0) {
-  const MAX_RESPONSE_SIZE = 1024 * 1024; // 1MB
-  return new Promise((resolve, reject) => {
-    if (redirects > 5) return reject(new Error("too many redirects"));
-    const client = url.startsWith("https") ? https : http;
-    const req = client.get(url, { timeout: 5000 }, (res) => {
-      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-        const redirectUrl = res.headers.location;
-        try {
-          const u = new URL(redirectUrl);
-          if (!["http:", "https:"].includes(u.protocol)) {
-            return reject(new Error(`Redirect to non-HTTP protocol blocked: ${u.protocol}`));
-          }
-        } catch {
-          return reject(new Error(`Invalid redirect URL: ${redirectUrl}`));
-        }
-        return fetchJSON(redirectUrl, redirects + 1).then(resolve, reject);
-      }
-      let data = "";
-      res.on("data", chunk => {
-        data += chunk;
-        if (data.length > MAX_RESPONSE_SIZE) {
-          req.destroy();
-          reject(new Error("Response too large"));
-        }
-      });
-      res.on("end", () => {
-        try { resolve(JSON.parse(data)); }
-        catch (e) { reject(e); }
-      });
-    });
-    req.on("error", reject);
-    req.on("timeout", () => { req.destroy(); reject(new Error("timeout")); });
-  });
-}
-
-async function getLatestVersion() {
-  try {
-    const data = await fetchJSON("https://registry.npmjs.org/aiyu-multi-agent/latest");
-    return data.version || null;
-  } catch { return null; }
-}
-
-function getComponentCounts() {
-  return {
-    agents: utils.countFiles(path.join(WINDSURF_DIR, "agents"), ".md"),
-    skills: utils.countDirs(path.join(WINDSURF_DIR, "skills")),
-    workflows: utils.countFiles(path.join(WINDSURF_DIR, "workflows"), ".md"),
-  };
-}
-
-function isValidUrl(str) {
-  try {
-    const u = new URL(str);
-    return ["http:", "https:"].includes(u.protocol);
-  } catch { return false; }
-}
-
-// ── Command Implementations ──────────────────────────────────────────
-
-async function cmdInit(options) {
-  const initCmd = require("../lib/commands/init");
-  await initCmd.run(process.cwd(), { dryRun: options.dryRun, interactive: options.interactive, windsurfOnly: options.windsurfOnly, agentOnly: options.agentOnly });
-  const usage = require("../lib/core/usage");
-  usage.trackCommand(process.cwd(), "init");
-}
-
-async function cmdUpdate(options) {
-  const targetDir = process.cwd();
-  const targetAgent = config.getAgentDir(targetDir);
-  const targetWindsurf = config.getWindsurfDir(targetDir);
-
-  if (!fs.existsSync(targetAgent) && !fs.existsSync(targetWindsurf)) {
-    console.log(chalk.yellow(".agent/ or .windsurf/ not found. Run `aiyu-multi-agent init` first.\n"));
-    return;
-  }
-
-  const installed = config.getVersion(targetDir);
-  console.log(`Installed version: ${installed || "unknown"}`);
-  console.log(`Package version:   ${CURRENT_VERSION}`);
-
-  if (installed === CURRENT_VERSION) {
-    console.log(chalk.green(`\nAlready up to date! v${CURRENT_VERSION}\n`));
-    return;
-  }
-
-  console.log("\nChecking npm for latest version...");
-  const latest = await getLatestVersion();
-  if (latest && latest !== CURRENT_VERSION) {
-    console.log(chalk.yellow(`Newer version available on npm: v${latest}`));
-    console.log("Run: npx aiyu-multi-agent@latest update\n");
-    return;
-  }
-
-  const targetConfig = config.getConfigDir(targetDir);
-  console.log(`\nUpdating from v${installed || "?"} to v${CURRENT_VERSION}...`);
-  const preserved = utils.copyRecursive(WINDSURF_DIR, targetConfig, { merge: true, dryRun: options.dryRun });
-  if (preserved.length > 0) {
-    console.log("\n  Preserved user-modified files (not overwritten):");
-    preserved.forEach(f => console.log(`    ${f}`));
-  }
-  if (!options.dryRun) {
-    config.saveVersion(targetDir, CURRENT_VERSION);
-    utils.updateGitignore(targetDir);
-  }
-  console.log(options.dryRun ? "\n[DRY RUN] No files were written.\n" : chalk.green(`\nUpdated to v${CURRENT_VERSION}!\n`));
-}
-
-async function cmdVersion() {
-  console.log(`aiyu-multi-agent v${CURRENT_VERSION}`);
-  const installed = config.getVersion(process.cwd());
-  if (installed) console.log(`Project config version: v${installed}`);
-  console.log("\nChecking npm for latest...");
-  const latest = await getLatestVersion();
-  if (latest) {
-    console.log(latest === CURRENT_VERSION ? chalk.green(`You are on the latest: v${latest}`) : `Latest on npm: v${latest}\nUpdate: npx aiyu-multi-agent@latest update`);
-  } else {
-    console.log("Could not reach npm registry.");
-  }
-  console.log("");
-}
-
-function cmdStatus() {
-  const cfgDir = config.getConfigDir(process.cwd()) || WINDSURF_DIR;
-  const scriptsDir = path.join(cfgDir, "scripts");
-  console.log("📊 Project Status:\n");
-  console.log(`  Agents:    ${utils.countFiles(path.join(cfgDir, "agents"), ".md")}`);
-  console.log(`  Skills:    ${utils.countDirs(path.join(cfgDir, "skills"))}`);
-  console.log(`  Workflows: ${utils.countFiles(path.join(cfgDir, "workflows"), ".md")}`);
-  console.log(`  Scripts:   ${fs.existsSync(scriptsDir) ? fs.readdirSync(scriptsDir).filter(f => f.endsWith(".py")).length : 0}`);
-  console.log(`  Rules:     ${utils.countFiles(path.join(cfgDir, "rules"), ".md")}`);
-  console.log(`  Config:    ${cfgDir}`);
-  console.log("");
-}
-
-function cmdList() {
-  console.log("📋 Available Commands:\n");
-  const cfgDir = config.getConfigDir(process.cwd()) || WINDSURF_DIR;
-  const workflowsDir = path.join(cfgDir, "workflows");
-  if (!fs.existsSync(workflowsDir)) {
-    console.log("  No workflows found.");
-    return;
-  }
-
-  // Cache workflow descriptions for 30s
-  if (!global._wfCache || Date.now() - global._wfCache.ts > 30000) {
-    const entries = [];
-    fs.readdirSync(workflowsDir).filter(f => f.endsWith(".md")).sort().forEach(f => {
-      const content = fs.readFileSync(path.join(workflowsDir, f), "utf-8");
-      const descMatch = content.match(/description:\s*(.+)/);
-      entries.push({ name: f.replace(".md", ""), desc: descMatch ? descMatch[1].trim() : "No description" });
-    });
-    global._wfCache = { entries, ts: Date.now() };
-  }
-
-  global._wfCache.entries.forEach(e => {
-    console.log(`  /${e.name.padEnd(25)} ${e.desc}`);
-  });
-  console.log("");
-}
-
-function cmdInfo(agentName) {
-  const cfgDir = config.getConfigDir(process.cwd()) || WINDSURF_DIR;
-  const agentsDir = path.join(cfgDir, "agents");
-  const filePath = path.join(agentsDir, `${agentName}.md`);
-  if (!fs.existsSync(filePath)) {
-    const files = fs.readdirSync(agentsDir).filter(f => f.endsWith(".md"));
-    const match = files.find(f => f.replace(".md", "").includes(agentName));
-    if (match) return cmdInfo(match.replace(".md", ""));
-    console.log(`Agent not found: ${agentName}\n`);
-    console.log("Available agents:");
-    files.sort().forEach(f => console.log(`  ${f.replace(".md", "")}`));
-    return;
-  }
-  const content = fs.readFileSync(filePath, "utf-8");
-  const fm = utils.parseFrontmatter(content);
-  const skills = Array.isArray(fm.skills) ? fm.skills : (fm.skills ? fm.skills.split(",").map(s => s.trim()) : []);
-  const tools = Array.isArray(fm.tools) ? fm.tools : (fm.tools ? fm.tools.split(",").map(t => t.trim()) : []);
-  console.log(`Agent: ${fm.name || agentName}\n`);
-  console.log(`  Description: ${fm.description || "N/A"}\n`);
-  console.log(`  Tools:       ${tools.join(", ")}`);
-  console.log(`  Skills:      ${skills.join(", ")}`);
-  console.log(`  Sub-agents:  ${tools.includes("Agent") ? "Yes" : "No"}`);
-  if (skills.length > 0) {
-    console.log("\n  Skill Details:");
-    skills.forEach(skill => {
-      const skillPath = path.join(WINDSURF_DIR, "skills", skill, "SKILL.md");
-      if (fs.existsSync(skillPath)) {
-        const sfm = utils.parseFrontmatter(fs.readFileSync(skillPath, "utf-8"));
-        console.log(`     ${skill.padEnd(25)} ${sfm.description || "Loaded"}`);
-      } else {
-        console.log(`     ${skill.padEnd(25)} (built-in)`);
-      }
-    });
-  }
-  console.log("");
-}
-
-function cmdChecklist(url) {
-  if (url && !isValidUrl(url)) {
-    console.error(chalk.red("Invalid URL. Only http:// and https:// allowed.\n"));
-    return;
-  }
-  const args = url
-    ? [".windsurf/scripts/checklist.py", ".", "--url", url]
-    : [".windsurf/scripts/checklist.py", "."];
-  console.log("Running Master Checklist...\n");
-  try {
-    execFileSync("python3", args, { cwd: process.cwd(), encoding: "utf-8", stdio: "inherit" });
-  } catch {
-    console.error(chalk.red("Checklist failed. See errors above.\n"));
-  }
-}
-
-function cmdUninstall() {
-  const targetDir = process.cwd();
-  const agentDir = config.getAgentDir(targetDir);
-  const windsurfDir = config.getWindsurfDir(targetDir);
-
-  if (!fs.existsSync(agentDir) && !fs.existsSync(windsurfDir)) {
-    console.log(chalk.yellow("No config directory found. Nothing to uninstall.\n"));
-    return;
-  }
-
-  console.log("Removing config directories...\n");
-  [agentDir, windsurfDir].forEach(dir => {
-    if (fs.existsSync(dir)) {
-      const stat = fs.lstatSync(dir);
-      if (stat.isSymbolicLink()) {
-        fs.unlinkSync(dir);
-      } else {
-        fs.rmSync(dir, { recursive: true, force: true });
-      }
-    }
-  });
-  console.log(chalk.green("Done! Config directories removed.\n"));
-  console.log("Note: .gitignore entries and .windsurfrules were left intact. Remove '# Aiyu MultiAgent' and '.windsurf' from .gitignore, and delete .windsurfrules manually if desired.\n");
-}
-
-// ── CLI Program ──────────────────────────────────────────────────────
+const inline = require("../lib/commands/init-inline");
 
 const program = new Command();
 
 program
   .name("aiyu-multi-agent")
   .description("Production-grade AI Agent Platform")
-  .version(CURRENT_VERSION)
-  .addHelpText("before", `\n  ${chalk.cyan(`Aiyu MultiAgent v${CURRENT_VERSION}`)} — ${getComponentCounts().agents} Agents | ${getComponentCounts().skills} Skills | ${getComponentCounts().workflows} Workflows\n`)
+  .version(inline.CURRENT_VERSION)
+  .addHelpText("before", `\n  ${chalk.cyan(`Aiyu MultiAgent v${inline.CURRENT_VERSION}`)} — ${inline.getComponentCounts().agents} Agents | ${inline.getComponentCounts().skills} Skills | ${inline.getComponentCounts().workflows} Workflows\n`)
   .addHelpText("after", `\n  Documentation: https://github.com/teeprakorn1/aiyu-multi-agent#readme\n`);
 
 program
@@ -281,14 +26,14 @@ program
   .option("--dry-run", "Preview without writing files")
   .option("--windsurf-only", "Create .windsurf/ only (no .agent/ directory)")
   .option("--agent-only", "Create .agent/ only (no .windsurf/ symlink)")
-  .action(cmdInit);
+  .action(inline.cmdInit);
 
 program
   .command("update")
   .description("Update config to latest version (preserves user-modified files)")
   .option("--dry-run", "Preview without writing files")
   .action(async (options) => {
-    await cmdUpdate(options);
+    await inline.cmdUpdate(options);
     const usage = require("../lib/core/usage");
     usage.trackCommand(process.cwd(), "update");
   });
@@ -297,7 +42,7 @@ program
   .command("version")
   .description("Show current version + check for updates")
   .action(async () => {
-    await cmdVersion();
+    await inline.cmdVersion();
     const usage = require("../lib/core/usage");
     usage.trackCommand(process.cwd(), "version");
   });
@@ -306,7 +51,7 @@ program
   .command("status")
   .description("Show project statistics")
   .action(() => {
-    cmdStatus();
+    inline.cmdStatus();
     const usage = require("../lib/core/usage");
     usage.trackCommand(process.cwd(), "status");
   });
@@ -314,22 +59,22 @@ program
 program
   .command("list")
   .description("List all available slash commands")
-  .action(cmdList);
+  .action(inline.cmdList);
 
 program
   .command("info <agent>")
   .description("Show agent details: skills, tools, rules, workflow")
-  .action(cmdInfo);
+  .action(inline.cmdInfo);
 
 program
   .command("checklist [url]")
   .description("Run master checklist (optionally with URL for perf + E2E)")
-  .action(cmdChecklist);
+  .action(inline.cmdChecklist);
 
 program
   .command("uninstall")
   .description("Remove config directories from project")
-  .action(cmdUninstall);
+  .action(inline.cmdUninstall);
 
 program
   .command("add <type> <name>")
@@ -372,6 +117,7 @@ program
   .command("publish")
   .description("Publish agent to npm")
   .option("--dry-run", "Validate and package without publishing")
+  .option("--strict", "Block publish if leaked secrets detected")
   .option("--name <name>", "Override package name")
   .option("--version <version>", "Override version")
   .option("--author <author>", "Set author")
@@ -530,6 +276,20 @@ program
   .description("[experimental] Generate MCP server / config")
   .action((type, subtype) => {
     console.log(chalk.yellow(`\n  ⚠️ "aiyu-multi-agent generate ${type} ${subtype || ""}" is experimental and not yet implemented\n`));
+  });
+
+program
+  .command("serve")
+  .description("Start HTTP API server — /health, /metrics, /traces, /jobs")
+  .option("-p, --port <port>", "Port number", parseInt)
+  .option("--trace-dir <dir>", "Enable persistent traces to directory")
+  .action((options) => {
+    if (options.port) process.env.PORT = options.port;
+    if (options.traceDir) {
+      const tracing = require("../lib/core/tracing");
+      tracing.enablePersistentTraces(options.traceDir);
+    }
+    require("../bin/server.js");
   });
 
 program

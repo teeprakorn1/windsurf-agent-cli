@@ -1,10 +1,10 @@
-# CODEBASE.md — Aiyu MultiAgent V2.3.0
+# CODEBASE.md — Aiyu MultiAgent V2.4.0
 
 ## System Overview
 
 Production-grade AI Agent Platform — Smart Init, Plugin System, Agent Testing, and Publishing.
 
-**V2.3.0** — MCP Server integration + System-wide bug audit (20 fixes) + security hardening (BLOCKED_FLAGS, sanitizeInput).
+**V2.4.0** — HTTP API + Operational Readiness + MCP Server + security hardening + Docker.
 
 **V2.2** — Production upgrade: circuit breaker, request queue, distributed tracing, health check, structured logging, Prometheus metrics, context size limits, integration tests.
 

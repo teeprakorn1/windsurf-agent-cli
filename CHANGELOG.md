@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.4.0] - 2026-05-05
+
+### Added — HTTP API + Operational Readiness
+
+- **🔥 `aiyu-multi-agent serve`** — Start HTTP API server (Express) with `/health`, `/metrics`, `/traces`, `/jobs` endpoints
+- **`POST /jobs`** — Async job model: enqueue agent run → `{jobId, status: "queued"}`, integrates with request-queue
+- **`GET /jobs/:id`** — Job status + result polling
+- **`GET /jobs`** — List recent jobs with queue metrics
+- **Graceful shutdown** — SIGTERM/SIGINT handler with 10s drain timeout, queue destroy, 503 for new requests during shutdown
+- **Rate limiting** — 10 req/s per IP (reuses `guardrails.rateLimit`), 429 response when exceeded
+- **MCP host authorization** — `mcp.allowedAgents` config in `.agent/config.yaml`, `run_agent` checks allowlist before execution (backward compatible — all allowed if not configured)
+- **Secret scanning in publish** — Detects leaked API keys (OpenAI `sk-`, AWS `AKIA`, GitHub `ghp_`, npm `npm_`, Slack `xoxb`) in agent markdown. Warns by default, blocks with `--strict`
+- **Prometheus `/metrics`** — HTTP-specific metrics: `aiyu_http_requests_total`, `aiyu_http_request_duration_seconds` (p50/p95/p99), `aiyu_queue_size`
+- **Persistent traces** — `--trace-dir .traces/` option appends completed traces as JSONL, rotates at 10MB
+- **Dockerfile** — Multi-stage build (node:20-slim), `.dockerignore`, `npm run docker:build`
+- **docker-compose.yml** — aiyu-api service with healthcheck
+- **Load test script** — `scripts/load-test.js [concurrency] [duration_sec]`
+- **Smoke tests** — `lib/test/smoke/api.test.js` for API endpoint validation
+- **CLI refactor** — Extracted inline commands from `bin/cli.js` to `lib/commands/init-inline.js` (thin router pattern)
+- **`publish --strict`** — Block publish if leaked secrets detected
+- **`serve --trace-dir`** — Enable persistent trace storage
+
+### Changed
+
+- `bin/cli.js` → thin router (~300 lines, was ~560), commands in `lib/commands/init-inline.js`
+- `lib/publish/validator.js` — `validate()` now accepts `options.strict` for secret scanning
+- `lib/mcp/tools/run-agent.js` — Added `getAllowedAgents()` for MCP host authorization
+
+---
+
 ## [2.3.0] - 2026-05-05
 
 ### Added — MCP Server (Issue #1)

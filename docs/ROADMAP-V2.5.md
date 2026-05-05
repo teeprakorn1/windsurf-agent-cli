@@ -1,7 +1,7 @@
-# Aiyu MultiAgent V2.4.0 — Roadmap
+# Aiyu MultiAgent V2.5.0 — Roadmap
 
-> **From:** v2.3.0 (MCP Server + 20 bug fixes + security hardening)
-> **To:** v2.4.0 (HTTP API + Operational Readiness)
+> **From:** v2.4.0 (HTTP API + Operational Readiness + MCP Server + Docker)
+> **To:** v2.5.0 (TypeScript Migration + Agent Composition)
 > **Timeline:** 5–7 days
 
 ---

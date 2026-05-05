@@ -2,7 +2,7 @@
 
 > Production-grade AI Agent Platform with Smart Init, Plugin System, Agent Testing, and Publishing — 83 Agents, 46 Skills, 78 Workflows, 10 Rules
 >
-> **v2.3.0** — MCP Server integration + System-wide bug audit (20 fixes) + security hardening
+> **v2.4.0** — HTTP API + Operational Readiness + MCP Server + security hardening
 
 ---
 
@@ -567,4 +567,4 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, code style, and PR
 - [@FrameHandsomez](https://github.com/FrameHandsomez)
 
 ---
-*Created: 2026-04-27 | V2: 2026-05-04 | V2.1: 2026-05-04 | V2.3.0: 2026-05-05*
+*Created: 2026-04-27 | V2: 2026-05-04 | V2.1: 2026-05-04 | V2.4.0: 2026-05-05*
