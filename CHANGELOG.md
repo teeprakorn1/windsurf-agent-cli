@@ -7,6 +7,131 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.4.1] - 2026-05-05
+
+### Fixed — 98 Bugs (System-wide Bug Audit, 4 rounds)
+
+**P0 Critical:**
+- **parseToolCalls undeclared `match` variable** — `match` used without `let` declaration in Strategy 3 JSON block extraction, creating implicit global. Added `let match;` declaration (`lib/core/agent-runtime.js`)
+- **API /jobs missing agent_name default** — When `agent_name` omitted from POST body, `runAgent` received `undefined` causing "Agent not found: undefined" crash. Now defaults to `findDefaultAgent()` (`lib/api/jobs.js`)
+- **Rate limit window mismatch** — API was 600 req/min (not 10 req/sec). Added `windowMs` parameter to `rateLimit()`, API now uses `guardrails.rateLimit(key, 10, 1000)` for true 10 req/sec with 1-second window (`lib/core/guardrails.js`, `lib/api/rate-limit.js`)
+- **shell.exec duplicate validation** — Removed redundant BLOCKED_FLAGS check, `sandboxExec` is now single enforcement point (`lib/core/tool-registry.js`)
+- **Chat tool resolution broken** — Legacy tool names (`Read`, `Bash`) not resolved in chat mode, causing tool lookup failures (`lib/core/agent-runtime.js`)
+- **Chat tool validation inconsistent** — `validateToolArgs` used raw name while `getTool` needed resolved name (`lib/core/agent-runtime.js`)
+- **search.grep crash — missing `fs` require** — `search.grep` handler used `fs.existsSync/readFileSync` without importing `fs`, causing `ReferenceError: fs is not defined` on every call (`lib/core/tool-registry.js`)
+- **runAgent maxSteps no upper bound** — Agent spec could set `max_steps: 999999` causing runaway ReAct loop. Added `MAX_ALLOWED_STEPS=50` hard cap with `Math.min()` in both `loadAgentSpec` and `runAgent` (`lib/core/agent-runtime.js`)
+- **fs.glob fallback stack overflow** — Fallback `walk()` function had no depth limit, causing stack overflow on deeply nested directories. Added `depth` parameter with `maxDepth=20` (`lib/core/tool-registry.js`)
+- **Circuit breaker NaN in error message** — `breakerStatus.lastFailureTime` could be `null` (after `resetBreaker()` or fresh breaker), causing `null + resetMs - Date.now()` = `NaN` in retry-seconds display. Now guards with fallback to `resetMs/1000` and `Math.max(0,...)` (`lib/core/agent-runtime.js` — both `runAgent` and `createChatSession`)
+- **fs.glob fallback `?` matches `/`** — Glob `?` (any single char) was converted to regex `.` which matches `/`, violating glob semantics. Changed to `[^/]` consistent with `*` → `[^/]*` (`lib/core/tool-registry.js`)
+
+**P1 High:**
+- **pathTraversal test non-deterministic** — Added explicit `projectRoot` parameter in tests (`lib/test/runner.js`, `lib/test/compliance.js`)
+- **fs.edit replaces ALL occurrences** — Changed `replaceAll` → `replace` (first occurrence only) to prevent data corruption (`lib/core/tool-registry.js`)
+- **Cache key missing maxSteps** — Different `maxSteps` values returned same cached result (`lib/core/agent-runtime.js`)
+- **Health check always returns 503** — Compared wrong field (`report.status` → `report.readiness`) (`lib/api/server.js`)
+- **queue.jobs exposed directly** — Added `getJob()` + `getRecentJobs()` public API methods (`lib/core/request-queue.js`, `lib/api/jobs.js`)
+- **Chat session outputFormat not enforced** — `createChatSession.send()` didn't enforce `outputFormat: json` like `runAgent` did. Now validates JSON output and wraps text if invalid (`lib/core/agent-runtime.js`)
+- **init.js generates legacy tool names** — Agent template used `Read, Grep, Glob, Bash, Edit, Write` instead of namespaced `fs.read, search.grep, fs.glob, shell.exec, fs.edit, fs.write` (`lib/commands/init.js`)
+- **MCP/API agent runs not tracked** — `run_agent` MCP tool and `/jobs` API endpoint didn't call `usage.trackCommand()`, so `agentRuns` counter missed MCP/API usage. Added tracking with `{via: "mcp"}` and `{via: "api"}` metadata (`lib/mcp/tools/run-agent.js`, `lib/api/jobs.js`)
+- **parseToolCalls fails on nested parentheses** — Regex `[^)]*` stopped at first `)`, breaking args like `{"path": "file(1).txt"}`. Replaced with balanced-depth parser that counts paren depth and handles string escapes (`lib/core/agent-runtime.js`)
+- **API /jobs missing agent_name validation** — `agent_name` from request body wasn't validated with `isValidAgentName()`, creating defense-in-depth gap for path traversal. MCP tool already validated; API now does too (`lib/api/jobs.js`)
+- **Health check llmProviders has no .status field** — `checkReadiness()` returned llmProviders without `.status`, causing health display to show `✗ undefined`. Added `status: "ok"/"limited"` + message field (`lib/core/health-check.js`)
+- **parseToolCalls key=value greedy quote stripping** — `replace(/^"|"$/g, "")` removed quotes from inside values (e.g. `path="/src/my\"file"` → `/src/myfile`). Changed to `slice(1,-1)` that only strips surrounding quotes (`lib/core/agent-runtime.js`)
+- **tool-runner.js missing `_truncated` flag** — Truncation in isolated tool runner didn't set `_truncated: true`, unlike `tool-registry.js`. Consumers couldn't detect truncated output (`lib/core/tool-runner.js`)
+- **chat.js agent-not-found error delayed** — `createChatSession()` throws when agent doesn't exist, but error only appeared on first `session.send()`, not at session creation. Wrapped in try/catch for immediate feedback (`lib/commands/chat.js`)
+- **config.saveVersion uses writeFileSync** — `saveVersion()` used `fs.writeFileSync` instead of `guardrails.safeWrite`, risking corruption on crash and missing path traversal protection. Now uses atomic write (`lib/core/config.js`)
+- **packager.js bin/run.js missing --force** — Published agent's `bin/run.js` mentioned `--force` flag in error message but never implemented it. Added `process.argv.includes("--force")` check. Also replaced outdated "Windsurf IDE" reference with correct CLI usage (`lib/publish/packager.js`)
+- **Health check icon doesn't recognize 'healthy' status** — Queue reports `status: "healthy"` but icon mapping only checked `ok/ready/configured/available`, showing `✗` for healthy queue. Added `"healthy"` to OK status list (`bin/cli.js`)
+
+**P2 Medium:**
+- **ReDoS vulnerability** — Added `_safeRegex()` to reject dangerous regex patterns (`lib/core/tool-registry.js`)
+- **truncateResult misses edge cases** — Improved with HALF_MAX strategy + final size check (`lib/core/tool-registry.js`)
+- **glob regex doesn't escape metacharacters** — Added proper escaping before glob-to-regex conversion (`lib/core/tool-registry.js`)
+- **Hardcoded .windsurf/ path in checklist** — Uses `config.getConfigDir()` now (`lib/commands/init-inline.js`)
+- **Skill lookup uses package dir** — Now uses project config dir for installed skills (`lib/commands/init-inline.js`)
+- **Simulator only has legacy tool names** — Added namespaced names (`fs.read`, `shell.exec`, etc.) (`lib/test/simulator.js`)
+- **Chat ignores outputFormat/deterministic** — Chat now passes `chatLlmOpts` with outputFormat and temperature (`lib/core/agent-runtime.js`)
+- **fs.read no file size limit** — Added 1MB size check before reading (`lib/core/tool-registry.js`)
+- **safeWrite temp file collision** — Uses `crypto.randomUUID()` instead of `Date.now()` (`lib/core/guardrails.js`)
+- **Chat session no step records** — Chat ReAct loop didn't create step records (no `step`, `thought`, `toolCalls`, `duration_ms`). Now creates `chatSteps[]` array like `runAgent`, returned in entry.steps (`lib/core/agent-runtime.js`)
+- **Circuit breaker message inconsistent** — Chat said "Retry later" while runAgent showed "Retry after Xs". Chat now shows same reset time message (`lib/core/agent-runtime.js`)
+- **Cache key doesn't include agent spec** — Cache only checked input/provider/model, so changing agent instructions returned stale results. Added `agentInstructionsHash` (SHA-256 of instructions) to cache key (`lib/core/agent-runtime.js`)
+- **usage.saveUses uses writeFileSync** — `saveUsage()` used `fs.writeFileSync` instead of `guardrails.safeWrite`, risking corruption on crash. Now uses atomic write (`lib/core/usage.js`)
+- **search.grep regex lastIndex not reset on error** — `regex.test()` with `/g` flag mutates `lastIndex`; if `test()` throws (catastrophic backtracking edge case), `lastIndex` wasn't reset. Wrapped in try/finally to guarantee reset (`lib/core/tool-registry.js`)
+- **health command doesn't call markInitialized** — `aiyu-multi-agent health` CLI command never called `healthCheck.markInitialized()`, so uptime showed time since module load, not process start. Added call (`bin/cli.js`)
+- **validator.js SECRET_PATTERNS with /g flag** — Module-level regex patterns had `/g` flag but `content.match()` doesn't need it for detection. Removed `/g` to prevent future `lastIndex` bugs if patterns are ever used with `test()` (`lib/publish/validator.js`)
+- **plugin.js temp dir uses Date.now()** — `aiyu-multi-agent-skill-install-${Date.now()}` had collision risk on parallel installs. Changed to `crypto.randomUUID()` (`lib/core/plugin.js`)
+- **health-check _startTime on module load** — `_startTime` was set at `require()` time, not server start. `markInitialized()` existed but was never called. Now called in `bin/server.js` and `lib/mcp/server.js` on startup (`bin/server.js`, `lib/mcp/server.js`)
+- **init.js safeWrite calls missing projectRoot** — `generateDefaultAgent`, `generateConfig`, `generateTestStub` called `guardrails.safeWrite()` without `projectRoot` parameter, causing pathTraversal to use `process.cwd()` instead of actual project root. Added `projectDir` param to all 3 functions and call sites (`lib/commands/init.js`)
+- **tool-runner.js truncation inconsistent** — Used full `MAX_SIZE` (100KB) per field while `tool-registry.js` uses `HALF_MAX` (50KB). When both `content` and `stdout` are large, total could exceed 100KB limit. Changed to `HALF_MAX` per field (`lib/core/tool-runner.js`)
+- **circuit-breaker resetBreaker doesn't clear lastFailureTime** — After `resetBreaker()`, stale `lastFailureTime` remained, which could cause instant OPEN→HALF_OPEN transition if `canExecute()` checked `Date.now() - lastFailureTime`. Now clears both `lastFailureTime` and `lastFailureError` on reset (`lib/core/circuit-breaker.js`)
+
+**P3 Low:**
+- **Tracing over-aggressive eviction** — Removed `|| traces.size > MAX_TRACES` condition, added FIFO fallback (`lib/core/tracing.js`)
+- **tracing.js appendFileSync blocking** — `_appendTraceToFile()` used `fs.appendFileSync` (blocking I/O) in async context, blocking event loop under high trace volume. Changed to `fs.appendFile` (async) (`lib/core/tracing.js`)
+- **getRecentJobs not sorted by time** — `slice(-limit)` relied on Map insertion order which could be non-chronological after cleanup. Now sorts by `enqueuedAt` descending (`lib/core/request-queue.js`)
+- **copyRecursive uses process.cwd()** — `preserved` path calculation used `path.relative(process.cwd(), destPath)` which is fragile if cwd changes. Added explicit `rootDir` parameter with `process.cwd()` default (`lib/utils.js`)
+- **Postinstall may modify wrong .gitignore** — Added `isOwnPackage` guard + try/catch (`bin/postinstall.js`)
+- **Plugin symlink + safeWrite edge case** — Added documentation comment (`lib/core/plugin.js`)
+- **global._wfCache memory leak risk** — Changed to module-level variable (`lib/commands/init-inline.js`)
+- **request-queue waitFor timeout buffer excessive** — `waitFor()` added 5s buffer on top of job timeout (e.g. 300s job → 305s wait). Reduced to 1s buffer — sufficient for cleanup overhead (`lib/core/request-queue.js`)
+
+**Fourth Audit — 15 Additional Bugs:**
+
+**P0 Critical (Crash / Security):**
+- **API /jobs null agent_name crash** — When `agent_name` omitted and `findDefaultAgent()` returns `null`, job crashed inside queue with "Agent not found: null". Now validates `resolvedAgentName` before enqueue, returns 400 if no agent found (`lib/api/jobs.js`)
+- **shell.exec pre-check rejects full paths** — Pre-check used raw first token (e.g. `/usr/bin/node`) against `ALLOWED_COMMANDS`, but `sandboxExec` uses `path.basename()`. Full paths like `/usr/bin/node --version` were rejected despite being safe. Now applies `path.basename()` in pre-check, matching sandboxExec behavior (`lib/core/tool-registry.js`)
+- **packager.js Date.now() temp dir collision** — `aiyu-multi-agent-publish-${Date.now()}` had collision risk on parallel publishes (same bug already fixed in `plugin.js`). Changed to `crypto.randomUUID()` (`lib/publish/packager.js`)
+
+**P1 High (Logic Errors):**
+- **Rate limit ignores X-Forwarded-For** — Behind reverse proxy, `req.ip` = proxy IP, so all clients were rate-limited together. Now reads `X-Forwarded-For` header first, falling back to `req.ip` (`lib/api/rate-limit.js`)
+- **Health check Ollama hardcoded 'local'** — `ollama: "local"` was always reported regardless of whether Ollama was actually running. Now performs HTTP HEAD check to `/api/tags` with 2s timeout, reporting `available`/`unreachable`/`not_configured`. `checkReadiness` and `getFullHealthReport` made async (`lib/core/health-check.js`, `lib/api/server.js`, `bin/cli.js`)
+- **Circuit breaker successCount never resets** — `successCount` accumulated indefinitely across OPEN/CLOSED cycles, causing `getBreakerStatus()` to return misleading values. Now resets to 1 when transitioning HALF_OPEN→CLOSED (`lib/core/circuit-breaker.js`)
+- **API /jobs doesn't validate max_steps** — `max_steps: 999999` from request body passed through unchecked. Now validates range 1–50 at API layer before enqueue (`lib/api/jobs.js`)
+- **fs.glob glob@10+ API break** — `glob@10+` returns Promise, not callback. Callback was never invoked, so primary path always failed silently to fallback. Now tries Promise API first, falls back to callback for glob@8 compatibility (`lib/core/tool-registry.js`)
+
+**P2 Medium (Robustness):**
+- **Tracing race condition in file rotation** — `fs.existsSync` + `fs.statSync` + `fs.renameSync` (sync) + `fs.appendFile` (async) allowed two concurrent writes to interleave after rotation. Changed to `fs.appendFileSync` for atomic write-after-rotate (`lib/core/tracing.js`)
+- **parseToolCalls escape handling wrong for `\"`** — `if (ch === "\\") { endIdx++; continue; }` skipped next char unconditionally, so `\"` (escaped backslash then quote) incorrectly skipped the closing quote. Now uses `escaped` flag for proper two-state tracking (`lib/core/agent-runtime.js`)
+- **_cacheGet returns mutable reference** — `runAgent` set `cached._fromCache = true` directly on cache entry, polluting future cache hits. Now returns `JSON.parse(JSON.stringify(entry.data))` deep copy (`lib/core/agent-runtime.js`)
+- **API /jobs missing projectDir** — `runAgent` call in job handler didn't pass `projectDir`, defaulting to `process.cwd()` which could differ. Now passes `projectDir: process.cwd()` explicitly (`lib/api/jobs.js`)
+
+**P3 Low (Cosmetic / Minor):**
+- **Circuit breaker breakers Map no cleanup** — `breakers` Map grew without bound if new breaker names were created. Added `removeBreaker()` function and export (`lib/core/circuit-breaker.js`)
+- **inspect-agent maxSteps not capped** — `parseInt(fm.max_steps, 10) || 10` showed raw value without `Math.min(_, 50)` cap that `loadAgentSpec` applies. Now capped at 50 for consistency (`lib/mcp/tools/inspect-agent.js`)
+- **fs.glob fallback no `{a,b}` alternation** — `globToRegex` only handled `**`, `*`, `?`. Pattern `{src,lib}/**/*.js` failed to match. Now expands `{a,b,c}` braces to `(a|b|c)` regex group before wildcard conversion (`lib/core/tool-registry.js`)
+
+**Second Audit — 22 Additional Bugs:**
+
+**P0 Critical (Security / Crash):**
+- **BLOCKED_FLAGS bypass via `--eval=code`** — `sandboxExec` only checked exact flag match, allowing `--eval=code`, `-ecode`, and `--eval="malicious"` to pass. Added `_isBlockedFlag()` that checks `startsWith(flag + "=")` and short-flag concatenation patterns (`lib/core/guardrails.js`)
+- **sandboxExec redundant `path.basename`** — `sandboxExec` called `path.basename(cmd)` even when `cmd` was already a basename (from `tool-registry.js`). Now only calls `basename` when `cmd` contains `path.sep`, avoiding incorrect resolution of full paths (`lib/core/guardrails.js`)
+- **rateLimits Map unbounded growth** — `rateLimits` Map only cleaned up when `size > 100`, but entries never expired between cleanups. Added time-based cleanup every 60 seconds via `_lastRateCleanup` tracker (`lib/core/guardrails.js`)
+- **safeWrite temp file leak on writeFileSync failure** — `safeWrite()` wrapped `renameSync` in try/catch but not `writeFileSync`. If write to temp file failed, orphan temp file remained. Now wraps both operations with cleanup (`lib/core/guardrails.js`)
+- **Chat session outputFormat not overridable** — `createChatSession()` only used `agentSpec.outputFormat`, ignoring `options.outputFormat`. Now accepts `outputFormat` from options parameter, consistent with `runAgent` (`lib/core/agent-runtime.js`)
+- **parseToolCalls key=value only matches double quotes** — Strategy 2b regex `/"([^"]*)"/g` only matched `key="value"`, missing `key='value'` and `key=value`. New regex handles double-quoted, single-quoted, and unquoted values (`lib/core/agent-runtime.js`)
+- **executeToolIsolated missing `cwd` in fork** — Child process fork didn't set `cwd` option, so `process.cwd()` in child could differ from parent's project root. Now passes `cwd: projectRoot` in fork options (`lib/core/tool-registry.js`)
+
+**P1 High (Logic Errors):**
+- **fs.glob fallback regex `?` not converted** — Glob-to-regex escaped `?` to `\?` before replacing `?` with `[^/]`, so replacement never matched. Fixed by transforming glob wildcards (`**`, `*`, `?`) to placeholders BEFORE escaping regex metacharacters (`lib/core/tool-registry.js`)
+- **fs.glob fallback doesn't skip node_modules/.git** — Unlike `search.grep`, fallback `walk()` entered `node_modules` and `.git` directories, causing slow scans and excessive results. Added skip check matching `search.grep` behavior (`lib/core/tool-registry.js`)
+- **truncateResult shallow copy mutates original** — `{ ...result }` spread only copies top-level; mutating `truncated.matches` (array) also mutated `result.matches`. Changed to `JSON.parse(JSON.stringify(result))` for deep clone (`lib/core/tool-registry.js`)
+- **Cache key missing projectDir** — `_cacheKey()` didn't include `projectDir`, so same agent name + input in different projects returned stale cross-project cache results. Added `projectDir` to cache key hash (`lib/core/agent-runtime.js`)
+- **maxSteps accepts negative values** — `parseInt("-5")` = -5 passed `Math.min(-5, 50)` = -5, causing ReAct loop to never execute (`step < -5` = false). Added `Math.max(1, ...)` to enforce minimum of 1 (`lib/core/agent-runtime.js`)
+- **Claude/Ollama missing default temperature** — `callClaude` and `callOllama` only set temperature when `options.temperature !== undefined`, defaulting to provider's API default (1.0) instead of 0.7. Now uses `0.7` as default, matching `callOpenAI` (`lib/core/llm-providers.js`)
+- **requestQueue _finishJob removes wrong jobs** — Cleanup used Map insertion order instead of time order, potentially removing recent jobs instead of oldest. Now sorts by `enqueuedAt` before removing (`lib/core/request-queue.js`)
+- **health-check swallows require errors** — `catch {}` blocks in `checkReadiness()` silently consumed module load errors, making debugging impossible. Now logs error messages and includes them in check output (`lib/core/health-check.js`)
+
+**P2 Medium (Robustness):**
+- **fs.read ignores offset/limit from schema** — Schema declared `offset`/`limit` as optional params but implementation never used them. Now implements 1-indexed line range reading with `totalLines` and `offset` in response (`lib/core/tool-registry.js`)
+- **usage.saveUses passes cfgDir instead of projectDir** — `safeWrite()` received `cfgDir` as `projectRoot`, which could fail pathTraversal if cfgDir is a symlink outside project. Now passes `projectDir` for correct scope (`lib/core/usage.js`)
+- **plugin.getSkillDir not exported** — `add.js` called `plugin.getSkillDir()` but it wasn't in `module.exports`, causing `TypeError: plugin.getSkillDir is not a function` crash. Added to exports (`lib/core/plugin.js`)
+- **MCP run_agent schema requires agent_name** — Schema used `z.string()` (required) but description said "omit for default". Changed to `z.string().optional()` and added default agent resolution in `run-agent.js` (`lib/mcp/server.js`, `lib/mcp/tools/run-agent.js`)
+- **tool-runner.js exits 0 on errors** — Permission denied, invalid args, and tool-not-found all used `process.exit(0)` (success), misleading parent process. Changed to `process.exit(1)` (`lib/core/tool-runner.js`)
+- **API server no urlencoded body limit** — `express.json({ limit: "1mb" })` limited JSON but not URL-encoded bodies. Added `express.urlencoded({ limit: "1mb", extended: true })` for defense-in-depth (`lib/api/server.js`)
+
+---
+
 ## [2.4.0] - 2026-05-05
 
 ### Added — HTTP API + Operational Readiness

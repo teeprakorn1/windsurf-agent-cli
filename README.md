@@ -2,7 +2,7 @@
 
 > Production-grade AI Agent Platform with Smart Init, Plugin System, Agent Testing, and Publishing — 83 Agents, 46 Skills, 78 Workflows, 10 Rules
 >
-> **v2.4.0** — HTTP API + Operational Readiness + MCP Server + security hardening
+> **v2.4.1** — Bug fix release (98 bugs fixed across 4 audit rounds) | v2.4.0 — HTTP API + Operational Readiness + MCP Server + security hardening
 
 ---
 
@@ -26,8 +26,8 @@
 ### Production Features (V2.2)
 - **Circuit Breaker** — Prevents cascade failures when LLM providers are down
 - **Request Queue** — Concurrency control, priority ordering, backpressure
-- **Distributed Tracing** — Trace every agent run, OpenTelemetry export
-- **Health Check** — `aiyu-multi-agent health` system status
+- **Distributed Tracing** — Trace every agent run, OpenTelemetry export, race-free file rotation
+- **Health Check** — `aiyu-multi-agent health` system status (with Ollama reachability check)
 - **Prometheus Metrics** — `aiyu-multi-agent usage` gauge format export
 - **Structured Logging** — JSON log output via `LOG_FORMAT=json`
 
@@ -242,7 +242,7 @@ Legacy names (`Read`, `Write`, `Edit`, `Grep`, `Glob`, `Bash`) auto-alias to nam
 - **LLM Retry/Backoff** — Exponential backoff (max 3 retries) for 429, 503, timeout errors
 - **Claude/Ollama Tool Use** — `callClaude` parses `tool_use` blocks; `callOllama` parses `tool_calls` response
 - **Chat ReAct Loop** — Chat sessions run full ReAct loop (respects agent's max_steps config, capped at 10), not just single follow-up
-- **Cross-Platform Tools** — `fs.glob` and `search.grep` use Node.js native (no grep/find dependency — works on Windows)
+- **Cross-Platform Tools** — `fs.glob` and `search.grep` use Node.js native (no grep/find dependency — works on Windows). glob@10+ Promise API with glob@8 callback fallback. `{a,b}` brace alternation supported
 - **Safe Write EXDEV** — Atomic write handles cross-partition rename with copy+unlink fallback
 - **Agent Name Validation** — Rejects path traversal chars (`/ \ : * ? " < > |`)
 
@@ -450,9 +450,9 @@ aiyu-multi-agent-skill-my-skill/
 
 | Guardrail | Description |
 |-----------|-------------|
-| **Path Traversal** | Blocks `../`, absolute paths, double slashes, dot segments, symlink attacks escaping project root. Uses explicit `projectRoot` param + `path.normalize()` + `fs.realpathSync()` |
+| **Path Traversal** | Blocks `../`, absolute paths, double slashes, dot segments, symlink attacks escaping project root. Uses explicit `projectRoot` param + `path.normalize()` + `fs.realpathSync()`. `shell.exec` resolves full paths via `path.basename()` |
 | **Safe Write** | Atomic file writes (temp → rename) with EXDEV fallback + temp file cleanup on error |
-| **Rate Limit** | In-memory rate limiting (configurable per key, auto-cleanup) |
+| **Rate Limit** | In-memory rate limiting (configurable per key, auto-cleanup, X-Forwarded-For support) |
 | **Sandbox Exec** | `execFileSync` only (no shell), whitelist-only, `parseCommandArgs` with escape sequences, dangerous pattern detection (command substitution, destructive commands) |
 | **Command Injection** | `shell.exec` uses `execFileSync` + parsed args (no `shell: true`). Blocks `$()`, `` ` ``, `rm -rf`, `mkfs`, etc. |
 | **File Limits** | `search.grep`: maxDepth=10, maxFileSize=1MB, maxFiles=1000. `fetchJSON`: 1MB response limit |
@@ -469,7 +469,7 @@ aiyu-multi-agent-skill-my-skill/
 ---
 name: your-agent
 description: What this agent does
-tools: Read, Grep, Glob, Bash, Edit, Write
+tools: fs.read, search.grep, fs.glob, shell.exec, fs.edit, fs.write
 model: inherit
 skills: clean-code, architecture
 provider: openai
@@ -567,4 +567,4 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, code style, and PR
 - [@FrameHandsomez](https://github.com/FrameHandsomez)
 
 ---
-*Created: 2026-04-27 | V2: 2026-05-04 | V2.1: 2026-05-04 | V2.4.0: 2026-05-05*
+*Created: 2026-04-27 | V2: 2026-05-04 | V2.1: 2026-05-04 | V2.4.0: 2026-05-05 | V2.4.1: 2026-05-05*

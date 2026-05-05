@@ -183,9 +183,10 @@ program
   .command("health")
   .description("System health check — liveness, readiness, component status")
   .option("--json", "Output as JSON")
-  .action((options) => {
+  .action(async (options) => {
     const healthCheck = require("../lib/core/health-check");
-    const report = healthCheck.getFullHealthReport(process.cwd());
+    healthCheck.markInitialized();
+    const report = await healthCheck.getFullHealthReport(process.cwd());
     if (options.json) {
       console.log(JSON.stringify(report, null, 2));
     } else {
@@ -199,7 +200,7 @@ program
       console.log(`  PID:         ${report.pid}`);
       console.log(chalk.gray("\n  Components:"));
       for (const [name, check] of Object.entries(report.checks)) {
-        const icon = check.status === "ok" || check.status === "ready" || check.status === "configured" || check.status === "available" ? chalk.green("✓") : check.status === "degraded" || check.status === "warning" || check.status === "limited" ? chalk.yellow("⚠") : chalk.red("✗");
+        const icon = check.status === "ok" || check.status === "ready" || check.status === "configured" || check.status === "available" || check.status === "healthy" ? chalk.green("✓") : check.status === "degraded" || check.status === "warning" || check.status === "limited" ? chalk.yellow("⚠") : chalk.red("✗");
         console.log(`    ${icon} ${name.padEnd(18)} ${check.status}`);
         if (check.message) console.log(`      ${chalk.gray(check.message)}`);
         if (check.heapUsedMB) console.log(`      ${chalk.gray(`heap: ${check.heapUsedMB}MB / ${check.heapTotalMB}MB`)}`);

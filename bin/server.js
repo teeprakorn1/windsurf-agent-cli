@@ -11,6 +11,8 @@ const logger = require("../lib/core/logger");
 
 const app = createApp();
 const server = app.listen(apiConfig.PORT, () => {
+  const healthCheck = require("../lib/core/health-check");
+  healthCheck.markInitialized();
   logger.info(`aiyu-multi-agent API listening on port ${apiConfig.PORT}`);
   console.log(`✅ API server started — http://localhost:${apiConfig.PORT}`);
   console.log(`   /health  — System health check`);
