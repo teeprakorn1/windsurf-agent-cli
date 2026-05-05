@@ -84,10 +84,11 @@ TOOL_CALL: Bash({"command": "npm test"})
 |------|------|-------------|
 | `Read` | `path` | Read file contents |
 | `Write` | `path`, `content` | Write file (atomic) |
-| `Edit` | `path`, `old_string`, `new_string` | Find & replace in file |
-| `Grep` | `pattern`, `path` | Search file contents |
-| `Glob` | `pattern`, `path` | Find files by name |
-| `Bash` | `command`, `timeout` | Execute allowed commands |
+| `Edit` | `path`, `old_string`, `new_string` | Find & replace in file (enforces unique old_string) |
+| `Grep` | `pattern`, `path` | Search file contents (async walk, 50-file event-loop yield) |
+| `Glob` | `pattern`, `path` | Find files by name (supports `[...]` character classes) |
+| `Bash` | `command`, `timeout` | Execute allowed commands (bare name only, no path prefixes) |
+| `fetch.url` | `url`, `method?`, `headers?`, `body?`, `timeout?` | Fetch HTTP(S) URLs (15s timeout, 100KB body limit) |
 
 ### Allowed Bash Commands
 

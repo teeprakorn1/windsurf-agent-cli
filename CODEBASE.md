@@ -1,4 +1,6 @@
-# CODEBASE.md — Aiyu MultiAgent V2.4.2
+# CODEBASE.md — Aiyu MultiAgent V2.5.0
+
+> **V2.5.0** — Claude Design-inspired features + 16 bug fixes (5 critical + 6 high + 5 medium). WebSocket real-time streaming, handoff bundles, fetch.url tool, inline intervention, agent system auto-apply. Fixes: parseToolCalls escaped flag char-swallow, shell.exec path-prefix bypass block + bare-name sandboxExec, fs.edit unique-occurrence enforcement, fetch.url NET_TOOLS missing, circuit breaker OPEN→HALF_OPEN double-entry, WebSocket memory leaks, Ollama health check 5xx, chat session error continuity, cache key resolved-values, _isBlockedFlag code-char heuristic, search.grep async walk, fs.glob character class, temperature consistency, kv-pair spaces in unquoted values.
 
 > **V2.4.2** — CI fix + 98 bugs fixed across 4 audit rounds.
 
@@ -71,6 +73,17 @@ Production-grade AI Agent Platform — Smart Init, Plugin System, Agent Testing,
 │   tools/list-agents.js                  │
 │   tools/run-agent.js                    │
 │   tools/inspect-agent.js                │
+├─────────────────────────────────────────┤
+│   lib/api/ — HTTP + WebSocket API       │
+│   server.js — Express app + routes      │
+│   ws.js — 🔥 WebSocket real-time stream │
+│   handoff.js — 🔥 Agent handoff + intervene│
+│   jobs.js — Async job model             │
+│   config.js / middleware.js / etc.      │
+├─────────────────────────────────────────┤
+│   lib/core/ — Core Engine (continued)   │
+│   handoff.js — 🔥 Agent-to-agent bundles│
+│   agent-system.js — 🔥 Auto-apply profile│
 └─────────────────────────────────────────┘
 ```
 
@@ -89,13 +102,13 @@ Production-grade AI Agent Platform — Smart Init, Plugin System, Agent Testing,
 `.windsurf/rules/` — Auto-triggered by keywords
 
 ### V2 Modules
-- `lib/core/agent-runtime.js` — 🔥 ReAct loop, chat session (sliding window + char-based context limit MAX_CONTEXT_CHARS=200000, step records, outputFormat enforcement), agent loader, circuit breaker integration, distributed tracing (traceId in state), MAX_ALLOWED_STEPS=50 hard cap, balanced-depth parseToolCalls (with proper `let match` declaration), cache key with agentInstructionsHash
-- `lib/core/tool-registry.js` — 🔥 Namespaced tools (fs.read/shell.exec with offset/limit support), schemas, validation, parseCommandArgs (escape sequences), cross-platform fs.glob/search.grep (maxDepth, maxFileSize, maxFiles limits, fs require fix, glob fallback depth limit, wildcard-before-escape regex fix, node_modules/.git skip in fallback), truncateResult deep clone, executeToolIsolated passes cwd in fork
+- `lib/core/agent-runtime.js` — 🔥 ReAct loop, chat session (sliding window + char-based context limit MAX_CONTEXT_CHARS=200000, step records, outputFormat enforcement), agent loader, circuit breaker integration, distributed tracing (traceId in state), MAX_ALLOWED_STEPS=50 hard cap, balanced-depth parseToolCalls (with proper `let match` declaration, escaped flag fix — no char swallow after escape), cache key with agentInstructionsHash + resolved outputFormat/deterministic/maxSteps (not raw options)
+- `lib/core/tool-registry.js` — 🔥 Namespaced tools (fs.read/shell.exec with offset/limit support), schemas, validation, parseCommandArgs (escape sequences), cross-platform fs.glob/search.grep (maxDepth, maxFileSize, maxFiles limits, fs require fix, glob fallback depth limit, wildcard-before-escape regex fix, node_modules/.git skip in fallback, async walk with setImmediate yield every 50 files), truncateResult deep clone, executeToolIsolated passes cwd in fork. fs.edit enforces unique old_string (rejects multiple occurrences). shell.exec rejects path-prefixed commands (./node bypass) and passes bare command name to sandboxExec
 - `lib/core/llm-providers.js` — 🔥 OpenAI, Claude (tool_use), Ollama (tools), Mock (respects outputFormat), retry/backoff, 1MB response size limit, default temperature 0.7 for all providers
 - `lib/core/tool-runner.js` — Isolated tool runner (forked child process with cwd, restricted env, HALF_MAX truncation consistent with tool-registry, `_truncated` flag, exit code 1 on errors)
 - `lib/core/config.js` — Config loader (.agent/ primary, .windsurf/ symlink). initConfigDir supports windsurfOnly and agentOnly options. saveVersion uses guardrails.safeWrite
 - `lib/core/plugin.js` — npm skill install/remove + permission system (guardrails.safeWrite for config.yaml writes, crypto.randomUUID for temp dirs, exports getSkillDir)
-- `lib/core/guardrails.js` — pathTraversal (projectRoot param + path.normalize + fs.realpathSync symlink protection), safeWrite (EXDEV fallback + temp file cleanup on writeFileSync AND renameSync errors), rateLimit (configurable windowMs param, time-based cleanup every 60s), sandboxExec (execFileSync, no curl/wget, `_isBlockedFlag()` catches `--eval=code` and `-ecode` patterns, only calls `path.basename` for full paths)
+- `lib/core/guardrails.js` — pathTraversal (projectRoot param + path.normalize + fs.realpathSync symlink protection), safeWrite (EXDEV fallback + temp file cleanup on writeFileSync AND renameSync errors), rateLimit (configurable windowMs param, time-based cleanup every 60s), sandboxExec (execFileSync, no curl/wget, `_isBlockedFlag()` catches `--eval=code` and short-flag patterns with code-char heuristic — only blocks when remainder contains ` '"();{}` to allow legitimate flags like `-ecount`)
 - `lib/core/usage.js` — Usage statistics + deployment tracking + agentRuns counter + Prometheus metrics export (formatPrometheusMetrics) + getMetrics + safeWrite with projectDir (not cfgDir) for correct pathTraversal scope
 - `lib/core/runtime.js` — Node/Bun dual
 - `lib/core/logger.js` — Structured JSON logging (LOG_FORMAT=json), meta field support, setJsonOutput()
@@ -134,7 +147,7 @@ Production-grade AI Agent Platform — Smart Init, Plugin System, Agent Testing,
 - **LLM Retry**: Exponential backoff (max 3 retries) for 429, 503, timeout, ECONNRESET
 - **Claude Tool Use**: Parses `tool_use` content blocks from Anthropic API
 - **Ollama Tools**: Parses `message.tool_calls` from Ollama API
-- **Chat ReAct Loop**: Full loop (max steps from agent spec, capped at 10) with try/catch around callLLM + sliding window (MAX_CONTEXT_MESSAGES=20) + char-based context limit (MAX_CONTEXT_CHARS=200000) + truncateResult on tool outputs + step records (chatSteps[]) + outputFormat enforcement + circuit breaker with retry time
+- **Chat ReAct Loop**: Full loop (max steps from agent spec, capped at 10) with try/catch around callLLM + sliding window (MAX_CONTEXT_MESSAGES=20) + char-based context limit (MAX_CONTEXT_CHARS=200000) + truncateResult on tool outputs + step records (chatSteps[]) + outputFormat enforcement + circuit breaker with retry time + error message pushed as assistant content on circuit breaker/LLM failure for conversation continuity
 - **Cross-Platform**: fs.glob/search.grep use Node.js native (no grep/find dependency)
 - **Safe Write EXDEV**: copyFileSync + unlinkSync fallback for cross-partition
 - **Rate Limits**: Configurable `windowMs` parameter (default 60s). API uses 1-second window for true 10 req/sec. X-Forwarded-For header used for client IP behind reverse proxy. Cleanup removes expired entries when Map > 100
@@ -153,16 +166,17 @@ Production-grade AI Agent Platform — Smart Init, Plugin System, Agent Testing,
 - **Step Duration**: `duration_ms` now includes LLM response time (stepStart measured before LLM call)
 
 ### Security (V2.1)
-- **Command Injection**: `shell.exec` uses `execFileSync` (no `shell: true`) + `parseCommandArgs` with escape sequences. Blocks `$()`, `` ` ``, `rm -rf`, `mkfs`, `dd if=`, `chmod 777`, `chown root`. No `execSync` anywhere in codebase or generated templates. `BLOCKED_FLAGS` (`-e`, `--eval`, `-c`, `--command`, `-i`, `--repl`) prevent `node -e` style arbitrary code execution. `_isBlockedFlag()` catches `--eval=code`, `-ecode`, and short-flag concatenation patterns
+- **Command Injection**: `shell.exec` uses `execFileSync` (no `shell: true`) + `parseCommandArgs` with escape sequences. Blocks `$()`, `` ` ``, `rm -rf`, `mkfs`, `dd if=`, `chmod 777`, `chown root`. No `execSync` anywhere in codebase or generated templates. `BLOCKED_FLAGS` (`-e`, `--eval`, `-c`, `--command`, `-i`, `--repl`) prevent `node -e` style arbitrary code execution. `_isBlockedFlag()` catches `--eval=code` and short-flag concatenation with code-char heuristic (` '"();{}`) — allows legitimate flags like `-ecount`. Path-prefixed commands (e.g., `./node`) rejected to prevent allowlist bypass — only bare command names passed to `sandboxExec`
 - **Path Traversal**: `pathTraversal(filePath, projectRoot)` — explicit root param + `path.normalize()` on both sides + `fs.realpathSync()` to resolve symlinks. Returns `realResolved` (canonical path). Prevents bypass via double slashes, dot segments, and symlink attacks. Also applied to `shell.exec` cwd argument
 - **Allowed Commands**: `python3, node, git, npm, npx, bun, ls, cat, echo, mkdir, cp, mv, grep, find, head, tail, wc, sort, uniq` — no curl/wget
-- **File Limits**: search.grep: maxDepth=10, maxFileSize=1MB, maxFiles=1000. fetchJSON: 1MB response limit
+- **File Limits**: search.grep: maxDepth=10, maxFileSize=1MB, maxFiles=1000, async walk with setImmediate yield every 50 files. fetchJSON: 1MB response limit
 - **parseFrontmatter**: Uses `YAML.parse()` only — no fallback parser that could silently produce wrong results
 - **Plugin Config**: Uses `guardrails.safeWrite()` for config.yaml writes (with projectRoot). init.js uses `guardrails.safeWrite()` with projectRoot for all generated files
 - **Tool Result Truncation**: Results exceeding 100KB are truncated with `_truncated` flag (applied in both `runAgent` and `createChatSession`, also in `tool-runner.js` isolated execution). Deep clone via `JSON.parse(JSON.stringify())` prevents mutation of original result
 - **Plugin Isolation**: `executeToolIsolated()` forks child process with restricted permission env vars
 - **Glob Semantics**: `?` matches any char except `/` (consistent with `*` to `[^/]*`), `**` matches any path including `/`. `{a,b,c}` brace alternation expanded to `(a|b|c)` regex group. Fallback glob skips `node_modules` and `.git`, transforms wildcards before escaping regex metacharacters. glob@10+ Promise API with glob@8 callback fallback
 - **Input Sanitization**: `sanitizeInput()` — 100K char limit + heuristic prompt injection detection (warning log). Applied in `runAgent()` and `createChatSession().send()`
+- **fs.edit Uniqueness**: `fs.edit` enforces unique `old_string` — rejects edit when multiple occurrences found, returns error with occurrence count. Prevents silent partial edits
 
 ## Connections
 

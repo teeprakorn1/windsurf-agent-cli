@@ -7,6 +7,102 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.5.0] - 2026-05-05
+
+### Added — Claude Design-Inspired Features
+
+**WebSocket Real-Time Streaming (`/ws`)**
+- `lib/api/ws.js` — Bidirectional WebSocket server mounted on same HTTP port
+- Message types: `run`, `chat.create`, `chat.send`, `intervene`, `subscribe` (client → server)
+- Push events: `step`, `complete`, `error`, `chat.step`, `chat.complete`, `pong` (server → client)
+- `onStep` callback integration with `runAgent` for per-step real-time emission
+- Session cleanup on disconnect: `chatSessions` Map purges orphaned entries
+
+**Agent Handoff Bundle (A → B context passing)**
+- `lib/core/handoff.js` — Bundle format v1.0 with source, context, artifacts, pendingTasks, state
+- `lib/api/handoff.js` — `POST /handoff` chains two agents: from_agent runs, bundle created, to_agent receives enriched input
+- `GET /handoff/:id` — Retrieve stored bundle (max 100 stored)
+- Auto-extracts file writes, shell outputs, and max_steps/error tasks into artifacts/pendingTasks
+
+**Inline Intervention (mid-run feedback)**
+- `POST /agents/intervene` — Queue intervention for a running agent by `run_id`
+- WebSocket `type: "intervene"` — Same mechanism via WebSocket
+- `PENDING_INTERVENTIONS` Map with timestamp, cleaned up on WebSocket disconnect (5-min stale threshold)
+- Injected into ReAct loop between steps via `state._intervention`
+
+**`fetch.url` Tool (external data fetch)**
+- `lib/core/tool-registry.js` — New built-in tool: `fetch.url({ url, method?, headers?, body?, timeout? })`
+- Native Node.js `http`/`https` modules (no extra dependencies)
+- Security: protocol restricted to `http:`/`https:` only, 15s default timeout, 1MB response size limit
+- Returns `{ status, headers, body, _truncated }`
+
+**Agent System Auto-Apply (project context detection)**
+- `lib/core/agent-system.js` — Auto-detects language, framework, testRunner, packageManager from `package.json`, `tsconfig.json`, Python project files
+- Reads `.windsurf/rules/` to extract active rule names
+- Builds behavioral guidelines (TypeScript strict mode, Next.js App Router, React hooks, AAA pattern, etc.)
+- Injected into system prompt automatically in both `runAgent` and `createChatSession`
+
+---
+
+### Fixed — 31 Bugs (8 Critical + 9 High + 10 Medium + 4 Low)
+
+**P0 Critical:**
+- **Unauthenticated HTTP API** — All endpoints (`/jobs`, `/handoff`, `/ws`, `/metrics`, `/traces`) had no authentication. Now supports `AIYU_API_KEY` env var: when set, requires `Authorization: Bearer <key>` or `x-api-key` header. `/health` exempt for k8s probes. WebSocket uses `?token=<key>` query param. Constant-time `crypto.timingSafeEqual` prevents timing attacks (`lib/api/middleware.js`, `lib/api/server.js`, `lib/api/ws.js`, `lib/api/config.js`)
+- **No LLM provider failover** — Circuit breaker OPEN caused immediate hard failure with no recovery. Now implements failover chain `openai → claude → local → mock`, skipping providers without configured credentials. Failover triggers on both circuit breaker OPEN and LLM call failure, with tracing events for observability (`lib/core/agent-runtime.js`)
+- **parseToolCalls escaped flag swallows character** — After escape sequence (`\"`), the character following the closing quote was skipped due to `escaped=false; continue` pattern. Removed premature `continue` so the character is processed normally (`lib/core/agent-runtime.js`)
+- **shell.exec path-prefix command bypass** — Commands like `./node` resolved `base="node"` (passing allowlist) but executed the path-prefixed binary. Now rejects path-prefixed commands entirely and passes bare command name to `sandboxExec` (`lib/core/tool-registry.js`)
+- **fs.edit silent partial edit on multiple occurrences** — `content.replace(old_string, new_string)` only replaced first match silently. Now detects multiple occurrences and rejects with error + count, enforcing unique `old_string` (`lib/core/tool-registry.js`)
+- **tool-runner.js `fetch.url` missing from NET_TOOLS** — `NET_TOOLS = ["search.grep"]` excluded `fetch.url`, so `PERMISSIONS_NETWORK=false` did not block HTTP requests in isolated tool runner. Added `fetch.url` to `NET_TOOLS` (`lib/core/tool-runner.js`)
+- **Circuit breaker OPEN→HALF_OPEN double-entry** — `canExecute()` set `halfOpenAttempts = 0` then returned `true`, allowing the next `canExecute()` call in the same event loop tick to also pass (incrementing from 0→1). Now atomically sets `halfOpenAttempts = 1` during transition, preventing more than `halfOpenMaxAttempts` probes (`lib/core/circuit-breaker.js`)
+
+**P1 High:**
+- **WebSocket chatSessions memory leak** — `chatSessions` Map never cleaned up on WebSocket disconnect. Now iterates and deletes sessions belonging to the disconnected client (`lib/api/ws.js`)
+- **PENDING_INTERVENTIONS memory leak** — Unconsumed interventions accumulated indefinitely. Now stores interventions with timestamp `{ message, _ts }` and cleans up entries older than 5 minutes on WebSocket disconnect (`lib/api/ws.js`, `lib/api/handoff.js`)
+- **Ollama health check ignores 5xx responses** — `resolve()` was called with status value but `ollamaStatus` was hardcoded to `"available"`. Now uses the resolved value so 5xx responses correctly show `"unhealthy"` (`lib/core/health-check.js`)
+- **Chat session error breaks conversation continuity** — On circuit breaker or LLM failure, error was not pushed to `messages` array and `thought` was `null` in step record. Now pushes error as assistant message and sets `thought` to error content (`lib/core/agent-runtime.js`)
+- **Cache key uses raw options instead of resolved values** — Cache key used `options.outputFormat`/`options.deterministic` (often `undefined`) while execution used resolved values from agent spec. Moved cache check after resolution and uses `resolvedCacheKey` (`lib/core/agent-runtime.js`)
+- **_isBlockedFlag over-aggressive short flag matching** — `-ecount` (valid grep flag) was blocked because it matched `-e` + extra chars. Now only blocks when remainder contains code-indicator characters (` '"();{}`) (`lib/core/guardrails.js`)
+
+**P2 Medium:**
+- **search.grep sync I/O blocks event loop** — Recursive `walk()` used `fs.readdirSync`/`fs.statSync`/`fs.readFileSync`, blocking Node.js event loop for seconds on large directories. Made `walk` async with `setImmediate` yield every 50 files (`lib/core/tool-registry.js`)
+- **Cache doesn't include skill instructions hash** — Cache key only hashed `agentSpec.instructions`, so changing skill content returned stale cached results. Now includes `skillInstructions` in the SHA-256 hash (`lib/core/agent-runtime.js`)
+- **fs.glob fallback doesn't support `[...]` character class** — `globToRegex` escaped `[` and `]` as literal characters instead of preserving them as character classes. Now extracts `[...]` patterns before escaping and restores them afterward (`lib/core/tool-registry.js`)
+- **Temperature handling inconsistency across providers** — OpenAI used `??` (null-coalescing) while Claude/Ollama used `!== undefined`, causing `temperature: null` to be sent to Claude but default to 0.7 for OpenAI. Now all providers use `!== undefined` consistently (`lib/core/llm-providers.js`)
+- **parseToolCalls kv-pair fallback can't handle spaces in unquoted values** — Regex `[^,}\s]+` stopped at first space, so `path=/my folder/file.txt` was truncated. Changed to `[^,}]+` which matches until comma or closing brace, then `.trim()` removes surrounding whitespace (`lib/core/agent-runtime.js`)
+
+**Elite Bug Audit — 13 Additional Bugs (1 Critical + 3 High + 5 Medium + 4 Low):**
+
+**P0 Critical:**
+- **runAgent crash — crypto.createHash receives Object** — `loadSkillInstructions()` returns Object but `crypto.Hash.update()` requires string/Buffer, causing `TypeError` crash on every execution path (run, chat, /jobs, /ws). Now stringifies before `.update()` (`lib/core/agent-runtime.js`)
+
+**P1 High:**
+- **callOllama hardcodes localhost:11434** — URL hardcoded instead of respecting `OLLAMA_HOST` env var like `health-check.js`. Now reads `process.env.OLLAMA_HOST` with localhost fallback (`lib/core/llm-providers.js`)
+- **Inline Intervention dead code** — `ws.js` sets `state._intervention` but `agent-runtime.js` never reads it, making `POST /agents/intervene` and WebSocket `type: "intervene"` no-ops. Now wired into ReAct loop between steps (`lib/core/agent-runtime.js`)
+- **sandboxExec leaks env vars to child processes** — `sandboxExec()` passes full `process.env` including `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GITHUB_TOKEN`, etc. Now strips keys matching `/(?:API_KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL|PRIVATE_KEY)/i` (`lib/core/guardrails.js`)
+
+**P2 Medium:**
+- **WebSocket runId/sessionId collision risk** — IDs used `Date.now() + Math.random()` which can collide under high throughput. Now uses `crypto.randomUUID()` (`lib/api/ws.js`)
+- **fetch.url doesn't follow HTTP redirects** — 301/302/307/308 responses returned redirect HTML instead of content. Now follows up to 3 redirects with protocol validation (`lib/core/tool-registry.js`)
+- **fetch.url response size counts string length not bytes** — `data.length` counts UTF-16 code units, allowing multi-byte content to exceed 1MB limit. Now uses `Buffer.concat` + `chunk.length` for byte-accurate measurement (`lib/core/tool-registry.js`)
+- **usage.json read-modify-write race condition** — `trackCommand()` reads, modifies, writes synchronously on every call; concurrent API requests overwrite each other's stats. Now uses in-memory buffer with 5-second periodic flush (`lib/core/usage.js`)
+- **Queue singleton not reset after destroy()** — `destroy()` sets `_destroyed=true` but `getDefaultQueue()` returns the same instance, causing `QUEUE_DESTROYED` errors on restart. Now resets `_defaultQueue=null` in `destroy()` (`lib/core/request-queue.js`)
+
+**P3 Low:**
+- **Tracing rotation filename collision** — Backup used `Date.now()` which can collide on rapid rotation. Now uses `crypto.randomUUID()` (`lib/core/tracing.js`)
+- **fetch.url falsy body values rejected** — `args.body || null` treats `0`, `false`, `""` as null. Now uses `args.body ?? null` (`lib/core/tool-registry.js`)
+- **OTel traceId/spanId too short** — `randomBytes(8)`/`randomBytes(4)` produce 16/8 hex chars, but OTel spec requires 32/16. Now uses `randomBytes(16)`/`randomBytes(8)` (`lib/core/tracing.js`)
+- **agent-system.js rule extraction reads only first line** — `split("\n")[0]` misses headings not on first line after frontmatter. Now finds first markdown heading with `/^#+\s*(.+)/m` regex (`lib/core/agent-system.js`)
+
+**Post-Release Fixes:**
+
+**P1 High:**
+- **Tool calls have no per-tool timeout** — README documented "30s per tool call" but `runAgent` and `createChatSession` called `await tool(toolArgs)` with no timeout, allowing hung tools to block the ReAct loop indefinitely. Now uses `Promise.race([toolPromise, timeoutPromise])` with `TOOL_TIMEOUT_MS=30000` (30s). Timeout errors are tagged `tool_timeout` in tracing vs `tool_failure` for regular errors (`lib/core/agent-runtime.js`)
+
+**P2 Medium:**
+- **Skill instructions hard-truncated at 2000 chars** — `content.slice(0, 2000)` in `buildSystemPrompt` cut skill content mid-sentence, losing critical instructions. New `truncateSkillContent()` function uses section-aware truncation: preserves markdown headings (`##`/`###`), keeps code blocks whole or skips them entirely, and respects `MAX_SKILL_INSTRUCTION_CHARS=8000` (4x increase). Exported for testing (`lib/core/agent-runtime.js`)
+
+---
+
 ## [2.4.1] - 2026-05-05
 
 ### Fixed — 98 Bugs (System-wide Bug Audit, 4 rounds)

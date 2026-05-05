@@ -1,6 +1,6 @@
 {
   "name": "aiyu-multi-agent",
-  "version": "2.4.2",
+  "version": "2.5.0",
   "description": "Production-grade AI Agent Platform — 83 Agents, 46 Skills, 78 Workflows, Smart Init, Plugin System, Agent Testing, Publishing",
   "bin": {
     "aiyu-multi-agent": "./bin/cli.js"
@@ -29,6 +29,7 @@
     "inquirer": "^9.2.23",
     "ora": "^5.4.1",
     "tweetsodium": "^0.0.4",
+    "ws": "^8.20.0",
     "yaml": "^2.4.1",
     "zod": "^4.4.3"
   },

@@ -77,6 +77,20 @@ aiyu-multi-agent generate mcp <type>     # MCP server generator
 │  ├── packager.js    — Bundle agent for npm            │
 │  ├── validator.js   — Pre-publish checks             │
 │  └── registry.js    — npm publish wrapper             │
+├──────────────────────────────────────────────────────┤
+│              API Layer (V2.4+)                       │
+│  lib/api/                                            │
+│  ├── server.js      — Express + routes               │
+│  ├── ws.js          — 🔥 WebSocket real-time stream  │
+│  ├── handoff.js     — 🔥 Agent handoff + intervene   │
+│  ├── jobs.js        — Async job model                │
+│  └── middleware.js  — Logging, shutdown, rate-limit│
+├──────────────────────────────────────────────────────┤
+│              Core Engine (V2.5+)                     │
+│  lib/core/                                           │
+│  ├── handoff.js     — 🔥 Bundle format (A→B)        │
+│  ├── agent-system.js— 🔥 Auto-detect project context │
+│  └── fetch.url      — 🔥 Built-in HTTP fetch tool     │
 └──────────────────────────────────────────────────────┘
 ```
 
@@ -96,7 +110,11 @@ aiyu-multi-agent/
 │   │   ├── plugin.js       # Plugin install/remove/lifecycle
 │   │   ├── runtime.js      # Agent runtime engine
 │   │   ├── guardrails.js   # Security layer
-│   │   └── logger.js       # Structured logger
+│   │   ├── logger.js       # Structured logger
+│   │   ├── agent-runtime.js# ReAct loop + chat session (V2.2)
+│   │   ├── handoff.js      # 🔥 Agent-to-agent bundle format (V2.5)
+│   │   ├── agent-system.js # 🔥 Auto-detect project context (V2.5)
+│   │   └── tool-registry.js# Namespaced tools + fetch.url (V2.5)
 │   ├── commands/
 │   │   ├── init.js         # Smart init (interactive)
 │   │   ├── add.js          # aiyu-multi-agent add skill <name>

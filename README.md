@@ -2,7 +2,7 @@
 
 > Production-grade AI Agent Platform with Smart Init, Plugin System, Agent Testing, and Publishing — 83 Agents, 46 Skills, 78 Workflows, 10 Rules
 >
-> **v2.4.2** — CI fix + 98 bugs fixed | v2.4.0 — HTTP API + Operational Readiness + MCP Server + security hardening
+> **v2.5.0** — Claude Design-inspired: WebSocket streaming, handoff bundles, fetch.url, inline intervention, agent system auto-apply + 31 bug fixes (API auth, LLM failover, crypto crash, OLLAMA_HOST, intervention wiring, env leak, redirect follow, race conditions, OTel spec) | v2.4.0 — HTTP API + MCP Server + security hardening
 
 ---
 
@@ -40,6 +40,13 @@
 - **Secret Scanning** — Detects leaked API keys on `aiyu-multi-agent publish` (blocks with `--strict`)
 - **Docker** — Multi-stage Dockerfile + docker-compose.yml with healthcheck
 - **Persistent Traces** — `--trace-dir .traces/` appends JSONL, rotates at 10MB
+
+### Claude Design-Inspired Features (V2.5)
+- **🔥 WebSocket Streaming** — `ws://localhost:3000/ws` for real-time agent step events (like Claude Design's live canvas)
+- **🔥 Agent Handoff** — `POST /handoff` chains agents: from_agent → bundle → to_agent with enriched context
+- **🔥 Inline Intervention** — `POST /agents/intervene` or WebSocket `type: "intervene"` to inject mid-run feedback
+- **🔥 `fetch.url` Tool** — Agents can fetch external HTTP(S) URLs (15s timeout, 100KB body limit)
+- **🔥 Agent System Auto-Apply** — Auto-detects language/framework/testRunner from package.json + rules, injects into system prompt
 
 ### Agent Framework
 - **80 Specialized AI Agents** — From frontend to IoT, security to mechatronics
@@ -248,7 +255,7 @@ Legacy names (`Read`, `Write`, `Edit`, `Grep`, `Glob`, `Bash`) auto-alias to nam
 - **Step Logging** — Standard shape: `{ step, thought, action, result, error, duration_ms }`
 - **Output Contract** — `outputFormat: json` enforces JSON output
 - **Deterministic Mode** — `temperature: 0` for stable test results (all providers: OpenAI, Claude, Ollama)
-- **Tool Timeout** — Default 30s per tool call
+- **Tool Timeout** — Default 30s per tool call (`Promise.race` timeout in both `runAgent` and `createChatSession`), tracing marks `tool_timeout` vs `tool_failure`
 - **LLM Retry/Backoff** — Exponential backoff (max 3 retries) for 429, 503, timeout errors
 - **Claude/Ollama Tool Use** — `callClaude` parses `tool_use` blocks; `callOllama` parses `tool_calls` response
 - **Chat ReAct Loop** — Chat sessions run full ReAct loop (respects agent's max_steps config, capped at 10), not just single follow-up
@@ -306,7 +313,7 @@ aiyu-multi-agent/
 │   ├── utils.js                 # Shared utilities
 │   ├── core/
 │   │   ├── config.js            # Config loader (.agent/ + .windsurf/ symlink)
-│   │   ├── agent-runtime.js     # 🔥 ReAct loop + tool calling (imports llm-providers, tool-registry)
+│   │   ├── agent-runtime.js     # 🔥 ReAct loop + tool calling + per-tool timeout (30s) + smart skill truncation (8KB)
 │   │   ├── tool-registry.js     # 🔥 Namespaced tools, schemas, arg validation, parseCommandArgs
 │   │   ├── llm-providers.js     # 🔥 OpenAI, Claude, Ollama, Mock + retry/backoff
 │   │   ├── tool-runner.js       # Isolated tool runner (child process)

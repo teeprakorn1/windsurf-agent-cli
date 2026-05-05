@@ -44,6 +44,98 @@ aiyu-multi-agent chat
 
 ---
 
+## 🌐 WebSocket API (V2.5)
+
+Real-time agent execution with step-by-step streaming — inspired by Claude Design's live canvas.
+
+```javascript
+// Connect to WebSocket
+const ws = new WebSocket("ws://localhost:3000/ws");
+
+// Run agent with real-time step events
+ws.send(JSON.stringify({
+  type: "run",
+  agentName: "backend-specialist",
+  input: "Create a REST API",
+  provider: "openai"
+}));
+
+// Receive events:
+// { type: "step", runId, step, thought, action, result, error, duration_ms }
+// { type: "complete", runId, status, output, usage }
+// { type: "error", runId, message }
+
+// Create chat session
+ws.send(JSON.stringify({ type: "chat.create", agentName: "frontend-specialist" }));
+// → { type: "chat.created", sessionId: "chat_xxx" }
+
+// Send message in chat
+ws.send(JSON.stringify({ type: "chat.send", sessionId: "chat_xxx", input: "Hello" }));
+// → { type: "chat.step", ... } (per step)
+// → { type: "chat.complete", sessionId, content, usage }
+
+// Intervene mid-run (inject feedback while agent is running)
+ws.send(JSON.stringify({ type: "intervene", runId: "run_xxx", message: "Use dark mode" }));
+```
+
+---
+
+## 🔄 Agent Handoff (V2.5)
+
+Chain agents together — Agent A completes, produces a handoff bundle, Agent B receives enriched context.
+
+```bash
+# Chain: frontend-specialist designs UI → backend-specialist implements API
+curl -X POST http://localhost:3000/handoff \
+  -H "Content-Type: application/json" \
+  -d '{
+    "from_agent": "frontend-specialist",
+    "to_agent": "backend-specialist",
+    "input": "Design a task dashboard"
+  }'
+```
+
+**Response:**
+```json
+{
+  "handoffId": "bundle_xxx",
+  "from": { "agent": "frontend-specialist", "status": "complete", "steps": 5 },
+  "to": { "agent": "backend-specialist", "status": "complete", "output": "..." },
+  "artifacts": 3,
+  "pendingTasks": 0
+}
+```
+
+**Retrieve bundle:**
+```bash
+curl http://localhost:3000/handoff/bundle_xxx
+```
+
+---
+
+## ✋ Inline Intervention (V2.5)
+
+Inject feedback mid-run to redirect an agent without restarting.
+
+```bash
+# Via HTTP API
+curl -X POST http://localhost:3000/agents/intervene \
+  -H "Content-Type: application/json" \
+  -d '{"run_id": "run_xxx", "message": "Use TypeScript instead of JavaScript"}'
+```
+
+```javascript
+// Via WebSocket
+ws.send(JSON.stringify({
+  type: "intervene",
+  runId: "run_xxx",
+  message: "Use TypeScript instead of JavaScript"
+}));
+// → { type: "intervene.ack", runId }
+```
+
+---
+
 ## 🔥 Execution Engine
 
 ### `aiyu-multi-agent run`
