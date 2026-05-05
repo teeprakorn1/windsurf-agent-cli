@@ -2,7 +2,7 @@
 
 > Production-grade AI Agent Platform with Smart Init, Plugin System, Agent Testing, and Publishing — 83 Agents, 46 Skills, 78 Workflows, 10 Rules
 >
-> **v2.2.4** — 14 bug fixes (security, correctness, performance)
+> **v2.3.0** — MCP Server integration + System-wide bug audit (20 fixes) + security hardening
 
 ---
 
@@ -13,6 +13,7 @@
 - **🔥 Execution Engine** — ReAct loop, tool calling, 4 LLM providers (OpenAI, Claude, Ollama, mock)
 - **🔥 `aiyu-multi-agent run`** — Execute agent with input, JSON output for CI/CD
 - **🔥 `aiyu-multi-agent chat`** — Interactive session mode, continuous context
+- **🔥 MCP Server** — `aiyu-multi-agent mcp` integrates with Claude Code, Cursor, Zed, Windsurf
 - **Plugin System** — `aiyu-multi-agent add skill X` installs from npm with permission checks
 - **Agent Testing** — `aiyu-multi-agent test` runs prompt/output assertions
 - **Publish/Install** — `aiyu-multi-agent publish` → others can `npx your-agent`
@@ -155,6 +156,59 @@ aiyu-multi-agent chat --agent backend-specialist  # Chat with specific agent
 aiyu-multi-agent chat --provider openai      # Chat with real LLM
 ```
 
+### MCP Server
+
+Integrate aiyu with any MCP-compatible host (Claude Code, Cursor, Zed, Windsurf):
+
+```bash
+aiyu-multi-agent mcp                         # Start MCP server (stdio transport)
+```
+
+**Host Configuration:**
+
+<details>
+<summary>Claude Code</summary>
+
+```json
+// claude_desktop_config.json
+{
+  "mcpServers": {
+    "aiyu": {
+      "command": "npx",
+      "args": ["-y", "aiyu-multi-agent", "mcp"],
+      "cwd": "/path/to/your/project"
+    }
+  }
+}
+```
+</details>
+
+<details>
+<summary>Cursor</summary>
+
+```json
+// .cursor/mcp.json
+{
+  "mcpServers": {
+    "aiyu": {
+      "command": "npx",
+      "args": ["-y", "aiyu-multi-agent", "mcp"]
+    }
+  }
+}
+```
+</details>
+
+**MCP Tools:**
+
+| Tool | Description |
+|------|-------------|
+| `list_agents` | Discover available agents in the project |
+| `run_agent` | Execute an agent (pass `agent_name` + `input`, optional `provider`/`model`/`max_steps`) |
+| `inspect_agent` | Get agent details — skills, tools, instructions |
+
+**Provider keys:** The MCP server reads from the same config as the CLI (`.agent/config.yaml` / `.windsurf/config.yaml`). Environment variables (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `OLLAMA_HOST`) take priority if set.
+
 **LLM Providers:**
 
 | Provider | Env Var | Models |
@@ -183,11 +237,11 @@ Legacy names (`Read`, `Write`, `Edit`, `Grep`, `Glob`, `Bash`) auto-alias to nam
 - **Arg Validation** — Required args checked before tool execution, missing args return error
 - **Step Logging** — Standard shape: `{ step, thought, action, result, error, duration_ms }`
 - **Output Contract** — `outputFormat: json` enforces JSON output
-- **Deterministic Mode** — `temperature: 0` for stable test results
+- **Deterministic Mode** — `temperature: 0` for stable test results (all providers: OpenAI, Claude, Ollama)
 - **Tool Timeout** — Default 30s per tool call
 - **LLM Retry/Backoff** — Exponential backoff (max 3 retries) for 429, 503, timeout errors
 - **Claude/Ollama Tool Use** — `callClaude` parses `tool_use` blocks; `callOllama` parses `tool_calls` response
-- **Chat ReAct Loop** — Chat sessions run full ReAct loop (max 5 steps), not just single follow-up
+- **Chat ReAct Loop** — Chat sessions run full ReAct loop (respects agent's max_steps config, capped at 10), not just single follow-up
 - **Cross-Platform Tools** — `fs.glob` and `search.grep` use Node.js native (no grep/find dependency — works on Windows)
 - **Safe Write EXDEV** — Atomic write handles cross-partition rename with copy+unlink fallback
 - **Agent Name Validation** — Rejects path traversal chars (`/ \ : * ? " < > |`)
@@ -513,4 +567,4 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, code style, and PR
 - [@FrameHandsomez](https://github.com/FrameHandsomez)
 
 ---
-*Created: 2026-04-27 | V2: 2026-05-04 | V2.1: 2026-05-04*
+*Created: 2026-04-27 | V2: 2026-05-04 | V2.1: 2026-05-04 | V2.3.0: 2026-05-05*

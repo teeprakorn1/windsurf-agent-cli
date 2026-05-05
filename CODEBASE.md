@@ -1,8 +1,10 @@
-# CODEBASE.md — Aiyu MultiAgent V2.2
+# CODEBASE.md — Aiyu MultiAgent V2.3.0
 
 ## System Overview
 
 Production-grade AI Agent Platform — Smart Init, Plugin System, Agent Testing, and Publishing.
+
+**V2.3.0** — MCP Server integration + System-wide bug audit (20 fixes) + security hardening (BLOCKED_FLAGS, sanitizeInput).
 
 **V2.2** — Production upgrade: circuit breaker, request queue, distributed tracing, health check, structured logging, Prometheus metrics, context size limits, integration tests.
 
@@ -57,6 +59,14 @@ Production-grade AI Agent Platform — Smart Init, Plugin System, Agent Testing,
 │   lib/publish/ — Publish System         │
 │   packager.js, validator.js,            │
 │   registry.js                           │
+└─────────────┬───────────────────────────┘
+              ▼
+┌─────────────────────────────────────────┐
+│   lib/mcp/ — MCP Server                 │
+│   server.js — 🔥 MCP stdio server       │
+│   tools/list-agents.js                  │
+│   tools/run-agent.js                    │
+│   tools/inspect-agent.js                │
 └─────────────────────────────────────────┘
 ```
 
@@ -104,6 +114,10 @@ Production-grade AI Agent Platform — Smart Init, Plugin System, Agent Testing,
 - `lib/test/integration/flow.test.js` — Integration tests: full agent flow with tracing, breaker, queue, health, metrics (12 tests)
 - `lib/test/` — Test framework (runner, assertions, simulator, reporter)
 - `lib/publish/` — Publish system (packager uses utils.copyRecursive, validator, registry)
+- `lib/mcp/server.js` — 🔥 MCP server (McpServer + StdioServerTransport, dynamic import for ESM-only SDK). Exposes 3 tools: list_agents, run_agent, inspect_agent
+- `lib/mcp/tools/list-agents.js` — Lists all agents in project with name + description (optional verbose: skills, tools, provider, model)
+- `lib/mcp/tools/run-agent.js` — Executes agent via agentRuntime.runAgent, returns output + steps + usage. Output truncated at 50KB
+- `lib/mcp/tools/inspect-agent.js` — Returns full agent spec (frontmatter + instructions)
 
 ### Runtime Correctness
 - **Tool Namespace**: `fs.read`, `fs.write`, `fs.edit`, `fs.glob`, `search.grep`, `shell.exec` — legacy aliases supported, namespace enforced on registration
@@ -111,12 +125,12 @@ Production-grade AI Agent Platform — Smart Init, Plugin System, Agent Testing,
 - **Arg Validation**: `TOOL_SCHEMAS` with required/optional fields, validated before execution (both runAgent and chat)
 - **Step Logging**: `{ step, thought, action, result, error, duration_ms, toolCalls }`
 - **Output Contract**: `outputFormat: json` enforces JSON output (options.outputFormat overrides agentSpec)
-- **Deterministic Mode**: `temperature: 0` for stable tests
+- **Deterministic Mode**: `temperature: 0` for stable tests (now passed to all providers: OpenAI, Claude, Ollama)
 - **Tool Timeout**: Default 30s per tool call
 - **LLM Retry**: Exponential backoff (max 3 retries) for 429, 503, timeout, ECONNRESET
 - **Claude Tool Use**: Parses `tool_use` content blocks from Anthropic API
 - **Ollama Tools**: Parses `message.tool_calls` from Ollama API
-- **Chat ReAct Loop**: Full loop (max 5 steps) with try/catch around callLLM + sliding window (MAX_CONTEXT_MESSAGES=20) + char-based context limit (MAX_CONTEXT_CHARS=200000)
+- **Chat ReAct Loop**: Full loop (max steps from agent spec, capped at 10) with try/catch around callLLM + sliding window (MAX_CONTEXT_MESSAGES=20) + char-based context limit (MAX_CONTEXT_CHARS=200000) + truncateResult on tool outputs
 - **Cross-Platform**: fs.glob/search.grep use Node.js native (no grep/find dependency)
 - **Safe Write EXDEV**: copyFileSync + unlinkSync fallback for cross-partition
 - **Rate Limits Cleanup**: Removes expired entries when Map > 100
@@ -135,14 +149,15 @@ Production-grade AI Agent Platform — Smart Init, Plugin System, Agent Testing,
 - **Step Duration**: `duration_ms` now includes LLM response time (stepStart measured before LLM call)
 
 ### Security (V2.1)
-- **Command Injection**: `shell.exec` uses `execFileSync` (no `shell: true`) + `parseCommandArgs` with escape sequences. Blocks `$()`, `` ` ``, `rm -rf`, `mkfs`, `dd if=`, `chmod 777`, `chown root`
-- **Path Traversal**: `pathTraversal(filePath, projectRoot)` — explicit root param + `path.normalize()` on both sides + `fs.realpathSync()` to resolve symlinks. Prevents bypass via double slashes, dot segments, and symlink attacks
+- **Command Injection**: `shell.exec` uses `execFileSync` (no `shell: true`) + `parseCommandArgs` with escape sequences. Blocks `$()`, `` ` ``, `rm -rf`, `mkfs`, `dd if=`, `chmod 777`, `chown root`. No `execSync` anywhere in codebase or generated templates. `BLOCKED_FLAGS` (`-e`, `--eval`, `-c`, `--command`, `-i`, `--repl`) prevent `node -e` style arbitrary code execution
+- **Path Traversal**: `pathTraversal(filePath, projectRoot)` — explicit root param + `path.normalize()` on both sides + `fs.realpathSync()` to resolve symlinks. Returns `realResolved` (canonical path). Prevents bypass via double slashes, dot segments, and symlink attacks. Also applied to `shell.exec` cwd argument
 - **Allowed Commands**: `python3, node, git, npm, npx, bun, ls, cat, echo, mkdir, cp, mv, grep, find, head, tail, wc, sort, uniq` — no curl/wget
 - **File Limits**: search.grep: maxDepth=10, maxFileSize=1MB, maxFiles=1000. fetchJSON: 1MB response limit
 - **parseFrontmatter**: Uses `YAML.parse()` only — no fallback parser that could silently produce wrong results
 - **Plugin Config**: Uses `fs.writeFileSync()` instead of `safeWrite()` for config.yaml (avoids symlink issues). init.js uses `guardrails.safeWrite()` for .windsurfrules
-- **Tool Result Truncation**: Results exceeding 100KB are truncated with `_truncated` flag
+- **Tool Result Truncation**: Results exceeding 100KB are truncated with `_truncated` flag (applied in both `runAgent` and `createChatSession`)
 - **Plugin Isolation**: `executeToolIsolated()` forks child process with restricted permission env vars
+- **Input Sanitization**: `sanitizeInput()` — 100K char limit + heuristic prompt injection detection (warning log). Applied in `runAgent()` and `createChatSession().send()`
 
 ## Connections
 
@@ -162,8 +177,11 @@ Production-grade AI Agent Platform — Smart Init, Plugin System, Agent Testing,
 - **Health → Components**: `aiyu-multi-agent health` checks config, memory, queue, breakers, LLM providers
 - **Traces → Debug**: `aiyu-multi-agent traces` views distributed traces for debugging
 - **Agent Runtime → Circuit Breaker**: `circuitBreaker.canExecute/recordSuccess/recordFailure` wraps LLM calls
-- **Agent Runtime → Tracing**: `tracing.startTrace/startSpan/endSpan/endTrace` wraps each run and step
-- **Agent Runtime → Queue**: `getDefaultQueue().enqueue` for concurrent execution control
+- **Agent Runtime → Tracing**: `tracing.startTrace/startSpan/endSpan/endTrace` wraps each run and step (FIFO cleanup, no sort)
+- **Agent Runtime → Queue**: `getDefaultQueue().enqueue` for concurrent execution control (EventEmitter-based waitFor, crypto.randomUUID job IDs)
 - **Publish → npm**: bundles .agent/ as standalone npm package (uses utils.copyRecursive)
 - **Usage → Local**: .agent/usage.json, no external telemetry
 - **Inspect → Usage**: reads usage.json for stats, tool calls, latency, error rate
+- **MCP → Agent Runtime**: `run_agent` calls `agentRuntime.runAgent` with json:true, noCache:true
+- **MCP → Config**: `list_agents`/`inspect_agent` reads `.agent/agents/` via config.getConfigDir
+- **MCP → SDK**: `@modelcontextprotocol/sdk` (ESM-only, dynamic import) + `zod` for tool schemas

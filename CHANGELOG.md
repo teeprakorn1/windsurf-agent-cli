@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.3.0] - 2026-05-05
+
+### Added — MCP Server (Issue #1)
+
+- **🔥 `aiyu-multi-agent mcp`** — Start MCP server (stdio transport) for integration with Claude Code, Cursor, Zed, Windsurf
+- **`list_agents` tool** — Discover available agents in the project
+- **`run_agent` tool** — Execute an agent with input, optional provider/model/max_steps overrides
+- **`inspect_agent` tool** — Get detailed agent metadata (skills, tools, instructions)
+- **Provider keys** — Reads from same config as CLI (`.agent/config.yaml` / `.windsurf/config.yaml`), env vars (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `OLLAMA_HOST`) take priority
+- **Dependencies** — Added `@modelcontextprotocol/sdk` + `zod`
+- **README** — Added MCP Server section with host configuration examples
+
+### Fixed — System-Wide Bug Audit (18 bugs)
+
+- **🔴 packager.js: execSync in generated bin/run.js** — Removed `execSync` import from published agent template (security regression from V2.1 migration). Also renamed temp dir prefix from `windsurf-publish-` to `aiyu-multi-agent-publish-`
+- **🔴 test.js: execSync for unit/integration tests** — Replaced `execSync(\`node "${testFile}"\`)` with `execFileSync("node", [testFile])` in all 3 test runners (unit, production, integration) — same command injection regression
+- **🔴 agent-runtime.js: chat session missing truncateResult** — Chat mode tool execution now calls `toolRegistry.truncateResult()` on results (same as `runAgent`). Previously, unbounded tool results in chat could cause OOM
+- **🔴 agent-runtime.js: inconsistent tool name resolution** — `getTool(toolCall.tool)` changed to `getTool(resolvedName)` so error messages and tool lookup use the same resolved name. Legacy aliases (e.g., "Bash" → "shell.exec") now resolve consistently
+- **🔴 health-check.js: lazy require("../../package.json")** — Moved to top-level `const PKG = require(...)` to avoid stale version after package update and potential path resolution errors
+- **🟠 cli.js: cmdList/cmdInfo always read from package dir** — `cmdList()` and `cmdInfo()` now use `config.getConfigDir(process.cwd())` with fallback to `WINDSURF_DIR`. Previously, user-created agents and workflows were invisible to `list`/`info` commands
+- **🟠 agent-runtime.js: cache key missing outputFormat/deterministic** — `_cacheKey()` now includes `outputFormat` and `deterministic` so cached results aren't served for different format/mode requests
+- **🟠 tool-registry.js: shell.exec cwd path traversal** — `shell.exec` now validates `args.cwd` with `guardrails.pathTraversal()` before passing to `sandboxExec`. Previously, `cwd: "../../etc"` could execute commands outside project root
+- **🟠 agent-runtime.js: chat session hardcoded maxChatSteps=5** — Changed to `Math.min(agentSpec.maxSteps || DEFAULT_MAX_STEPS, 10)` so chat respects agent's configured `max_steps`
+- **🟡 llm-providers.js: Claude/Ollama missing temperature** — `callClaude` and `callOllama` now pass `options.temperature` to their request bodies. Deterministic mode (`temperature: 0`) now works with all providers, not just OpenAI
+- **🟡 test/runner.js: tools parsing crash on YAML array** — `fm.tools.split(",")` throws TypeError when YAML parses tools as array. Now uses `Array.isArray(fm.tools) ? fm.tools : fm.tools.split(",").map(...)` matching the pattern used everywhere else
+- **🟡 guardrails.js: pathTraversal returns non-canonical path** — Now returns `realResolved` (symlink-resolved) instead of `resolved` to prevent symlink-based path escape after validation
+- **🟡 agent-runtime.js: random cache eviction** — Replaced random eviction with LRU (delete oldest by timestamp). Previously, random eviction could evict recently-used entries while keeping stale ones
+- **🟡 request-queue.js: waitFor uses 50ms polling** — Replaced `setInterval` polling with `EventEmitter`-based Promise resolution. Eliminates unnecessary CPU usage and up to 50ms resolution latency
+- **🟡 tracing.js: O(n log n) cleanup on every startTrace** — Replaced sort-based cleanup with FIFO iteration (Map preserves insertion order). Reduces trace creation overhead under high volume
+- **🟢 packager.js: generated README references "Windsurf IDE"** — Changed to "Aiyu MultiAgent" with `npx aiyu-multi-agent run` command instead of `windsurf .`
+- **🟢 cli.js: fetchJSON redirect SSRF** — `fetchJSON` now validates redirect URL protocol (http/https only) before following. Previously, malicious servers could redirect to `file://` or other protocols
+- **🟢 request-queue.js: job ID collision risk** — Job IDs now use `crypto.randomUUID()` instead of `Date.now() + 6-char random`. Eliminates collision risk under high throughput
+
+### Fixed — Security Hardening (2 critical)
+
+- **🔴 guardrails.js: `node -e` sandbox bypass** — Added `BLOCKED_FLAGS` (`-e`, `--eval`, `-c`, `--command`, `-i`, `--interactive`, `--repl`) to prevent arbitrary code execution via `node -e "require('child_process').execSync('rm -rf /')"`. Blocked in both `sandboxExec()` and `shell.exec` tool handler (defense-in-depth)
+- **🔴 agent-runtime.js: no input sanitization** — Added `sanitizeInput()`: 100K char length limit + heuristic prompt injection detection (logs warning, doesn't block). Applied in both `runAgent()` and `createChatSession().send()`
+
+---
+
 ## [2.2.4] - 2026-05-05
 
 ### Fixed — Bug Audit (14 bugs)

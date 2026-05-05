@@ -31,7 +31,16 @@ function fetchJSON(url, redirects = 0) {
     const client = url.startsWith("https") ? https : http;
     const req = client.get(url, { timeout: 5000 }, (res) => {
       if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-        return fetchJSON(res.headers.location, redirects + 1).then(resolve, reject);
+        const redirectUrl = res.headers.location;
+        try {
+          const u = new URL(redirectUrl);
+          if (!["http:", "https:"].includes(u.protocol)) {
+            return reject(new Error(`Redirect to non-HTTP protocol blocked: ${u.protocol}`));
+          }
+        } catch {
+          return reject(new Error(`Invalid redirect URL: ${redirectUrl}`));
+        }
+        return fetchJSON(redirectUrl, redirects + 1).then(resolve, reject);
       }
       let data = "";
       res.on("data", chunk => {
@@ -152,7 +161,8 @@ function cmdStatus() {
 
 function cmdList() {
   console.log("📋 Available Commands:\n");
-  const workflowsDir = path.join(WINDSURF_DIR, "workflows");
+  const cfgDir = config.getConfigDir(process.cwd()) || WINDSURF_DIR;
+  const workflowsDir = path.join(cfgDir, "workflows");
   if (!fs.existsSync(workflowsDir)) {
     console.log("  No workflows found.");
     return;
@@ -176,7 +186,8 @@ function cmdList() {
 }
 
 function cmdInfo(agentName) {
-  const agentsDir = path.join(WINDSURF_DIR, "agents");
+  const cfgDir = config.getConfigDir(process.cwd()) || WINDSURF_DIR;
+  const agentsDir = path.join(cfgDir, "agents");
   const filePath = path.join(agentsDir, `${agentName}.md`);
   if (!fs.existsSync(filePath)) {
     const files = fs.readdirSync(agentsDir).filter(f => f.endsWith(".md"));
@@ -249,7 +260,7 @@ function cmdUninstall() {
     }
   });
   console.log(chalk.green("Done! Config directories removed.\n"));
-  console.log("Note: .gitignore entries were left intact. Remove '# Aiyu MultiAgent' and '.windsurf' manually if desired.\n");
+  console.log("Note: .gitignore entries and .windsurfrules were left intact. Remove '# Aiyu MultiAgent' and '.windsurf' from .gitignore, and delete .windsurfrules manually if desired.\n");
 }
 
 // ── CLI Program ──────────────────────────────────────────────────────
@@ -519,6 +530,19 @@ program
   .description("[experimental] Generate MCP server / config")
   .action((type, subtype) => {
     console.log(chalk.yellow(`\n  ⚠️ "aiyu-multi-agent generate ${type} ${subtype || ""}" is experimental and not yet implemented\n`));
+  });
+
+program
+  .command("mcp")
+  .description("Start MCP server (stdio) — integrates with Claude Code, Cursor, Zed, Windsurf")
+  .action(async () => {
+    const { startServer } = require("../lib/mcp/server");
+    try {
+      await startServer(process.cwd());
+    } catch (err) {
+      logger.error(`MCP server failed: ${err.message}`);
+      process.exitCode = 1;
+    }
   });
 
 program.parseAsync().catch((err) => {
