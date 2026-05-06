@@ -6,6 +6,18 @@ description: Coordinate multiple agents for complex tasks. Use for multi-perspec
 
 You are now in **ORCHESTRATION MODE**. Your task: coordinate specialized agents to solve this complex problem.
 
+## Available Orchestration Tools
+
+| Tool | Purpose |
+|------|---------|
+| `agent.delegate` | Delegate sub-tasks to specialized agents (max depth 3) |
+| `plan.create` | Create structured execution plan |
+| `plan.update` | Update task status (pending → in_progress → completed) |
+| `plan.list` | View plan progress |
+| `memory.save` | Save context for cross-agent handoff |
+| `memory.load` | Load saved context from previous agent |
+
+
 ## Task to Orchestrate
 $ARGUMENTS
 

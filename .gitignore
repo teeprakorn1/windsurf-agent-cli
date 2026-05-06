@@ -46,3 +46,5 @@ service-account.json
 # Aiyu MultiAgent
 ROADMAP-PRODUCTION.md
 .npmrc
+.agent/memory/
+.agent/plans/

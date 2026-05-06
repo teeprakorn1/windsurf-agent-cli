@@ -268,8 +268,74 @@ program
 program
   .command("dev")
   .description("[experimental] Dev mode — live reload, debug reasoning, log tool calls")
-  .action(() => {
-    console.log(chalk.yellow('\n  ⚠️ "aiyu-multi-agent dev" is experimental and not yet implemented\n'));
+  .option("-a, --agent <name>", "Agent to run in dev mode")
+  .option("-v, --verbose", "Verbose: log every tool call + LLM response")
+  .option("--trace", "Enable persistent trace output to .agent/traces/")
+  .action(async (options) => {
+    const agentRuntime = require("../lib/core/agent-runtime");
+    const tracing = require("../lib/core/tracing");
+
+    if (options.trace) {
+      const config = require("../lib/core/config");
+      const cfgDir = config.getConfigDir(process.cwd());
+      if (cfgDir) tracing.enablePersistentTraces(require("path").join(cfgDir, "traces"));
+    }
+
+    console.log(chalk.cyan("\n🔧 Aiyu Dev Mode"));
+    console.log(chalk.gray("  Type input to run agent. Type 'exit' to quit.\n"));
+
+    const agentName = options.agent || "default";
+    const verbose = options.verbose || false;
+
+    // Simple REPL loop
+    const readline = require("readline");
+    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+
+    const prompt = () => {
+      rl.question(chalk.green(`[${agentName}] > `), async (input) => {
+        if (!input || input.trim() === "exit" || input.trim() === "quit") {
+          console.log(chalk.gray("  Exiting dev mode..."));
+          rl.close();
+          return;
+        }
+        try {
+          const startTime = Date.now();
+          const result = await agentRuntime.runAgent({
+            input: input.trim(),
+            agentName,
+            projectDir: process.cwd(),
+            provider: "mock",
+            noCache: true,
+            onStep: verbose ? (step, state) => {
+              console.log(chalk.blue(`  Step ${step.step}: ${step.thought?.slice(0, 120)}${step.thought?.length > 120 ? "..." : ""}`));
+              if (step.toolCalls.length > 0) {
+                for (const tc of step.toolCalls) {
+                  if (tc.error) {
+                    console.log(chalk.red(`    ❌ ${tc.tool}: ${tc.error}`));
+                  } else {
+                    console.log(chalk.green(`    ✅ ${tc.tool} (${tc.duration_ms}ms)`));
+                  }
+                }
+              }
+            } : undefined,
+          });
+          const elapsed = Date.now() - startTime;
+          const statusIcon = result.status === "complete" ? chalk.green("✓") : chalk.red("✗");
+          console.log(`\n  ${statusIcon} ${result.status} (${elapsed}ms, ${result.steps.length} steps)`);
+          if (result.output) {
+            console.log(chalk.white(`  ${result.output.slice(0, 500)}${result.output.length > 500 ? "..." : ""}`));
+          }
+          if (result.error) {
+            console.log(chalk.red(`  Error: ${result.error}`));
+          }
+          console.log("");
+        } catch (err) {
+          console.log(chalk.red(`  Error: ${err.message}\n`));
+        }
+        prompt();
+      });
+    };
+    prompt();
   });
 
 program

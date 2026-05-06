@@ -80,15 +80,38 @@ TOOL_CALL: Bash({"command": "npm test"})
 
 ## Built-in Tools
 
-| Tool | Args | Description |
-|------|------|-------------|
-| `Read` | `path` | Read file contents |
-| `Write` | `path`, `content` | Write file (atomic) |
-| `Edit` | `path`, `old_string`, `new_string` | Find & replace in file (enforces unique old_string) |
-| `Grep` | `pattern`, `path` | Search file contents (async walk, 50-file event-loop yield) |
-| `Glob` | `pattern`, `path` | Find files by name (supports `[...]` character classes) |
-| `Bash` | `command`, `timeout` | Execute allowed commands (bare name only, no path prefixes) |
-| `fetch.url` | `url`, `method?`, `headers?`, `body?`, `timeout?` | Fetch HTTP(S) URLs (15s timeout, 100KB body limit) |
+| Tool (Legacy) | Tool (Namespaced) | Args | Description |
+|---------------|-------------------|------|-------------|
+| `Read` | `fs.read` | `path`, `offset?`, `limit?` | Read file contents (1MB limit, line range support) |
+| `Write` | `fs.write` | `path`, `content` | Write file (atomic, safe-write) |
+| `Edit` | `fs.edit` | `path`, `old_string`, `new_string` | Find & replace (enforces unique old_string) |
+| `Grep` | `search.grep` | `pattern`, `path` | Search file contents (async walk, ReDoS-safe, 50-file yield) |
+| `Glob` | `fs.glob` | `pattern`, `path` | Find files by name (`[...]` classes, `{a,b}` braces) |
+| `Bash` | `shell.exec` | `command`, `timeout?`, `cwd?` | Execute allowed commands (bare name only, no path prefixes) |
+| — | `fetch.url` | `url`, `method?`, `headers?`, `body?`, `timeout?` | Fetch HTTP(S) URLs (15s timeout, 1MB body limit, 3 redirects) |
+
+> **V2.6 Note:** Legacy names (`Read`, `Bash`, etc.) are auto-resolved via `LEGACY_ALIAS`. New code should use namespaced names.
+
+---
+
+## V2.6 Module Map
+
+> The monolithic `agent-runtime.js` and `tool-registry.js` have been decomposed into focused modules. Both original files remain as thin re-exports for backward compatibility.
+
+| Module | Responsibility |
+|--------|---------------|
+| `react-loop.js` | ReAct loop execution (`runAgent`) |
+| `chat-session.js` | Interactive chat (`createChatSession`) |
+| `failover.js` | Per-provider circuit breaker + failover chain |
+| `cache.js` | LRU cache with TTL + deep-copy-on-read |
+| `agent-loader.js` | Load agent specs + skill instructions |
+| `prompt-builder.js` | Build system prompts + skill truncation |
+| `input-sanitizer.js` | Input validation + prompt injection detection |
+| `tool-parser.js` | Parse tool calls from LLM responses (4 strategies) |
+| `tool-definitions.js` | Builtin tools, schemas, registry, truncation |
+| `search-tools.js` | `search.grep` + `fs.glob` implementations |
+| `command-parser.js` | Shell arg parsing + ReDoS-safe regex |
+| `types.d.ts` | TypeScript declarations for 12 core modules |
 
 ### Allowed Bash Commands
 

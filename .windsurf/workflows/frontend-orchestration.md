@@ -9,6 +9,18 @@ $ARGUMENTS
 ---
 
 
+## Available Orchestration Tools
+
+| Tool | Purpose |
+|------|---------|
+| `agent.delegate` | Delegate sub-tasks to specialized agents (max depth 3) |
+| `plan.create` | Create structured execution plan |
+| `plan.update` | Update task status (pending → in_progress → completed) |
+| `plan.list` | View plan progress |
+| `memory.save` | Save context for cross-agent handoff |
+| `memory.load` | Load saved context from previous agent |
+
+
 ## 🤖 Agent Activation
 
 > **MANDATORY:** Before starting any work, announce the active agent to the user.

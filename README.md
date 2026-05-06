@@ -44,12 +44,13 @@
 
 **Aiyu MultiAgent** is an open-source AI agent platform that helps developers automate software engineering tasks using large language models (LLMs). It features a **ReAct execution engine**, **MCP server integration** for Claude Code / Cursor / Windsurf, **WebSocket real-time streaming**, **agent handoff orchestration**, and a **plugin system** for extensible AI capabilities. Supports OpenAI GPT-4, Anthropic Claude, Ollama local models, and mock mode for testing.
 
-> **Latest Release: v2.5.1** — System audit bug fixes: per-provider circuit breaker keys, rate limit hard cap + X-Forwarded-For spoofing fix, search.grep lastIndex fix, chat session failover + TTL, handoff bundle persistence + project-scoped path, cache freeze-on-fallback + truncation optimization, `PENDING_INTERVENTIONS` export fix, LLM retry off-by-one fix, queue event order fix, Ollama https support, usage flush on exit, tracing p95 fix, CORS config. Plus 25 bug fixes and 4 pre-existing test fixes for production stability.
+> **Latest Release: v2.6.0** — Module decomposition + production hardening + Karpathy Behavioral Principles (84 agents): `agent-runtime.js` (843 → 8 focused modules), `tool-registry.js` (543 → 3 modules), tracing async write queue, MCP `run_agent` timeout + maxSteps cap, usage flush fix, Docker non-root user, `aiyu-multi-agent dev` command, TypeScript declarations, Karpathy principles (4 behavioral rules in system prompt + runtime guardrails + skill self-checks + all 84 agent files). All changes backward compatible.
 
 ---
 
 ## 📑 Table of Contents
 
+- [What's New in V2.6](#-whats-new-in-v26)
 - [What's New in V2.5](#-whats-new-in-v25)
 - [Quick Start](#-quick-start)
 - [Why Aiyu MultiAgent?](#-why-aiyu-multiagent)
@@ -63,6 +64,44 @@
 - [Plugin System](#-plugin-system)
 - [Contributing](#-contributing)
 - [License](#license)
+
+---
+
+## ✨ What's New in V2.6
+
+V2.6 brings **module decomposition** and **production hardening** — breaking the two largest god modules into focused, maintainable files while preserving full backward compatibility.
+
+| Area | Change | Impact |
+|------|--------|--------|
+| 🏗️ Decomposition | `agent-runtime.js` (843 lines) → 8 modules | Maintainability ⬆️ |
+| 🏗️ Decomposition | `tool-registry.js` (543 lines) → 3 modules | Maintainability ⬆️ |
+| 🔧 Production | Tracing `appendFileSync` → async batched queue | No event loop blocking |
+| 🔧 Production | MCP `run_agent` 2min timeout + maxSteps cap 20 | Prevents runaway agents |
+| 🔧 Production | Usage flush `beforeExit` + sync fallback | No data loss on exit |
+| 🐳 Docker | Non-root user + expanded `.dockerignore` | Security ⬆️ |
+| 🛠️ CLI | `aiyu-multi-agent dev` REPL with verbose logging | Dev experience ⬆️ |
+| 📦 Types | `types.d.ts` for 12 core modules | TS migration foundation |
+| 🧠 Karpathy | Behavioral principles in system prompt + runtime guardrails | LLM coding quality ⬆️ |
+| 🤖 Agent Audit | 84/84 clean-code, 84/84 Interaction Maps, frontend decomposed | Agent consistency ⬆️ |
+| 🛠️ 7 New Tools | agent.delegate, memory.save/load, web.search, plan.create/update/list | Agent capability ⬆️ |
+| 📋 Frontmatter Audit | 84/84 When to Activate, 84/84 Philosophy, 84/84 memory field | Agent completeness ⬆️ |
+
+### Decomposed Modules
+
+```
+agent-runtime.js (re-export) ──► react-loop.js    — ReAct loop
+                               ► chat-session.js — Interactive chat
+                               ► failover.js     — Per-provider CB
+                               ► cache.js        — LRU cache
+                               ► agent-loader.js — Agent spec loading
+                               ► prompt-builder.js — System prompt
+                               ► input-sanitizer.js — Input validation
+                               ► tool-parser.js — Tool call parsing
+
+tool-registry.js (re-export) ──► tool-definitions.js — Tools + schemas
+                               ► search-tools.js   — Grep + Glob
+                               ► command-parser.js — Shell arg parse
+```
 
 ---
 

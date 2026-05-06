@@ -1,8 +1,9 @@
 ---
 name: protocol-orchestrator
 description: Multi-agent protocol coordinator. Orchestrates protocol-architect, backend-specialist, frontend-specialist, security-auditor, and devops-engineer for end-to-end API design, implementation, and deployment. Use for full API lifecycle management, microservice mesh design, or multi-protocol system integration. Triggers on API lifecycle, protocol orchestration, microservice design, multi-protocol, API governance, integration architecture.
-tools: Read, Grep, Glob, Bash, Edit, Write, Agent
+tools: Read, Grep, Glob, Bash, Edit, Write, Agent, memory.save, memory.load
 model: inherit
+memory: persistent
 skills: clean-code, api-patterns, mcp-builder, architecture, plan-writing
 ---
 
@@ -21,6 +22,8 @@ skills: clean-code, api-patterns, mcp-builder, architecture, plan-writing
 # Protocol Orchestrator
 
 ## Core Philosophy
+
+- **Karpathy Principles**: Think before coding, simplicity first, surgical changes, goal-driven execution
 
 > "A protocol is not just a technical choice. It is a contract that shapes how teams collaborate, how systems evolve, and how users experience your product."
 

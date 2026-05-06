@@ -91,6 +91,22 @@ aiyu-multi-agent generate mcp <type>     # MCP server generator
 │  ├── handoff.js     — 🔥 Bundle format (A→B)        │
 │  ├── agent-system.js— 🔥 Auto-detect project context │
 │  └── fetch.url      — 🔥 Built-in HTTP fetch tool     │
+├──────────────────────────────────────────────────────┤
+│         Decomposed Modules (V2.6+)                   │
+│  agent-runtime.js  — Re-export (backward compat)     │
+│  react-loop.js     — 🔥 ReAct loop execution         │
+│  chat-session.js   — 🔥 Interactive chat             │
+│  failover.js       — 🔥 Per-provider CB + failover   │
+│  cache.js          — 🔥 LRU cache                     │
+│  agent-loader.js   — 🔥 Agent spec + skill loading    │
+│  prompt-builder.js — 🔥 System prompt construction   │
+│  input-sanitizer.js— 🔥 Input validation              │
+│  tool-parser.js    — 🔥 Tool call parsing             │
+│  tool-registry.js  — Re-export (backward compat)     │
+│  tool-definitions.js—🔥 Tools + schemas + registry    │
+│  search-tools.js   — 🔥 Grep + Glob                  │
+│  command-parser.js — 🔥 Shell arg parse + safe regex  │
+│  types.d.ts        — TypeScript declarations         │
 └──────────────────────────────────────────────────────┘
 ```
 
@@ -111,10 +127,22 @@ aiyu-multi-agent/
 │   │   ├── runtime.js      # Agent runtime engine
 │   │   ├── guardrails.js   # Security layer
 │   │   ├── logger.js       # Structured logger
-│   │   ├── agent-runtime.js# ReAct loop + chat session (V2.2)
+│   │   ├── agent-runtime.js# Re-export (V2.6 decomposition)
+│   │   ├── react-loop.js   # 🔥 ReAct loop execution (V2.6)
+│   │   ├── chat-session.js # 🔥 Interactive chat session (V2.6)
+│   │   ├── failover.js     # 🔥 Per-provider CB + failover (V2.6)
+│   │   ├── cache.js        # 🔥 LRU cache (V2.6)
+│   │   ├── agent-loader.js # 🔥 Agent spec + skill loading (V2.6)
+│   │   ├── prompt-builder.js#🔥 System prompt builder (V2.6)
+│   │   ├── input-sanitizer.js#🔥 Input validation (V2.6)
+│   │   ├── tool-parser.js  # 🔥 Tool call parsing (V2.6)
+│   │   ├── tool-registry.js# Re-export (V2.6 decomposition)
+│   │   ├── tool-definitions.js#🔥 Tools + schemas + registry (V2.6)
+│   │   ├── search-tools.js # 🔥 Grep + Glob (V2.6)
+│   │   ├── command-parser.js#🔥 Shell arg parse + safe regex (V2.6)
+│   │   ├── types.d.ts      # TypeScript declarations (V2.6)
 │   │   ├── handoff.js      # 🔥 Agent-to-agent bundle format (V2.5)
 │   │   ├── agent-system.js # 🔥 Auto-detect project context (V2.5)
-│   │   └── tool-registry.js# Namespaced tools + fetch.url (V2.5)
 │   ├── commands/
 │   │   ├── init.js         # Smart init (interactive)
 │   │   ├── add.js          # aiyu-multi-agent add skill <name>

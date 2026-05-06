@@ -7,6 +7,90 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.6.0] - 2026-05-06
+
+### Changed — Module Decomposition + Production Hardening
+
+**Module Decomposition (Backward Compatible):**
+- **`agent-runtime.js` decomposed** (843 → 69 lines + 8 focused modules) — `react-loop.js` (ReAct loop), `chat-session.js` (interactive chat), `failover.js` (per-provider circuit breaker + failover chain), `cache.js` (LRU cache), `agent-loader.js` (agent spec + skill loading), `prompt-builder.js` (system prompt construction), `input-sanitizer.js` (input validation + prompt injection detection), `tool-parser.js` (tool call parsing from LLM responses). `agent-runtime.js` is now a thin re-export for backward compatibility.
+- **`tool-registry.js` decomposed** (543 → 3 modules) — `tool-definitions.js` (builtin tools, schemas, registry, truncation), `search-tools.js` (search.grep + fs.glob), `command-parser.js` (shell arg parsing + ReDoS-safe regex). `tool-registry.js` is now a thin re-export for backward compatibility.
+
+**Production Fixes:**
+- **Tracing async write queue** — `_appendTraceToFile()` replaced `fs.appendFileSync` (sync, blocks event loop) with async batched write queue (`fs.promises.appendFile`). Traces are buffered and flushed in batches, preventing event loop stalls under high trace volume.
+- **MCP `run_agent` timeout + maxSteps cap** — Added 2-minute timeout and maxSteps cap of 20 for MCP tool calls. Prevents runaway agent execution from blocking MCP clients. Returns `isError: true` on timeout.
+- **Usage flush fix** — `process.on("exit", _flushBuffer)` (sync-only, no async) replaced with `process.on("beforeExit")` (allows async) + `_syncFlushBuffer` fallback on forced exit. Prevents data loss on graceful and forced termination.
+- **Docker healthcheck fix** — `docker-compose.yml` healthcheck changed from `http.get` to `http.request` with explicit 3s timeout, preventing indefinite hang on unresponsive server.
+
+### Added
+
+- **`aiyu-multi-agent dev` command** — REPL-based dev mode with `--agent`, `--verbose` (per-step tool call logging), and `--trace` (persistent trace output). Runs agent with `noCache: true` and mock provider by default.
+- **TypeScript declarations** — `lib/core/types.d.ts` with type definitions for 12 core modules (agent-runtime, circuit-breaker, tracing, guardrails, request-queue, health-check, config, cache, failover, tool-registry, llm-providers, usage).
+- **Docker non-root user** — Dockerfile now creates `aiyu` user/group, `chown -R aiyu:aiyu /app`, runs as `USER aiyu`. Includes inline `HEALTHCHECK` directive.
+- **Expanded `.dockerignore`** — 8 → 25 entries, excluding `.agent/`, `.windsurf/`, `.env.*`, `*.pem`, `coverage/`, `docs/`, `test/`, etc.
+- **Karpathy Behavioral Principles** — Integrated Andrej Karpathy's 4 LLM coding principles into the platform: (1) **THINK FIRST** — state assumptions explicitly, ask when uncertain; (2) **SIMPLICITY** — minimum code that solves the problem, no speculative features; (3) **SURGICAL** — touch only what you must, every changed line traces to user request; (4) **GOAL-DRIVEN** — define success criteria before implementing, write tests first. Applied across 10 locations: `prompt-builder.js` (system prompt behavioral rules), `react-loop.js` (large-change guardrail for fs.write/fs.edit), `clean-code/SKILL.md` (senior engineer + surgical self-checks), `plan-writing/SKILL.md` (Goal-Driven Verification principle), `GEMINI.md` (tradeoff note for trivial tasks), `init.js` (default agent template), **all 84 agent `.md` files** (Karpathy reference line in Philosophy/Mindset section).
+- **Agent System Quality Audit** — Comprehensive audit and fix of all 84 agent definitions: (1) Added `clean-code` skill to `incident-responder` and `threat-modeler` (now 84/84 have it); (2) Fixed `cli.md` tools from legacy names (`fs.read`, `search.grep`) to standard (`Read`, `Grep`, `Glob`, `Bash`, `Edit`, `Write`); (3) Added Interaction Maps to 35 agents missing them (now 84/84 have them); (4) Extracted `frontend-specialist.md` design process (26KB → 11KB) into new `frontend-design-process` skill; (5) Added Philosophy + Mindset to `cli.md`; (6) Removed non-existent `ViewCodeItem`, `FindByName` tools from `explorer-agent.md`.
+- **7 New Tools** — Expanded tool registry from 7 → 14 tools: (1) `agent.delegate` — Delegate tasks to other agents with max depth 3, 60s timeout, self-delegation prevention; (2) `memory.save` / `memory.load` — File-based agent memory (`.agent/memory/<agent>/<key>.json`), keyed by agent name; (3) `web.search` — Multi-provider web search (SearXNG self-hosted, Serper Google API, Tavily AI-optimized), configurable via `config.yaml` `webSearch.provider` + `webSearch.apiKey`; (4) `plan.create` / `plan.update` / `plan.list` — Structured task planning with status tracking (pending/in_progress/completed/blocked/skipped), stored in `.agent/plans/`. Added `Agent` → `agent.delegate` legacy alias. Updated `prompt-builder.js` to list all 14 tools in system prompt.
+- **Agent Frontmatter Audit** — Comprehensive upgrade of all 84 agent `.md` frontmatter: (1) Added `When to Activate` section to 75 agents (now 84/84 have it); (2) Added `Core Philosophy` to 3 agents missing it — `explorer-agent`, `orchestrator`, `project-planner` (now 84/84); (3) Added `memory` field to all 84 agents — 73 `session` + 11 `persistent` (orchestrators/planner/explorer); (4) Added new tools to frontmatter — `memory.save`/`memory.load` (84/84), `web.search` (17 researchers), `plan.create`/`update`/`list` (15 planners); (5) Added `Available Orchestration Tools` table to 9 orchestration workflows.
+
+### Fixed — Bug Audit 2026-05-06 Round 1 (2 Critical + 5 High + 4 Medium)
+
+**P0 Critical:**
+- **LLM retry off-by-one (maxRetries+1 attempts)** — `callLLM()` retry loop used `attempt < maxRetries` as the retry condition on the last attempt, causing an extra loop iteration before throwing. Changed to `isLastAttempt = attempt >= maxRetries - 1` for exactly `MAX_RETRIES` total attempts (`lib/core/llm-providers.js`)
+- **fetch.url SSRF vulnerability** — No protection against fetching internal/private IPs. Added DNS resolution + private IP block (RFC1918, loopback, link-local, unique-local IPv6). Blocks `127.x`, `10.x`, `172.16-31.x`, `192.168.x`, `169.254.x`, `::1`, `fe80:`, `fd/fc` before HTTP request. Also checks redirect targets (`lib/core/tool-definitions.js`)
+
+**P1 High:**
+- **Chat session maxSteps hard-capped at 10** — `createChatSession` used `Math.min(..., 10)` instead of `MAX_ALLOWED_STEPS` (50), causing chat to hit step limit before `runAgent`. Now consistent with ReAct loop (`lib/core/chat-session.js`)
+- **WebSocket intervention 1-step delay** — `onStep` callback checked `PENDING_INTERVENTIONS` AFTER the step completed, injecting intervention into the next step instead of the current one. Clarified architecture: react-loop.js checks `state._intervention` BEFORE each LLM call; ws.js only syncs pending → state without duplicate timing logic (`lib/api/ws.js`, `lib/core/react-loop.js`)
+- **handoff.js unsafe write bypasses guardrails** — `saveBundlesToDisk()` used `fs.writeFileSync` directly, missing atomic write, path traversal protection, and EXDEV fallback. Changed to `guardrails.safeWrite()` (`lib/api/handoff.js`)
+- **Ollama always included in failover chain** — `buildFailoverChain()` included `"local"` even when Ollama wasn't running, causing 120s timeout waste on every failover attempt. Added `_isOllamaLikelyAvailable()` with `markOllamaOk()` called on successful Ollama responses. Circular dependency (failover ↔ llm-providers) resolved by keeping `markOllamaOk` in `failover.js` only (`lib/core/failover.js`, `lib/core/llm-providers.js`)
+- **fs.glob literal bracket false match** — `[` and `]` in filenames (e.g. `file[1].txt`) were treated as glob character classes, producing incorrect regex patterns. Added support for `[[]` (literal `[`) and `[]]` (literal `]`) escape sequences in glob-to-regex fallback (`lib/core/search-tools.js`)
+
+**P2 Medium:**
+- **Context trim breaks tool call/result pairs** — `messages.slice(-10)` could drop a `user` tool-result message while keeping the `assistant` tool-call message, confusing the LLM. Replaced with content-based trimming: first trims individual message contents proportionally, then drops oldest non-system messages only if still over limit (`lib/core/react-loop.js`)
+- **tcRegex lastIndex state pollution** — `TOOL_CALL:` regex with `/g` flag could retain stale `lastIndex` from previous parse if `exec()` threw. Added explicit `tcRegex.lastIndex = 0` reset before each parse (`lib/core/tool-parser.js`)
+- **WebSocket no input length validation** — `handleRun` and `handleChatSend` accepted arbitrarily large inputs, causing memory pressure before `sanitizeInput` could reject. Added `MAX_INPUT_LENGTH` check at WS layer, returning error to client immediately (`lib/api/ws.js`)
+- **plugin.js execFileSync lacks security comment** — `npm install` used `execFileSync` directly (bypassing `sandboxExec` guardrails), but this is safe because `execFileSync` does NOT invoke a shell. Added explicit comment explaining why this is intentional and secure (`lib/core/plugin.js`)
+
+### Fixed — Bug Audit 2026-05-06 Round 2 (3 Critical + 3 High + 2 Medium)
+
+**P0 Critical:**
+- **Ollama HTTPS regression** — `callOllama()` always used `http.request` even when `OLLAMA_HOST` was `https://`, causing 100% connection failure for HTTPS Ollama endpoints. V2.5.1 fixed this in health-check.js but the fix was lost during V2.6.0 module decomposition. Now selects `http` or `https` transport based on `ollamaUrl.protocol` (`lib/core/llm-providers.js`)
+- **Test runner infinite recursion** — `npm test` script was `python3 test_runner.py .` which internally ran `npm test`, creating an infinite loop that never executed any actual tests. Changed to `node lib/test/unit/core.test.js && node lib/test/unit/production.test.js && node lib/test/integration/flow.test.js` for direct execution. Added `test:unit` and `test:integration` scripts (`package.json`)
+- **Lint runner timeout** — `npm run lint` script was `python3 lint_runner.py .` which internally ran `npm run lint`, causing a 120s timeout since no actual lint script existed. Changed to `node --check` for syntax validation of all JS files (`package.json`)
+
+**P1 High:**
+- **WebSocket intervene bypasses length limit** — `handleIntervene` accepted arbitrarily large messages while the HTTP `/agents/intervene` endpoint enforced a 10K char limit. Added `MAX_INTERVENTION_LENGTH=10000` check in WS handler to match HTTP limit, preventing memory pressure via WebSocket (`lib/api/ws.js`)
+- **`max_steps` falsy coercion** — `max_steps || undefined` in handoff routes coerced `max_steps=0` to `undefined`, preventing intentional step disabling via API. Changed to `max_steps != null ? max_steps : undefined` to preserve `0` as a valid value (`lib/api/handoff.js`)
+- **Chat session missing maxSteps override** — `createChatSession` did not accept `maxSteps` from options, ignoring caller overrides unlike `runAgent`. Added `maxSteps: overrideMaxSteps` to options destructuring and used `overrideMaxSteps ?? agentSpec.maxSteps ?? DEFAULT_MAX_STEPS` for resolution (`lib/core/chat-session.js`)
+
+**P2 Medium:**
+- **`/metrics` exposed without auth** — Prometheus metrics endpoint required no authentication, leaking usage data and internal counters. Added `apiKeyAuth` middleware to `/metrics` route, consistent with other sensitive endpoints (`lib/api/server.js`)
+- **No security headers** — Express app set no security headers (CSP, HSTS, X-Frame-Options, etc.), leaving it vulnerable to clickjacking, MIME sniffing, and XSS injection. Added `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `X-XSS-Protection: 1; mode=block`, `Referrer-Policy: strict-origin-when-cross-origin`, and `Strict-Transport-Security` (HTTPS only) as global middleware (`lib/api/server.js`)
+
+### Fixed — API Production Hardening (3 Critical + 3 High + 2 Medium)
+
+**P0 Critical:**
+- **WebSocket no maxPayload limit** — `WebSocketServer` accepted arbitrarily large messages, enabling memory exhaustion attacks before `MAX_INPUT_LENGTH` check could reject. Added `maxPayload: 1MB` + `perMessageDeflate: false` (zip bomb prevention) to WebSocketServer options (`lib/api/ws.js`)
+- **WebSocket no heartbeat — connection leak** — Dead connections (client crash, network partition) were never detected, causing `chatSessions` and `PENDING_INTERVENTIONS` to leak indefinitely. Added ping/pong heartbeat every 30s: server marks `ws.isAlive = false` before ping, `pong` handler resets it, stale connections are `terminate()`d (`lib/api/ws.js`)
+- **WebSocket `handleRun` no timeout** — Agent runs via WebSocket had no timeout (unlike MCP's 2-minute cap), allowing a stuck agent to block the WS connection indefinitely. Added `Promise.race` with 5-minute timeout for both `handleRun` and `handleChatSend`, consistent with `JOB_TIMEOUT_MS` default (`lib/api/ws.js`)
+
+**P1 High:**
+- **`/traces` + `/metrics` exposed without auth boundary** — When `AIYU_API_KEY` was not set, `/traces` and `/metrics` were accessible from any network, leaking tool outputs, system prompts, and internal counters. Added `sensitiveRouteAuth` middleware: requires API key if configured, otherwise restricts to localhost (loopback) only. Prevents data exposure on untrusted networks (`lib/api/server.js`)
+- **Rate limit error matching by string** — `rate-limit.js` matched rate limit errors via `err.message.includes("Rate limit")`, which would break if `guardrails.rateLimit` error message changed. Added `err.code = "RATE_LIMITED"` to guardrails error and changed rate-limit.js to match by `err.code`. Also added `Retry-After` header on 429 responses and `X-RateLimit-Limit` + `X-RateLimit-Window` headers on all responses for proper client backoff (`lib/core/guardrails.js`, `lib/api/rate-limit.js`)
+- **Shutdown doesn't terminate WebSocket connections** — `gracefulShutdown()` closed the HTTP server but left WS connections open, preventing clean shutdown until clients disconnected naturally. Added `terminateAllConnections()` call in shutdown that terminates all active WS clients + clears heartbeat timer (`lib/api/ws.js`, `lib/api/shutdown.js`)
+
+**P2 Medium:**
+- **No request ID propagation** — No `X-Request-Id` header was generated or propagated, making it impossible to trace a request across API → Queue → LLM → Tool → Response. Added `requestIdMiddleware` that reads `X-Request-Id` from client or generates UUID, sets it on `req.id` and response header. Enhanced `requestLogger` to include request/response sizes and request ID (`lib/api/middleware.js`, `lib/api/server.js`)
+- **`/jobs/:id` returns unbounded result** — `GET /jobs/:id` returned the full agent output without truncation, potentially exposing MB-sized tool outputs through the API. Added 10KB truncation with `_truncated` flag, consistent with tool result truncation pattern (`lib/api/jobs.js`)
+
+### Added — API Production Hardening
+
+- **LLM keep-alive agents** — `httpsAgent` and `httpAgent` with `keepAlive: true`, `maxSockets: 10` for OpenAI, Claude, and Ollama HTTP requests. Reuses TCP connections across LLM calls, reducing latency and preventing socket exhaustion under high concurrency (`lib/core/llm-providers.js`)
+- **CORS preflight cache** — `maxAge: 86400` (24h) on CORS configuration, reducing preflight request overhead (`lib/api/server.js`)
+- **WS `ws.on("error")` handler** — Uncaught WebSocket errors would crash the process. Added error handler that logs and prevents unhandled exception propagation (`lib/api/ws.js`)
+
+---
+
 ## [2.5.1] - 2026-05-06
 
 ### Fixed — 25 Bugs + 4 Pre-existing Test Fixes (6 Critical + 7 High + 12 Medium)
