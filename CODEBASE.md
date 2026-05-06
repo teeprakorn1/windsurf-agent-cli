@@ -1,4 +1,6 @@
-# CODEBASE.md — Aiyu MultiAgent V2.6.0
+# CODEBASE.md — Aiyu MultiAgent V2.7.0
+
+> **V2.7.0** — Dashboard v2.7.0 release + WS event schema documentation + bug audit (2 critical + 4 high + 5 medium). New package `aiyu-multi-agent-dashboard` — Next.js 14 real-time monitoring dashboard. Features: Agent Status Panel, Execution Timeline, Intervention Panel, Interaction Map, Memory Viewer, Metrics Panel, Logs Viewer. P3 Polish: dark mode toggle, export trace to JSON, keyboard shortcuts (Ctrl+Enter/Esc), WebSocket auto-reconnect with exponential backoff, mobile responsive layout. `docs/WS-SCHEMA.md` — formal contract for all WS message types (6 client→server, 10 server→client + 5 planned). New broadcast events: `agent.status`, `handoff.started`/`handoff.complete`, `delegate.started`/`delegate.complete`. `VALID_CLIENT_TYPES` validation. `/agents/statuses` HTTP endpoint. Docker Compose service `aiyu-dashboard` on port 3001. Bug fixes: plan.create path traversal (planName sanitized), memory.save path traversal (agentName sanitized + safeWrite), WS handleRun/handleChatSend timer leak (clearTimeout after Promise.race), failover _ollamaLastOk wired into buildFailoverChain (deprioritize unconfirmed Ollama), /agents/statuses sensitiveRouteAuth, agentStatuses Map TTL cleanup (30min, max 100), init.js process.exit→throw, context trimming preserves tool call/result pairs (drop in assistant+user pairs), plan.create/plan.update use safeWrite, resolveProvider duplicate documented, dead FAILOVER_CHAIN export removed.
 
 > **V2.6.0** — Module decomposition + production hardening + Karpathy Behavioral Principles (84 agents) + Agent System Quality Audit (84/84 clean-code, 84/84 Interaction Maps, frontend-specialist decomposed 26KB→11KB, new frontend-design-process skill) + bug audit Round 1 (11 bugs: 2 critical + 5 high + 4 medium) + Round 2 (8 bugs: 3 critical + 3 high + 2 medium) + API production hardening (3 critical + 3 high + 2 medium). agent-runtime.js (843 lines → 8 focused modules), tool-registry.js (543 lines → 3 focused modules), tracing async write queue, MCP run_agent timeout + maxSteps cap, usage flush beforeExit + sync fallback, Docker non-root user + expanded .dockerignore, dev command (REPL with verbose tool logging), TypeScript declarations (types.d.ts), Karpathy principles (4 behavioral rules in system prompt + large-change guardrail + skill self-checks + goal-driven verification + all 84 agent files). Round 1: LLM retry off-by-one fix, fetch.url SSRF protection (DNS + private IP block), chat session step cap fix, WS intervention race fix, handoff safeWrite guard, Ollama failover availability check, glob literal bracket escapes, context trim preserving tool pairs, tcRegex lastIndex reset, WS input validation, plugin execFileSync security comment. Round 2: Ollama HTTPS regression fix (transport selection by protocol), test runner infinite recursion fix (direct node execution), lint runner timeout fix (node --check), WS intervene length limit (MAX_INTERVENTION_LENGTH=10000), max_steps falsy coercion fix (!= null), chat session maxSteps override support, /metrics apiKeyAuth, security headers (X-Content-Type-Options, X-Frame-Options, X-XSS-Protection, Referrer-Policy, HSTS). API Hardening: WS maxPayload 1MB + perMessageDeflate:false, WS heartbeat ping/pong 30s + stale connection termination, WS handleRun/handleChatSend 5min timeout (Promise.race), WS error handler, WS terminateAllConnections on shutdown, sensitiveRouteAuth for /traces + /metrics (API key or localhost), X-Request-Id propagation, enhanced requestLogger (req/resp size + reqId), rate limit err.code + Retry-After + X-RateLimit-* headers, CORS maxAge 24h, /jobs/:id result truncation 10KB, LLM keep-alive agents (httpsAgent/httpAgent, maxSockets=10).
 
@@ -239,3 +241,50 @@ Production-grade AI Agent Platform — Smart Init, Plugin System, Agent Testing,
 - **MCP → Agent Runtime**: `run_agent` calls `agentRuntime.runAgent` with json:true, noCache:true + usage.trackCommand({via: "mcp"}). **V2.6: 2min timeout + maxSteps cap at 20**. `agent_name` is optional (z.string().optional()), defaults to findDefaultAgent(). API /jobs validates resolvedAgentName before enqueue, validates max_steps 1-50, passes projectDir explicitly, **uses `isAnyLlmAvailable()` for circuit breaker pre-check**
 - **MCP → Config**: `list_agents`/`inspect_agent` reads `.agent/agents/` via config.getConfigDir + markInitialized() on server start
 - **MCP → SDK**: `@modelcontextprotocol/sdk` (ESM-only, dynamic import) + `zod` for tool schemas
+
+## Dashboard (v2.7.0)
+
+Standalone Next.js 14 application in `aiyu-multi-agent-dashboard/` — real-time agent monitoring.
+
+### Architecture
+
+```
+┌─────────────────────────────────────────┐
+│     Dashboard (Next.js 14 + Tailwind)   │
+│  ┌─────────────────────────────────┐    │
+│  │  useWebSocket hook             │    │
+│  │  ├── agent.status events       │    │
+│  │  ├── step/complete events      │    │
+│  │  └── auto-reconnect (exp backoff)│ │
+│  └─────────────────────────────────┘    │
+│  ┌─────────────────────────────────┐    │
+│  │  Components                     │    │
+│  │  ├── AgentStatusPanel          │    │
+│  │  ├── ExecutionTimeline         │    │
+│  │  ├── InterventionPanel         │    │
+│  │  ├── InteractionMap            │    │
+│  │  ├── MemoryViewer              │    │
+│  │  ├── MetricsPanel              │    │
+│  │  ├── LogsViewer                │    │
+│  │  └── ThemeToggle               │    │
+│  └─────────────────────────────────┘    │
+└─────────────────┬───────────────────────┘
+                  │ WebSocket /ws
+                  │ HTTP /agents/statuses
+                  │ HTTP /metrics
+┌─────────────────▼───────────────────────┐
+│         Aiyu API Server (port 3000)   │
+└─────────────────────────────────────────┘
+```
+
+### Features by Phase
+
+- **P0 (Core)**: Agent Status, Execution Timeline, Intervention, Run Input
+- **P2 (Enhanced)**: Interaction Map, Memory Viewer, Metrics Panel, Logs Viewer
+- **P3 (Polish)**: Dark Mode, Export JSON, Keyboard Shortcuts (Ctrl+Enter/Esc), Auto-Reconnect, Mobile Responsive
+
+### Connections
+
+- **Dashboard → WS**: Real-time events via `/ws` (agent.status, step, complete, error)
+- **Dashboard → HTTP**: Poll `/agents/statuses` for initial state, `/metrics` for stats
+- **Dashboard → Export**: Download JSON with runs, completedRuns, agentStatuses

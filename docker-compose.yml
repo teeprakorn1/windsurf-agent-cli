@@ -15,3 +15,14 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
+
+  aiyu-dashboard:
+    build: ../aiyu-multi-agent-dashboard
+    ports:
+      - "3001:3000"
+    environment:
+      - AIYU_WS_URL=ws://aiyu-api:3000/ws
+      - AIYU_API_URL=http://aiyu-api:3000
+    depends_on:
+      aiyu-api:
+        condition: service_healthy
