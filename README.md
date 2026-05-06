@@ -316,6 +316,50 @@ Aiyu MultiAgent supports multiple large language model providers with **automati
 
 When the circuit breaker detects failures (timeouts, 5xx errors, rate limits), it automatically promotes the next provider. No manual intervention required.
 
+### 🔗 Custom / Proxy Endpoints (OpenAI-Compatible & Anthropic-Compatible)
+
+You can redirect the `openai` or `claude` provider to any API that speaks the same protocol. There are two ways to configure:
+
+**Option A: Environment variables** (per-session, override everything)
+
+| 🌐 Service | 🔑 Base URL Env Var | 💻 Example Model |
+|:---|:---|:---|
+| **MaxPlus AI** (Anthropic proxy) | `ANTHROPIC_BASE_URL=https://api.maxplus-ai.cc` | `claude-sonnet-4` |
+| **GLM-5.1** (Zhipu AI) | `OPENAI_BASE_URL=https://open.bigmodel.cn/api/paas/v4` | `glm-5.1` |
+| **Kimi-K2.6** (Moonshot) | `OPENAI_BASE_URL=https://api.moonshot.cn/v1` | `kimi-k2.6` |
+| **DeepSeek** | `OPENAI_BASE_URL=https://api.deepseek.com/v1` | `deepseek-chat` |
+| **OpenRouter** | `OPENAI_BASE_URL=https://openrouter.ai/api/v1` | any |
+
+```bash
+# Windows PowerShell — MaxPlus AI via Claude provider
+$env:ANTHROPIC_BASE_URL="https://api.maxplus-ai.cc"
+$env:ANTHROPIC_API_KEY="ccsk-..."
+aiyu-multi-agent chat --provider claude --model claude-sonnet-4
+
+# Windows PowerShell — GLM-5.1 via OpenAI provider
+$env:OPENAI_BASE_URL="https://open.bigmodel.cn/api/paas/v4"
+$env:OPENAI_API_KEY="your-glm-key"
+aiyu-multi-agent chat --provider openai --model glm-5.1
+```
+
+**Option B: `/config` command** (persistent, stored in `~/.aiyu/config.json`)
+
+Use `/config` inside any `aiyu-multi-agent chat` session to manage API keys, base URLs, and default models — no env vars needed:
+
+```
+/config                                    — Show current config
+/config set claude base_url https://api.maxplus-ai.cc
+/config set claude api_key ccsk-...
+/config set claude default_model claude-sonnet-4-6
+/config set openai base_url https://api.maxplus-ai.cc
+/config set openai api_key ccsk-...
+/config set openai default_model gpt-5.5
+/config default claude claude-sonnet-4-6   — Set default provider + model
+/config reset                              — Reset to defaults
+```
+
+**Priority:** env var > `~/.aiyu/config.json` > agent spec > hardcoded default
+
 ---
 
 ## 🛠️ Built-in Tools
