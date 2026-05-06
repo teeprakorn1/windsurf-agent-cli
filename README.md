@@ -44,7 +44,7 @@
 
 **Aiyu MultiAgent** is an open-source AI agent platform that helps developers automate software engineering tasks using large language models (LLMs). It features a **ReAct execution engine**, **MCP server integration** for Claude Code / Cursor / Windsurf, **WebSocket real-time streaming**, **agent handoff orchestration**, and a **plugin system** for extensible AI capabilities. Supports OpenAI GPT-4, Anthropic Claude, Ollama local models, and mock mode for testing.
 
-> **Latest Release: v2.5.0** — Claude Design-inspired features including WebSocket streaming, agent handoff bundles, `fetch.url` tool, inline intervention API, auto-apply project context detection, API key authentication, LLM provider failover chain, per-tool timeout, and smart skill truncation. Plus 31 bug fixes for production stability.
+> **Latest Release: v2.5.1** — System audit bug fixes: per-provider circuit breaker keys, rate limit hard cap + X-Forwarded-For spoofing fix, search.grep lastIndex fix, chat session failover + TTL, handoff bundle persistence + project-scoped path, cache freeze-on-fallback + truncation optimization, `PENDING_INTERVENTIONS` export fix, LLM retry off-by-one fix, queue event order fix, Ollama https support, usage flush on exit, tracing p95 fix, CORS config. Plus 25 bug fixes and 4 pre-existing test fixes for production stability.
 
 ---
 
@@ -69,6 +69,8 @@
 ## ✨ What's New in V2.5
 
 V2.5 brings **Claude Design-inspired** capabilities to the Aiyu MultiAgent platform, enabling real-time agent collaboration, external API access, and smarter project-aware AI automation. This release adds 9 major features and fixes 31 bugs for production-grade reliability.
+
+**V2.5.1** adds 25 system-audit bug fixes: per-provider circuit breaker keys (`llm:openai`, `llm:claude` etc.) with `callLLMWithFailover()`, rate limit hard cap (200 entries) + X-Forwarded-For spoofing fix (`AIYU_TRUST_PROXY`), `search.grep` lastIndex reset, chat session failover + 30-min TTL, `PENDING_INTERVENTIONS` export fix, handoff bundle persistence + project-scoped path, cache freeze-on-fallback (Object.freeze), truncation optimization (shallow copy), LLM retry off-by-one fix, queue event order fix, Ollama https transport, usage flush on exit, tracing p95 clamp, CORS origin config (`AIYU_CORS_ORIGIN`), and fs.glob brace alternation escape.
 
 | 🎛️ **Real-Time Streaming** | 🔗 **Agent Handoff** | 💬 **Inline Intervention** |
 |:---:|:---:|:---:|

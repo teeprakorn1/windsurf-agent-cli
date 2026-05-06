@@ -13,8 +13,10 @@ function findProjectRoot() {
   for (let i = 0; i < 20; i++) {
     if (fs.existsSync(path.join(dir, ".git"))) return dir;
     if (fs.existsSync(path.join(dir, "package.json")) && !fs.existsSync(path.join(dir, "node_modules"))) {
-      const pkg = JSON.parse(fs.readFileSync(path.join(dir, "package.json"), "utf-8"));
-      if (pkg.name !== "aiyu-multi-agent") return dir;
+      try {
+        const pkg = JSON.parse(fs.readFileSync(path.join(dir, "package.json"), "utf-8"));
+        if (pkg.name !== "aiyu-multi-agent") return dir;
+      } catch { /* malformed package.json — skip */ }
     }
     const parent = path.dirname(dir);
     if (parent === dir) break;

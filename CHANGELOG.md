@@ -7,6 +7,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.5.1] - 2026-05-06
+
+### Fixed — 25 Bugs + 4 Pre-existing Test Fixes (6 Critical + 7 High + 12 Medium)
+
+**P0 Critical:**
+- **Circuit breaker global `"llm"` key blocks failover** — Single breaker key `"llm"` opened when any provider failed, blocking ALL subsequent LLM calls even if other providers were healthy. Now uses per-provider keys (`llm:openai`, `llm:claude`, `llm:local`, `llm:mock`) with `callLLMWithFailover()` that iterates provider chain, skipping OPEN breakers. `isAnyLlmAvailable()` exported for API/MCP pre-checks (`lib/core/agent-runtime.js`, `lib/api/jobs.js`, `lib/api/handoff.js`)
+- **Rate limit Map unbounded growth** — `rateLimits` Map could grow indefinitely from unique keys (e.g. bot scans with different IPs), causing memory leak. Added hard cap of 200 entries with FIFO eviction after expired cleanup (`lib/core/guardrails.js`)
+- **search.grep regex `lastIndex` skips matches** — `regex.test()` with `/g` flag mutates `lastIndex`; using `forEach` meant `lastIndex` wasn't reliably reset between lines, causing alternating match/skip behavior. Changed to `for`-loop with explicit `regex.lastIndex = 0` before each `test()` (`lib/core/tool-registry.js`)
+- **X-Forwarded-For spoofing bypasses rate limit** — `rateLimitMiddleware` used `X-Forwarded-For` header as primary IP source, allowing attackers to spoof IPs and bypass rate limits entirely. Now uses `req.ip` as primary (Express `trust proxy` setting), only reads `X-Forwarded-For` when `AIYU_TRUST_PROXY=true` is explicitly set (`lib/api/rate-limit.js`, `lib/api/server.js`)
+- **`_cacheGet` returns mutable reference** — When `JSON.parse(JSON.stringify())` deep clone failed (e.g. circular refs), `_cacheGet` returned the raw cache entry reference, allowing callers to mutate cached data. Now returns `Object.freeze()` shallow copy as fallback (`lib/core/agent-runtime.js`)
+- **`PENDING_INTERVENTIONS` not exported from ws.js** — `handoff.js` requires `PENDING_INTERVENTIONS` from `ws.js` for HTTP intervention API, but `ws.js` didn't export it — causing runtime `TypeError: Cannot read properties of undefined` when using `POST /agents/intervene`. Now exported (`lib/api/ws.js`)
+
+**P1 High:**
+- **Chat session no provider failover** — `createChatSession` called `llmProviders.callLLM` directly without circuit breaker or failover, unlike `runAgent`. Now uses `callLLMWithFailover()` with per-provider breaker tracking (`lib/core/agent-runtime.js`)
+- **Chat sessions no TTL** — `chatSessions` Map in WebSocket server never expired idle sessions, causing memory leak from abandoned connections. Added 30-minute TTL with `lastActivity` timestamp + periodic cleanup every 5 minutes (`lib/api/ws.js`)
+- **postinstall crash on malformed package.json** — `JSON.parse(fs.readFileSync(...))` in `findProjectRoot` threw on malformed `package.json`, crashing the entire postinstall script. Added `try-catch` to gracefully skip (`bin/postinstall.js`)
+- **jobs.js + handoff.js stale circuit breaker check** — Both API modules used `circuitBreaker.canExecute("llm")` (old global key) which no longer exists after per-provider refactor. Now uses `isAnyLlmAvailable()` from agent-runtime (`lib/api/jobs.js`, `lib/api/handoff.js`)
+- **Handoff bundle file global tmpdir conflict** — `BUNDLE_FILE` used global `os.tmpdir()` path `aiyu-handoff-bundles.json`, causing cross-instance write conflicts when multiple processes run. Now uses project-scoped path (`cfgDir/handoff-bundles.json`) with PID-based fallback (`lib/api/handoff.js`)
+- **`truncateResult` redundant deep clone** — `truncateResult()` called `JSON.parse(JSON.stringify(result))` even when result was already small enough, wasting CPU on double serialization. Now uses shallow copy `{...result}` and only serializes for final size check (`lib/core/tool-registry.js`)
+- **`jobs.js` redundant `err.code` assignment** — `err.code = "QUEUE_FULL"` was assigned to an error that already had `code: "QUEUE_FULL"` from the queue, a no-op that indicated possible copy-paste oversight. Removed redundant assignment (`lib/api/jobs.js`)
+
+**P2 Medium:**
+- **Cache deep clone on every hit** — `_cacheGet()` always performed `JSON.parse(JSON.stringify())` even for small/primitive results. Now only clones objects/arrays, returns primitives directly, and wraps clone in try-catch for circular refs (`lib/core/agent-runtime.js`)
+- **Handoff bundles lost on restart** — `STORED_BUNDLES` Map was in-memory only, losing all bundles on server restart. Now persists to temp file (`aiyu-handoff-bundles.json`) with load-on-startup + save-after-write (`lib/api/handoff.js`)
+- **truncateResult double parse** — `truncateResult()` called `JSON.parse(JSON.stringify(result))` even when result was already small enough. Now reuses the `JSON.stringify` output and only parses when truncation is actually needed (`lib/core/tool-registry.js`)
+- **Usage buffer not flushed on exit** — `_flushBuffer` ran on 5-second interval but not on process exit, losing buffered usage data on crash or SIGTERM. Added `process.on("exit", _flushBuffer)` with `_exitHandlerRegistered` guard (`lib/core/usage.js`)
+- **Tracing p95 index overflow** — `completed.length * 0.95` could produce index equal to array length (out of bounds) for small arrays. Added `Math.min(index, length - 1)` clamp (`lib/core/tracing.js`)
+- **CORS origin unrestricted** — `cors()` middleware with no `origin` option allowed any origin. Now reads `AIYU_CORS_ORIGIN` env var to restrict origins (defaults to `undefined` = allow all for backward compatibility) (`lib/api/server.js`)
+- **fs.glob brace alternation regex metachar** — `{a.c,b*}` brace alternatives weren't individually escaped before joining with `|`, allowing regex metacharacters inside braces to corrupt the pattern. Now escapes each alternative individually using placeholders to preserve alternation structure during main escaping (`lib/core/tool-registry.js`)
+- **LLM retry off-by-one** — `callLLM` retry loop used `attempt <= maxRetries` causing 4 attempts instead of 3 (initial + 3 retries). Changed to `attempt < maxRetries` for exactly `MAX_RETRIES` total attempts (`lib/core/llm-providers.js`)
+- **Queue `_finishJob` event order** — `_finishJob` called `_processNext()` before emitting `completed`/`failed` events, causing listeners to receive events after the next job had already started. Swapped order: emit first, then process next (`lib/core/request-queue.js`)
+- **Handoff `extractDecisions` operator precedence** — `step.thought && step.thought.includes("decided") || step.thought?.includes("decision")` evaluated as `(A && B) || C` due to `&&` having higher precedence than `||`. While accidentally correct, added explicit parentheses for clarity (`lib/core/handoff.js`)
+- **`crypto` require duplicated in function body** — `agent-runtime.js` required `crypto` inside `_cacheKey()` and `runAgent()` instead of at top level. Moved to top-level require (`lib/core/agent-runtime.js`)
+- **Ollama health check ignores https** — `checkReadiness` always used `http.request` even when `OLLAMA_HOST` was `https://`, causing connection failures for HTTPS Ollama endpoints. Now selects `http` or `https` transport based on URL protocol (`lib/core/health-check.js`)
+
+**Pre-existing Test Fixes:**
+- **checkReadiness/getFullHealthReport not awaited** — Both functions are async but tests called them synchronously, getting Promise objects instead of results. Added `await` in both unit and integration tests (`lib/test/unit/production.test.js`, `lib/test/integration/flow.test.js`)
+- **Trace ID length wrong in tests** — Tests expected `traceId.length === 16` and `spanId.length === 8`, but OTel spec (and actual code) produces 32 and 16 hex chars respectively. Fixed test assertions (`lib/test/unit/production.test.js`)
+- **Queue status "ready" not in test allowlist** — Integration test allowed `["ok", "healthy", "degraded", "not_available"]` but health-check returns `"ready"` for queue. Added `"ready"` to allowlist (`lib/test/integration/flow.test.js`)
+- **Integration test circuit breaker used old global key** — `circuitBreaker.resetBreaker("llm")` no longer valid. Changed to `circuitBreaker.resetBreaker("llm:mock")` for per-provider key (`lib/test/integration/flow.test.js`)
+
+---
+
 ## [2.5.0] - 2026-05-05
 
 ### Added — Claude Design-Inspired Features
