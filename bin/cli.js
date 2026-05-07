@@ -269,6 +269,7 @@ program
   .command("dev")
   .description("[experimental] Dev mode — live reload, debug reasoning, log tool calls")
   .option("-a, --agent <name>", "Agent to run in dev mode")
+  .option("-p, --provider <provider>", "LLM provider: openai, claude, local, mock")
   .option("-v, --verbose", "Verbose: log every tool call + LLM response")
   .option("--trace", "Enable persistent trace output to .agent/traces/")
   .action(async (options) => {
@@ -286,6 +287,7 @@ program
 
     const agentName = options.agent || "default";
     const verbose = options.verbose || false;
+    const provider = options.provider || "mock"; // Default mock for safety; use --provider openai/claude for real LLM
 
     // Simple REPL loop
     const readline = require("readline");
@@ -304,7 +306,7 @@ program
             input: input.trim(),
             agentName,
             projectDir: process.cwd(),
-            provider: "mock",
+            provider,
             noCache: true,
             onStep: verbose ? (step, state) => {
               console.log(chalk.blue(`  Step ${step.step}: ${step.thought?.slice(0, 120)}${step.thought?.length > 120 ? "..." : ""}`));

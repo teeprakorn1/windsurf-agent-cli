@@ -29,9 +29,14 @@ aiyu-multi-agent chat
 | `aiyu-multi-agent init` | Interactive agent generator |
 | `aiyu-multi-agent run <input>` | Execute agent with input |
 | `aiyu-multi-agent chat` | Interactive chat session |
+| `aiyu-multi-agent serve` | Start HTTP API + WebSocket server |
+| `aiyu-multi-agent mcp` | Start MCP server (stdio) |
+| `aiyu-multi-agent dev` | REPL dev mode with verbose logging |
 | `aiyu-multi-agent add skill <name>` | Install skill from npm |
 | `aiyu-multi-agent remove skill <name>` | Uninstall skill |
 | `aiyu-multi-agent test` | Run agent test suite |
+| `aiyu-multi-agent test --compliance` | Spec compliance (15 checks) |
+| `aiyu-multi-agent test --unit` | Unit tests (54 tests) |
 | `aiyu-multi-agent publish` | Publish agent to npm |
 | `aiyu-multi-agent status` | Show project statistics |
 | `aiyu-multi-agent inspect` | Observability — stats, tool usage, latency, errors |
@@ -247,10 +252,10 @@ aiyu-multi-agent run "..." --provider local --model codellama
 ### Mock (Testing)
 
 ```bash
-aiyu-multi-agent run "..." --provider mock
+AIYU_ENABLE_MOCK=1 aiyu-multi-agent run "..." --provider mock
 ```
 
-Returns canned responses. No API key needed. Perfect for testing and demos.
+Returns canned responses. Requires `AIYU_ENABLE_MOCK=1` env var. Perfect for testing and demos.
 
 ---
 
@@ -596,9 +601,14 @@ Agent names are validated to prevent path traversal attacks. Characters not allo
 | Variable | Purpose | Required For |
 |----------|---------|-------------|
 | `OPENAI_API_KEY` | OpenAI API access | `--provider openai` |
-| `ANTHTHROPIC_API_KEY` | Anthropic API access | `--provider claude` |
-| `WINDSURF_LOG_LEVEL` | Log level (debug/info/warn/error) | Optional |
-| `WINDSURF_CONFIG_DIR` | Override config directory | Optional |
+| `ANTHROPIC_API_KEY` | Anthropic API access | `--provider claude` |
+| `AIYU_ENABLE_MOCK` | Enable mock provider (`1` to enable) | `--provider mock` |
+| `AIYU_API_KEY` | API server auth key | `serve` command |
+| `AIYU_CORS_ORIGIN` | CORS origin for API server | `serve` command |
+| `AIYU_TRUST_PROXY` | Trust X-Forwarded-For header | Reverse proxy |
+| `OLLAMA_HOST` | Ollama server URL | `--provider local` |
+| `AIYU_LOG_LEVEL` | Log level (debug/info/warn/error) | Optional |
+| `AIYU_CONFIG_DIR` | Override config directory | Optional |
 
 ---
 

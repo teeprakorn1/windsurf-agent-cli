@@ -4,10 +4,11 @@
 
 | Version | Supported |
 | ------- | --------- |
-| 2.4.x   | ✅ Active |
-| 2.3.x   | ✅ Active |
-| 2.2.x   | ⚠️ Critical fixes only |
-| < 2.2   | ❌ End of life |
+| 2.7.x   | ✅ Active |
+| 2.6.x   | ✅ Active |
+| 2.5.x   | ✅ Active |
+| 2.4.x   | ⚠️ Critical fixes only |
+| < 2.4   | ❌ End of life |
 
 ## Reporting a Vulnerability
 
@@ -69,8 +70,12 @@ This project implements defense-in-depth for shell execution:
 
 | Version | Fix |
 |---------|-----|
-| 2.4.1 | BLOCKED_FLAGS bypass fix (`--eval=code`, `-ecode` patterns), `_isBlockedFlag()`, sandboxExec `path.basename` for full paths, rateLimits Map unbounded growth fix (time-based cleanup), safeWrite temp file leak on writeFileSync failure, ReDoS protection (`_safeRegex`), truncateResult deep clone (mutation prevention), glob regex metacharacter escaping, fs.glob fallback depth limit (stack overflow fix), maxSteps hard cap (MAX_ALLOWED_STEPS=50), API /jobs agent_name validation + max_steps validation, rate limit X-Forwarded-For support, secret scanning in publish (OpenAI/AWS/GitHub/npm/Slack keys) |
-| 2.4.0 | MCP host authorization (allowedAgents), secret scanning in publish, rate limiting middleware, graceful shutdown |
-| 2.2.0 | Symlink traversal attack fix (fs.realpathSync), init.js guardrails bypass fix (safeWrite), circuit breaker null state guard, JSON.stringify circular ref crash fix, safeWrite temp file leak fix, publish dry-run temp file leak fix, queue operations after destroy guard |
-| 2.1.0 | Command injection fix (execFileSync), path traversal fix (path.normalize), removed curl/wget, dangerous pattern detection |
+| 2.7.1 | Failover chain mutation fix, handoff catch block scope fix, chat session timeout, circuit breaker cleanup, tracing cleanup timer, cache key collision fix |
+| 2.7.0 | plan.create/memory.save path traversal fix, WS timer leak fix, agentStatuses TTL cleanup, sensitiveRouteAuth for /agents/statuses |
+| 2.6.0 | fetch.url SSRF protection (DNS + private IP block), WS maxPayload 1MB + perMessageDeflate:false, WS heartbeat + stale connection termination, WS handleRun/handleChatSend 5min timeout, sensitiveRouteAuth for /traces + /metrics, security headers (X-Content-Type-Options, X-Frame-Options, X-XSS-Protection, Referrer-Policy, HSTS), WS terminateAllConnections on shutdown |
+| 2.5.1 | Per-provider circuit breaker keys, rate limit hard cap + X-Forwarded-For spoofing fix, cache freeze-on-fallback, LLM retry off-by-one fix |
+| 2.4.1 | BLOCKED_FLAGS bypass fix, sandboxExec `path.basename`, rateLimits Map unbounded growth fix, safeWrite temp file leak, ReDoS protection, truncateResult deep clone, glob regex metacharacter escaping, maxSteps hard cap, API /jobs validation, secret scanning in publish |
+| 2.4.0 | MCP host authorization, secret scanning in publish, rate limiting middleware, graceful shutdown |
+| 2.2.0 | Symlink traversal attack fix, init.js guardrails bypass fix, circuit breaker null state guard, safeWrite temp file leak fix, queue operations after destroy guard |
+| 2.1.0 | Command injection fix, path traversal fix, removed curl/wget, dangerous pattern detection |
 | 2.0.0 | Initial security layer (guardrails, sandboxExec, safeWrite, rateLimit) |

@@ -134,8 +134,12 @@ lib/
 ### Running Tests
 
 ```bash
-# Unit tests (29 tests — guardrails, tool-registry, llm-providers)
+# Unit tests (29 core + 25 production = 54 tests)
 node lib/test/unit/core.test.js
+node lib/test/unit/production.test.js
+
+# Integration tests (12 tests)
+node lib/test/integration/flow.test.js
 
 # Spec compliance (15 checks)
 node bin/cli.js test --compliance
@@ -143,11 +147,8 @@ node bin/cli.js test --compliance
 # Agent tests (markdown-based)
 node bin/cli.js test
 
-# API smoke tests (requires server running)
-node lib/test/smoke/api.test.js
-
 # All at once
-node lib/test/unit/core.test.js && node bin/cli.js test --compliance && node bin/cli.js test
+npm test && node bin/cli.js test --compliance && node bin/cli.js test
 ```
 
 ### Writing Unit Tests
@@ -178,13 +179,16 @@ Add to `lib/test/compliance.js` following the existing pattern.
 Read `CODEBASE.md` and `docs/ARCHITECTURE-V2.md` for full details.
 
 **Key modules:**
-- `lib/core/guardrails.js` — Security layer (pathTraversal, safeWrite, rateLimit, sandboxExec, _isBlockedFlag)
-- `lib/core/tool-registry.js` — Tool definitions, schemas, validation, parseCommandArgs, _safeRegex
+- `lib/core/guardrails.js` — Security layer (pathTraversal, safeWrite, rateLimit, sandboxExec)
+- `lib/core/tool-definitions.js` — Tool definitions, schemas, validation, truncation
 - `lib/core/llm-providers.js` — OpenAI, Claude, Ollama, Mock providers
-- `lib/core/agent-runtime.js` — ReAct loop, chat session, agent loader (MAX_ALLOWED_STEPS=50)
+- `lib/core/react-loop.js` — ReAct loop with timeout + context trimming
+- `lib/core/chat-session.js` — Interactive chat with timeout
+- `lib/core/failover.js` — Per-provider circuit breaker + failover chain
+- `lib/core/agent-runtime.js` — Re-export (V2.6 decomposed into 8 modules)
 - `lib/api/server.js` — HTTP API (Express) with /health, /metrics, /traces, /jobs
+- `lib/api/ws.js` — WebSocket real-time streaming + heartbeat
 - `lib/api/jobs.js` — Async job model with request-queue integration
-- `lib/utils.js` — Shared utilities (parseFrontmatter, copyRecursive, isValidAgentName, etc.)
 
 ---
 

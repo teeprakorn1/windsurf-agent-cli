@@ -11,7 +11,7 @@
 <h1>Aiyu MultiAgent — Production-Grade AI Agent Platform</h1>
 
 <p>
-  <strong>Build, test, and deploy AI agents with 83+ specialized agents, MCP integration, WebSocket streaming, and multi-LLM support.</strong>
+  <strong>Build, test, and deploy AI agents with 84 specialized agents, MCP integration, WebSocket streaming, and multi-LLM support.</strong>
 </p>
 
 <p>
@@ -30,7 +30,7 @@
 
 <table align="center">
   <tr>
-    <td align="center"><b>83</b><br>🎯 Agents</td>
+    <td align="center"><b>84</b><br>🎯 Agents</td>
     <td align="center"><b>46</b><br>📚 Skills</td>
     <td align="center"><b>78</b><br>⚡ Workflows</td>
     <td align="center"><b>10</b><br>🛡️ Rules</td>
@@ -44,12 +44,13 @@
 
 **Aiyu MultiAgent** is an open-source AI agent platform that helps developers automate software engineering tasks using large language models (LLMs). It features a **ReAct execution engine**, **MCP server integration** for Claude Code / Cursor / Windsurf, **WebSocket real-time streaming**, **agent handoff orchestration**, and a **plugin system** for extensible AI capabilities. Supports OpenAI GPT-4, Anthropic Claude, Ollama local models, and mock mode for testing.
 
-> **Latest Release: v2.6.0** — Module decomposition + production hardening + Karpathy Behavioral Principles (84 agents): `agent-runtime.js` (843 → 8 focused modules), `tool-registry.js` (543 → 3 modules), tracing async write queue, MCP `run_agent` timeout + maxSteps cap, usage flush fix, Docker non-root user, `aiyu-multi-agent dev` command, TypeScript declarations, Karpathy principles (4 behavioral rules in system prompt + runtime guardrails + skill self-checks + all 84 agent files). All changes backward compatible.
+> **Latest Release: v2.7.1** — Bug fix release (5 rounds including Dashboard Integration: 8 critical + 17 high + 19 medium + 9 low + 3 CI). V2.7.0 added real-time monitoring dashboard, WS event schema, and 11 bug fixes. All changes backward compatible.
 
 ---
 
 ## 📑 Table of Contents
 
+- [What's New in V2.7](#-whats-new-in-v27)
 - [What's New in V2.6](#-whats-new-in-v26)
 - [What's New in V2.5](#-whats-new-in-v25)
 - [Quick Start](#-quick-start)
@@ -64,6 +65,34 @@
 - [Plugin System](#-plugin-system)
 - [Contributing](#-contributing)
 - [License](#license)
+
+---
+
+## ✨ What's New in V2.7
+
+V2.7 brings a **real-time monitoring dashboard** and **bug fix hardening** — adding a Next.js 14 dashboard for live agent monitoring, formal WS event schema, and fixing 21 bugs across two releases.
+
+| Area | Change | Impact |
+|------|--------|--------|
+| 📊 Dashboard | Next.js 14 real-time monitoring (`aiyu-multi-agent-dashboard/`) | Observability ⬆️ |
+| 🌙 P3 Polish | Dark mode, export trace, keyboard shortcuts, WS auto-reconnect, mobile | UX ⬆️ |
+| 📡 WS Schema | `docs/WS-SCHEMA.md` — formal contract (6 client→server, 10 server→client) | Reliability ⬆️ |
+| 🔄 Broadcasts | `agent.status`, `handoff.started/complete`, `delegate.started/complete` | Dashboard ⬆️ |
+| 🐛 V2.7.0 Fixes | 11 bugs — path traversal, timer leak, Ollama deprioritize, etc. | Security ⬆️ |
+| 🐛 V2.7.1 Fixes | 20 bugs — Dashboard integration (WS auth, Docker port, API proxy), WS timeout cancellation, path traversal in agent-loader, wsApiKeyAuth crash, prompt-builder hardcoded tools, usage atomic write, search-tools async, chat intervention, handoff broadcast, Claude system messages, queue timeout=0, chat context limit, WS Map exports, Ollama GET | Stability ⬆️ |
+
+### V2.7.1 Bug Fixes (8 Critical + 11 High + 12 Medium + 2 Low + 3 CI)
+
+**Dashboard Integration (2 Critical + 3 High + 2 Medium):**
+- **Critical**: WS client no API key token (auto `?token=` injection), `sensitiveRouteAuth` blocks Docker network (server-side API proxy with auth)
+- **High**: Docker port mapping `3001:3000` → `3001:3001`, `NEXT_PUBLIC_WS_URL` build-time embedding, Next.js rewrite no auth forwarding (API route proxy)
+- **Medium**: Dashboard missing `sendChatCreate`/`sendChatSend`, `/agents/statuses` missing ISO `timestamp` field
+
+**Server-side (6 Critical + 8 High + 10 Medium + 2 Low + 3 CI):**
+- **Critical**: WS run/chat timeout doesn't cancel agent execution (AbortController), agent-loader `isValidAgentName` path traversal, WS timeout timer leak, agent.delegate missing `_runId`, failover `.filter()` mutation, handoff catch `ReferenceError`
+- **High**: `wsApiKeyAuth` crashes on malformed URL, prompt-builder hardcodes tool list, usage.js atomic write, search-tools async, chat-session intervention, `AIYU_ENABLE_MOCK` not set in tests, context trim pair mismatch, chat tool timeout/abort, Claude Content-Length, intervene WS fallback, chat lastActivity timing
+- **Medium**: Handoff WS broadcast fallback, Claude system message merge, request-queue `timeout=0`, chat context limit, circuit breaker leak, tracing idle leak, cache key collision, tracing recursion → setImmediate, queue job deletion, safeWrite temp cleanup, grep early match limit, _broadcast error handling, SKILL.md size limit, Ollama health check
+- **Low**: ws.js Map accessor functions, health-check GET for Ollama, config.json try/catch, chatSessions read-only, memory pathTraversal, callMock UTF-8 slice
 
 ---
 
@@ -109,7 +138,14 @@ tool-registry.js (re-export) ──► tool-definitions.js — Tools + schemas
 
 V2.5 brings **Claude Design-inspired** capabilities to the Aiyu MultiAgent platform, enabling real-time agent collaboration, external API access, and smarter project-aware AI automation. This release adds 9 major features and fixes 31 bugs for production-grade reliability.
 
-**V2.5.1** adds 25 system-audit bug fixes: per-provider circuit breaker keys (`llm:openai`, `llm:claude` etc.) with `callLLMWithFailover()`, rate limit hard cap (200 entries) + X-Forwarded-For spoofing fix (`AIYU_TRUST_PROXY`), `search.grep` lastIndex reset, chat session failover + 30-min TTL, `PENDING_INTERVENTIONS` export fix, handoff bundle persistence + project-scoped path, cache freeze-on-fallback (Object.freeze), truncation optimization (shallow copy), LLM retry off-by-one fix, queue event order fix, Ollama https transport, usage flush on exit, tracing p95 clamp, CORS origin config (`AIYU_CORS_ORIGIN`), and fs.glob brace alternation escape.
+**V2.5.1** adds 25 system-audit bug fixes (6C+7H+12M):
+
+- Per-provider circuit breaker keys (`llm:openai`, `llm:claude`) with `callLLMWithFailover()`
+- Rate limit hard cap (200 entries) + X-Forwarded-For spoofing fix (`AIYU_TRUST_PROXY`)
+- `search.grep` lastIndex reset, chat session failover + 30-min TTL
+- Handoff bundle persistence + project-scoped path, cache freeze-on-fallback
+- LLM retry off-by-one fix, Ollama https transport, usage flush on exit
+- CORS origin config (`AIYU_CORS_ORIGIN`), fs.glob brace alternation escape
 
 | 🎛️ **Real-Time Streaming** | 🔗 **Agent Handoff** | 💬 **Inline Intervention** |
 |:---:|:---:|:---:|
@@ -310,7 +346,7 @@ Aiyu MultiAgent supports multiple large language model providers with **automati
 | **OpenAI** | `OPENAI_API_KEY` | `gpt-4`, `gpt-4o`, `gpt-3.5-turbo` | General-purpose coding, reasoning, creative tasks |
 | **Claude** | `ANTHROPIC_API_KEY` | `claude-3-5-sonnet`, `claude-3-5-haiku` | Long context, detailed analysis, safety-critical code |
 | **Ollama** | `OLLAMA_HOST` | `llama3`, `mistral`, `codellama` | Local/offline execution, privacy-sensitive projects |
-| **Mock** | *(none)* | Canned responses | Testing, CI/CD pipelines, development without API keys |
+| **Mock** | `AIYU_ENABLE_MOCK=1` | Canned responses | Testing, CI/CD pipelines, development without API keys |
 
 **🔄 Failover Chain:** `openai → claude → ollama → mock`
 
@@ -387,29 +423,37 @@ aiyu-multi-agent/
 │   │   ├── middleware.js        # Auth, rate-limit, logging, shutdown guard
 │   │   └── config.js            # API configuration
 │   ├── core/
-│   │   ├── agent-runtime.js     # 🔥 ReAct loop + tool calling + timeout + skill truncation
-│   │   ├── agent-system.js      # Auto-detect project context
-│   │   ├── handoff.js           # Handoff bundle builder
-│   │   ├── tool-registry.js     # Namespaced tools, schemas, arg validation
-│   │   ├── llm-providers.js     # OpenAI, Claude, Ollama, Mock + retry/backoff
-│   │   ├── tool-runner.js       # Isolated tool runner (child process)
-│   │   ├── plugin.js            # Plugin lifecycle + permission system
-│   │   ├── guardrails.js        # Security & safety layer
+│   │   ├── agent-runtime.js     # Re-export (V2.6 decomposed)
+│   │   ├── react-loop.js        # 🔥 ReAct loop + tool calling + timeout
+│   │   ├── chat-session.js      # 🔥 Interactive chat + timeout
+│   │   ├── failover.js          # 🔥 Per-provider circuit breaker + failover
+│   │   ├── cache.js             # 🔥 LRU cache
+│   │   ├── agent-loader.js      # 🔥 Agent spec + skill loading
+│   │   ├── prompt-builder.js    # 🔥 System prompt construction
+│   │   ├── input-sanitizer.js   # 🔥 Input validation + injection detection
+│   │   ├── tool-parser.js       # 🔥 Tool call parsing
+│   │   ├── tool-registry.js     # Re-export (V2.6 decomposed)
+│   │   ├── tool-definitions.js  # 🔥 Tools + schemas + registry
+│   │   ├── search-tools.js      # 🔥 Grep + Glob
+│   │   ├── command-parser.js    # 🔥 Shell arg parse + ReDoS-safe
+│   │   ├── llm-providers.js     # OpenAI, Claude, Ollama, Mock + retry
 │   │   ├── circuit-breaker.js   # Prevents cascade LLM failures
 │   │   ├── request-queue.js     # Concurrency control + backpressure
 │   │   ├── tracing.js           # Distributed tracing (OTel export)
 │   │   ├── health-check.js      # System + Ollama health status
-│   │   ├── usage.js             # Usage statistics + Prometheus metrics
-│   │   ├── config.js            # Config loader (.agent/ + .windsurf/ symlink)
-│   │   ├── logger.js            # Structured logging
-│   │   └── runtime.js           # Node/Bun detection
+│   │   ├── config.js            # Config loader (.agent/ + .windsurf/)
+│   │   ├── plugin.js            # Plugin lifecycle + permission system
+│   │   ├── guardrails.js        # Security & safety layer
+│   │   ├── usage.js             # Usage stats + Prometheus metrics
+│   │   ├── logger.js            # Structured JSON logging
+│   │   └── types.d.ts           # TypeScript declarations
 │   ├── commands/                # CLI command handlers
 │   ├── test/                    # Test runner + compliance + unit tests
 │   ├── mcp/                     # MCP server + tools
 │   └── publish/                 # Packager + validator + registry
 ├── templates/                  # Agent + skill scaffolds
 ├── docs/                       # Architecture, runtime spec, roadmap, usage
-└── .windsurf/                  # 83 Agents, 46 Skills, 78 Workflows, 10 Rules
+└── .windsurf/                  # 84 Agents, 46 Skills, 78 Workflows, 10 Rules
 ```
 </details>
 

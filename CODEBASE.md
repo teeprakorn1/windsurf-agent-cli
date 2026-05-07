@@ -1,24 +1,85 @@
-# CODEBASE.md — Aiyu MultiAgent V2.7.0
+# CODEBASE.md — Aiyu MultiAgent V2.7.1
 
-> **V2.7.0** — Dashboard v2.7.0 release + WS event schema documentation + bug audit (2 critical + 4 high + 5 medium). New package `aiyu-multi-agent-dashboard` — Next.js 14 real-time monitoring dashboard. Features: Agent Status Panel, Execution Timeline, Intervention Panel, Interaction Map, Memory Viewer, Metrics Panel, Logs Viewer. P3 Polish: dark mode toggle, export trace to JSON, keyboard shortcuts (Ctrl+Enter/Esc), WebSocket auto-reconnect with exponential backoff, mobile responsive layout. `docs/WS-SCHEMA.md` — formal contract for all WS message types (6 client→server, 10 server→client + 5 planned). New broadcast events: `agent.status`, `handoff.started`/`handoff.complete`, `delegate.started`/`delegate.complete`. `VALID_CLIENT_TYPES` validation. `/agents/statuses` HTTP endpoint. Docker Compose service `aiyu-dashboard` on port 3001. Bug fixes: plan.create path traversal (planName sanitized), memory.save path traversal (agentName sanitized + safeWrite), WS handleRun/handleChatSend timer leak (clearTimeout after Promise.race), failover _ollamaLastOk wired into buildFailoverChain (deprioritize unconfirmed Ollama), /agents/statuses sensitiveRouteAuth, agentStatuses Map TTL cleanup (30min, max 100), init.js process.exit→throw, context trimming preserves tool call/result pairs (drop in assistant+user pairs), plan.create/plan.update use safeWrite, resolveProvider duplicate documented, dead FAILOVER_CHAIN export removed.
+## Version History
 
-> **V2.6.0** — Module decomposition + production hardening + Karpathy Behavioral Principles (84 agents) + Agent System Quality Audit (84/84 clean-code, 84/84 Interaction Maps, frontend-specialist decomposed 26KB→11KB, new frontend-design-process skill) + bug audit Round 1 (11 bugs: 2 critical + 5 high + 4 medium) + Round 2 (8 bugs: 3 critical + 3 high + 2 medium) + API production hardening (3 critical + 3 high + 2 medium). agent-runtime.js (843 lines → 8 focused modules), tool-registry.js (543 lines → 3 focused modules), tracing async write queue, MCP run_agent timeout + maxSteps cap, usage flush beforeExit + sync fallback, Docker non-root user + expanded .dockerignore, dev command (REPL with verbose tool logging), TypeScript declarations (types.d.ts), Karpathy principles (4 behavioral rules in system prompt + large-change guardrail + skill self-checks + goal-driven verification + all 84 agent files). Round 1: LLM retry off-by-one fix, fetch.url SSRF protection (DNS + private IP block), chat session step cap fix, WS intervention race fix, handoff safeWrite guard, Ollama failover availability check, glob literal bracket escapes, context trim preserving tool pairs, tcRegex lastIndex reset, WS input validation, plugin execFileSync security comment. Round 2: Ollama HTTPS regression fix (transport selection by protocol), test runner infinite recursion fix (direct node execution), lint runner timeout fix (node --check), WS intervene length limit (MAX_INTERVENTION_LENGTH=10000), max_steps falsy coercion fix (!= null), chat session maxSteps override support, /metrics apiKeyAuth, security headers (X-Content-Type-Options, X-Frame-Options, X-XSS-Protection, Referrer-Policy, HSTS). API Hardening: WS maxPayload 1MB + perMessageDeflate:false, WS heartbeat ping/pong 30s + stale connection termination, WS handleRun/handleChatSend 5min timeout (Promise.race), WS error handler, WS terminateAllConnections on shutdown, sensitiveRouteAuth for /traces + /metrics (API key or localhost), X-Request-Id propagation, enhanced requestLogger (req/resp size + reqId), rate limit err.code + Retry-After + X-RateLimit-* headers, CORS maxAge 24h, /jobs/:id result truncation 10KB, LLM keep-alive agents (httpsAgent/httpAgent, maxSockets=10).
+### V2.7.1 (2026-05-07) — Bug Fix Release
 
-> **V2.5.1** — System audit bug fixes (6 critical + 7 high + 12 medium + 4 pre-existing test fixes). Per-provider circuit breaker keys, rate limit hard cap + X-Forwarded-For spoofing fix, search.grep lastIndex fix, chat session failover + TTL, PENDING_INTERVENTIONS export fix, handoff bundle persistence + project-scoped path, cache freeze-on-fallback, truncation optimization (shallow copy), LLM retry off-by-one fix, queue event order fix, Ollama https transport, usage flush on exit, tracing p95 fix, CORS config, fs.glob brace alternation escape, handoff operator precedence, crypto top-level require.
+**Dashboard Integration Fixes (2 Critical + 3 High + 2 Medium):**
+- **Critical**: WS client no API key token (auto `?token=` from `NEXT_PUBLIC_API_KEY`), `sensitiveRouteAuth` blocks Docker network (server-side API proxy with `x-api-key` injection)
+- **High**: Docker port `3001:3000` → `3001:3001`, `NEXT_PUBLIC_WS_URL` build-time embedding (was `AIYU_WS_URL`), Next.js rewrite no auth forwarding (replaced with API route proxy)
+- **Medium**: Dashboard missing `sendChatCreate`/`sendChatSend`, `/agents/statuses` missing ISO `timestamp` field
+- **Added**: Server-side API proxy route (`/api/[...path]`), `NEXT_PUBLIC_API_KEY` env for WS auth
+- **Changed**: Removed `/api/metrics` static proxy, removed Next.js rewrites, `docker-compose.yml` port + env fixes
 
-> **V2.5.0** — Claude Design-inspired features + 16 bug fixes (5 critical + 6 high + 5 medium). WebSocket real-time streaming, handoff bundles, fetch.url tool, inline intervention, agent system auto-apply.
+**Round 4 (2 Critical + 5 High + 7 Medium + 4 Low):**
+- **Critical**: WS timeout timer leak (clearTimeout in catch), agent.delegate missing _runId for broadcast
+- **High**: context trim pair mismatch, chat tool timeout/abort check, Claude Content-Length header, intervene WS fallback, chat lastActivity timing
+- **Medium**: tracing recursion → setImmediate, queue job deletion safety, safeWrite temp file cleanup, grep early match limit, _broadcast error handling, SKILL.md size limit (100KB), Ollama health check no keep-alive
+- **Low**: config.json try/catch, chatSessions read-only export, memory.save/load pathTraversal, callMock UTF-8 safe slice
 
-> **V2.4.2** — CI fix + 98 bugs fixed across 4 audit rounds.
+**Round 3 (2 Critical + 6 High + 5 Medium + 2 Low):**
+- **Critical**: WS timeout AbortController cancellation, agent-loader `isValidAgentName` path traversal
+- **High**: wsApiKeyAuth malformed URL crash, prompt-builder dynamic tool list, usage.js atomic write, search-tools async `fs.promises`, chat-session intervention support
+- **Medium**: handoff WS broadcast fallback, Claude system message merge, request-queue timeout=0 falsy check, chat context limit during tool execution
+- **Low**: ws.js Map accessor functions, health-check GET for Ollama
+
+**Rounds 1-2 (2 Critical + 3 High + 5 Medium + 3 CI):**
+- **Critical**: failover `.filter()` mutation (duplicate/skip providers), handoff catch `ReferenceError`
+- **High**: `AIYU_ENABLE_MOCK` not set in tests, `agent.delegate` no context limit (OOM), chat no timeout
+- **Medium**: circuit breaker leak, tracing idle leak, cache key collision, WS errors silently dropped
+- **3 CI**: mock env var + status mismatch in integration/compliance tests
+
+### V2.7.0 (2026-05-07) — Dashboard Release
+
+- **Dashboard** — Next.js 14 real-time monitoring (`aiyu-multi-agent-dashboard/`)
+- **Features** — Agent Status, Execution Timeline, Intervention, Interaction Map, Memory Viewer, Metrics, Logs
+- **P3 Polish** — Dark mode, export trace, keyboard shortcuts, WS auto-reconnect, mobile responsive
+- **WS Schema** — `docs/WS-SCHEMA.md` (6 client→server, 10 server→client, 5 planned)
+- **Broadcasts** — `agent.status`, `handoff.started/complete`, `delegate.started/complete`
+- **Docker** — `aiyu-dashboard` service on port 3001
+- **11 Bug fixes** — path traversal, timer leak, Ollama deprioritize, sensitiveRouteAuth, etc.
+
+### V2.6.0 (2026-05-06) — Module Decomposition + Production Hardening
+
+- **Decomposition** — `agent-runtime.js` (843→69+8 modules), `tool-registry.js` (543→3 modules)
+- **Karpathy Principles** — 4 behavioral rules across 84 agents + 10 locations
+- **Quality Audit** — 84/84 clean-code, 84/84 Interaction Maps, frontend-specialist 26KB→11KB
+- **19 Bug fixes** — Round 1 (2C+5H+4M), Round 2 (3C+3H+2M)
+- **8 API Hardening** — WS maxPayload, heartbeat, timeout, sensitiveRouteAuth, security headers, keep-alive
+
+### V2.5.1 (2026-05-06) — System Audit
+
+- **25 Bug fixes** (6C+7H+12M) + 4 pre-existing test fixes
+- Per-provider circuit breaker, rate limit cap, SSRF fix, chat failover, handoff persistence
+
+### V2.5.0 — Claude Design Features
+
+- WebSocket streaming, handoff bundles, fetch.url, inline intervention, agent system auto-apply
+- 16 bug fixes (5C+6H+5M)
+
+### V2.4.2 — CI Fix
+
+- 98 bugs fixed across 4 audit rounds
 
 ## System Overview
 
 Production-grade AI Agent Platform — Smart Init, Plugin System, Agent Testing, and Publishing.
 
-**V2.4.1** — Bug fix release: 98 bugs fixed across 4 audit rounds. Round 1 (45), Round 2 (16), Round 3 (22). Round 4 (15): API /jobs null agent_name crash + max_steps validation + projectDir in runAgent, shell.exec full-path pre-check (path.basename), packager.js crypto.randomUUID, rate-limit X-Forwarded-For, health-check Ollama reachability (async), circuit-breaker successCount reset + removeBreaker, glob@10+ Promise API + fallback callback, tracing appendFileSync (race fix), parseToolCalls escaped flag for `\"`, _cacheGet deep copy, inspect-agent maxSteps cap, glob fallback `{a,b}` brace alternation.
+### V2.4.1 — Bug Fix Release
 
-**V2.4.0** — HTTP API + Operational Readiness + MCP Server + security hardening + Docker.
+- 98 bugs fixed across 4 audit rounds (45 + 16 + 22 + 15)
+- API /jobs null crash + max_steps validation, shell.exec path.basename pre-check
+- ReDoS protection, truncateResult deep clone, glob regex metacharacter escaping
+- Circuit-breaker successCount reset + removeBreaker, secret scanning in publish
 
-**V2.2** — Production upgrade: circuit breaker, request queue, distributed tracing, health check, structured logging, Prometheus metrics, context size limits, integration tests.
+### V2.4.0 — HTTP API + Docker
+
+- HTTP API (Express), MCP Server, security hardening, Docker support
+
+### V2.2 — Production Upgrade
+
+- Circuit breaker, request queue, distributed tracing, health check
+- Structured logging, Prometheus metrics, context size limits, integration tests
 
 ## Architecture V2
 
@@ -121,30 +182,30 @@ Production-grade AI Agent Platform — Smart Init, Plugin System, Agent Testing,
 
 ### V2 Modules
 - `lib/core/agent-runtime.js` — **Re-export** (V2.6): thin re-export of decomposed modules for backward compatibility. All `require("./agent-runtime")` calls work unchanged.
-- `lib/core/react-loop.js` — 🔥 ReAct loop execution (`runAgent`), per-provider failover, tracing, context trimming, output format enforcement, **Karpathy large-change guardrail** (fs.write/fs.edit >5KB triggers surgical change warning)
-- `lib/core/chat-session.js` — 🔥 Interactive chat (`createChatSession`, **accepts maxSteps override**), sliding window, char-based context limit, step records
+- `lib/core/react-loop.js` — 🔥 ReAct loop execution (`runAgent`, **accepts AbortSignal for timeout cancellation**, **passes _runId to tool args for WS broadcast tracking**), per-provider failover, tracing, context trimming (**null/break-safe pair eviction**), output format enforcement, **Karpathy large-change guardrail** (fs.write/fs.edit >5KB triggers surgical change warning)
+- `lib/core/chat-session.js` — 🔥 Interactive chat (`createChatSession`, **accepts maxSteps override**, **intervene() method for mid-turn feedback**, **signal support for timeout cancellation**, **chatTimedOut/signal checks after tool Promise.race**), sliding window, char-based context limit, step records
 - `lib/core/failover.js` — 🔥 Per-provider circuit breaker (`llm:openai`, `llm:claude`, `llm:local`, `llm:mock`) with `callLLMWithFailover()` chain + `isAnyLlmAvailable()` check
 - `lib/core/cache.js` — 🔥 LRU cache (100 entries, 5min TTL, deep-copy-on-read, Object.freeze fallback for circular refs)
-- `lib/core/agent-loader.js` — 🔥 Load agent specs (frontmatter parsing, runtime spec version enforcement) + skill instructions
-- `lib/core/prompt-builder.js` — 🔥 Build system prompts (agent spec + skills + project profile + guardrails + **Karpathy Behavioral Rules**), section-aware skill truncation (MAX_SKILL_INSTRUCTION_CHARS=8000)
+- `lib/core/agent-loader.js` — 🔥 Load agent specs (frontmatter parsing, runtime spec version enforcement, **isValidAgentName path traversal validation**) + skill instructions (**MAX_SKILL_FILE_SIZE=100KB with truncated read for oversized files**)
+- `lib/core/prompt-builder.js` — 🔥 Build system prompts (agent spec + skills + project profile + guardrails + **Karpathy Behavioral Rules**), section-aware skill truncation (MAX_SKILL_INSTRUCTION_CHARS=8000), **dynamic tool list from registry** (no hardcoded tools)
 - `lib/core/input-sanitizer.js` — 🔥 Input validation (100K char limit) + heuristic prompt injection detection
 - `lib/core/tool-parser.js` — 🔥 Parse tool calls from LLM responses (4 strategies: API structured → TOOL_CALL regex → JSON blocks → final answer), balanced-depth paren parser
 - `lib/core/tool-registry.js` — **Re-export** (V2.6): thin re-export of decomposed tool modules for backward compatibility
-- `lib/core/tool-definitions.js` — 🔥 Builtin tools (fs.read/write/edit, shell.exec, fetch.url), TOOL_SCHEMAS, LEGACY_ALIAS, registerTool, validateToolArgs, truncateResult (shallow copy + HALF_MAX), executeToolIsolated (forked child with cwd)
-- `lib/core/search-tools.js` — 🔥 search.grep (for-loop with lastIndex reset, async walk with setImmediate yield every 50 files, ReDoS-safe regex) + fs.glob (glob@10+ Promise API with glob@8 callback fallback, brace alternation `{a,b}` with individual metachar escaping)
+- `lib/core/tool-definitions.js` — 🔥 Builtin tools (fs.read/write/edit, shell.exec, fetch.url, **memory.save/load with pathTraversal guard**), TOOL_SCHEMAS, LEGACY_ALIAS, registerTool, validateToolArgs, truncateResult (shallow copy + HALF_MAX), executeToolIsolated (forked child with cwd)
+- `lib/core/search-tools.js` — 🔥 search.grep (**async fs.promises** — no event loop blocking, for-loop with lastIndex reset, ReDoS-safe regex) + fs.glob (glob@10+ Promise API with glob@8 callback fallback, brace alternation `{a,b}` with individual metachar escaping)
 - `lib/core/command-parser.js` — 🔥 parseCommandArgs (escape sequences \\, \", \') + _safeRegex (ReDoS protection)
-- `lib/core/llm-providers.js` — 🔥 OpenAI, Claude (tool_use), Ollama (tools, **http/https transport selection by URL protocol**), Mock (respects outputFormat), retry/backoff (**fixed off-by-one: exactly MAX_RETRIES attempts**), 1MB response size limit, default temperature 0.7 for all providers
+- `lib/core/llm-providers.js` — 🔥 OpenAI, Claude (**merges multiple system messages**, **Content-Length header for proxy compatibility**), Ollama (tools, **http/https transport selection by URL protocol**), Mock (respects outputFormat, **UTF-8 safe slice for multi-byte chars**), retry/backoff (**fixed off-by-one: exactly MAX_RETRIES attempts**), 1MB response size limit, default temperature 0.7 for all providers
 - `lib/core/tool-runner.js` — Isolated tool runner (forked child process with cwd, restricted env, HALF_MAX truncation consistent with tool-registry, `_truncated` flag, exit code 1 on errors)
-- `lib/core/config.js` — Config loader (.agent/ primary, .windsurf/ symlink). initConfigDir supports windsurfOnly and agentOnly options. saveVersion uses guardrails.safeWrite
+- `lib/core/config.js` — Config loader (.agent/ primary, .windsurf/ symlink). **try/catch on config.json parse** to prevent crash on malformed JSON. initConfigDir supports windsurfOnly and agentOnly options. saveVersion uses guardrails.safeWrite
 - `lib/core/plugin.js` — npm skill install/remove + permission system (guardrails.safeWrite for config.yaml writes, crypto.randomUUID for temp dirs, exports getSkillDir)
-- `lib/core/guardrails.js` — pathTraversal (projectRoot param + path.normalize + fs.realpathSync symlink protection), safeWrite (EXDEV fallback + temp file cleanup on writeFileSync AND renameSync errors), rateLimit (configurable windowMs param, time-based cleanup every 60s, **hard cap 200 entries + FIFO eviction** to prevent unbounded growth from unique keys), sandboxExec (execFileSync, no curl/wget, `_isBlockedFlag()` catches `--eval=code` and short-flag patterns with code-char heuristic — only blocks when remainder contains ` '"();{} ` to allow legitimate flags like `-ecount`)
-- `lib/core/usage.js` — Usage statistics + deployment tracking + agentRuns counter + Prometheus metrics export (formatPrometheusMetrics) + getMetrics + safeWrite with projectDir (not cfgDir) for correct pathTraversal scope + **beforeExit + sync fallback flush** to prevent data loss
+- `lib/core/guardrails.js` — pathTraversal (projectRoot param + path.normalize + fs.realpathSync symlink protection), safeWrite (EXDEV fallback + temp file cleanup on writeFileSync AND renameSync errors, **periodic orphaned temp file cleanup every 5min**), rateLimit (configurable windowMs param, time-based cleanup every 60s, **hard cap 200 entries + FIFO eviction** to prevent unbounded growth from unique keys), sandboxExec (execFileSync, no curl/wget, `_isBlockedFlag()` catches `--eval=code` and short-flag patterns with code-char heuristic — only blocks when remainder contains ` '"();{} ` to allow legitimate flags like `-ecount`)
+- `lib/core/usage.js` — Usage statistics + deployment tracking + agentRuns counter + Prometheus metrics export (formatPrometheusMetrics) + getMetrics + safeWrite with projectDir (not cfgDir) for correct pathTraversal scope + **beforeExit + sync fallback flush** + **atomic write (temp+rename) in exit handler** to prevent truncated file
 - `lib/core/runtime.js` — Node/Bun dual
 - `lib/core/logger.js` — Structured JSON logging (LOG_FORMAT=json), meta field support, setJsonOutput()
 - `lib/core/circuit-breaker.js` — 🔥 Circuit breaker pattern (CLOSED→OPEN→HALF_OPEN→CLOSED), failure threshold, reset timeout, per-service breakers. Guards null lastFailureTime to prevent instant OPEN→HALF_OPEN. resetBreaker clears lastFailureTime/lastFailureError. successCount resets on HALF_OPEN→CLOSED recovery. removeBreaker() for cleanup. **Now used with per-provider keys** (`llm:openai`, `llm:claude`, `llm:local`, `llm:mock`) via `ensureLlmBreaker()` in failover.js
-- `lib/core/request-queue.js` — 🔥 Async job queue with concurrency control, priority ordering, backpressure (QUEUE_FULL), job timeout, metrics, **_finishJob emits events before _processNext** for correct listener order
-- `lib/core/tracing.js` — 🔥 Distributed tracing (trace+span IDs, OpenTelemetry export), trace storage, metrics (avg/p95 duration with Math.min p95 index clamp). **Async batched write queue** (V2.6: no more appendFileSync blocking event loop)
-- `lib/core/health-check.js` — 🔥 System health (liveness, readiness, component checks: memory, queue, breakers, LLM providers with status+message, Ollama reachability check with **http/https transport selection**, config, error logging in catch blocks). Async checkReadiness/getFullHealthReport
+- `lib/core/request-queue.js` — 🔥 Async job queue with concurrency control, priority ordering, backpressure (QUEUE_FULL), job timeout (**explicit undefined check for timeout=0**), metrics, **_finishJob emits events before _processNext** for correct listener order
+- `lib/core/tracing.js` — 🔥 Distributed tracing (trace+span IDs, OpenTelemetry export), trace storage, metrics (avg/p95 duration with Math.min p95 index clamp). **Async batched write queue with setImmediate scheduling** (prevents unbounded recursion under high throughput)
+- `lib/core/health-check.js` — 🔥 System health (liveness, readiness, component checks: memory, queue, breakers, LLM providers with status+message, Ollama reachability check with **GET method** + **http/https transport selection** + **keepAlive:false agent to prevent socket leak**, config, error logging in catch blocks). Async checkReadiness/getFullHealthReport
 - `lib/utils.js` — Shared utilities: parseFrontmatter (YAML.parse only, no fallback), copyRecursive (with skipDirs, rootDir param), findDefaultAgent, isValidAgentName, updateGitignore
 - `lib/commands/run.js` — 🔥 Agent execution entry (--verbose, --dry-run, --no-cache, streaming output)
 - `lib/commands/chat.js` — 🔥 Interactive chat session (sliding window MAX_CONTEXT_MESSAGES=20, agent validation on session creation)
@@ -203,8 +264,8 @@ Production-grade AI Agent Platform — Smart Init, Plugin System, Agent Testing,
 ### Security (V2.1)
 - **Command Injection**: `shell.exec` uses `execFileSync` (no `shell: true`) + `parseCommandArgs` with escape sequences. Blocks `$()`, `` ` ``, `rm -rf`, `mkfs`, `dd if=`, `chmod 777`, `chown root`. No `execSync` anywhere in codebase or generated templates. `BLOCKED_FLAGS` (`-e`, `--eval`, `-c`, `--command`, `-i`, `--repl`) prevent `node -e` style arbitrary code execution. `_isBlockedFlag()` catches `--eval=code` and short-flag concatenation with code-char heuristic (` '"();{}`) — allows legitimate flags like `-ecount`. Path-prefixed commands (e.g., `./node`) rejected to prevent allowlist bypass — only bare command names passed to `sandboxExec`
 - **Path Traversal**: `pathTraversal(filePath, projectRoot)` — explicit root param + `path.normalize()` on both sides + `fs.realpathSync()` to resolve symlinks. Returns `realResolved` (canonical path). Prevents bypass via double slashes, dot segments, and symlink attacks. Also applied to `shell.exec` cwd argument
-- **Allowed Commands**: `python3, node, git, npm, npx, bun, ls, cat, echo, mkdir, cp, mv, grep, find, head, tail, wc, sort, uniq` — no curl/wget
-- **File Limits**: search.grep: maxDepth=10, maxFileSize=1MB, maxFiles=1000, async walk with setImmediate yield every 50 files. fetchJSON: 1MB response limit
+- **Allowed Commands**: `python3, node, git, npm, npx, bun, ls, cat, echo, mkdir, cp, mv, grep, find, head, tail, wc, sort, uniq`
+- **File Limits**: search.grep: maxDepth=10, maxFileSize=1MB, maxFiles=1000, **async fs.promises walk** (no event loop blocking). fetchJSON: 1MB response limit
 - **parseFrontmatter**: Uses `YAML.parse()` only — no fallback parser that could silently produce wrong results
 - **Plugin Config**: Uses `guardrails.safeWrite()` for config.yaml writes (with projectRoot). init.js uses `guardrails.safeWrite()` with projectRoot for all generated files
 - **Tool Result Truncation**: Results exceeding 100KB are truncated with `_truncated` flag (applied in both `runAgent` and `createChatSession`, also in `tool-runner.js` isolated execution). **Uses shallow copy `{...result}` instead of `JSON.parse(JSON.stringify())`** — only serializes for final size check

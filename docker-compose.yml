@@ -17,12 +17,17 @@ services:
       retries: 3
 
   aiyu-dashboard:
-    build: ../aiyu-multi-agent-dashboard
+    build:
+      context: ../aiyu-multi-agent-dashboard
+      args:
+        AIYU_API_URL: http://aiyu-api:3000
+        NEXT_PUBLIC_WS_URL: ws://localhost:3000/ws
+        NEXT_PUBLIC_API_KEY: ${AIYU_API_KEY:-}
     ports:
-      - "3001:3000"
+      - "3001:3001"
     environment:
-      - AIYU_WS_URL=ws://aiyu-api:3000/ws
       - AIYU_API_URL=http://aiyu-api:3000
+      - AIYU_API_KEY=${AIYU_API_KEY:-}
     depends_on:
       aiyu-api:
         condition: service_healthy

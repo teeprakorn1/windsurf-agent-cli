@@ -7,6 +7,114 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.7.1] - 2026-05-07
+
+### Fixed — Dashboard Integration Bugs (2 Critical + 3 High + 2 Medium)
+
+**P0 Critical:**
+- **WS client doesn't send API key token** — Dashboard `useWebSocket` connected via `new WebSocket(url)` without `?token=` query param. When `AIYU_API_KEY` env var was set, the WS server's `wsApiKeyAuth` rejected all dashboard connections with 401. Added automatic `?token=` query param injection from `NEXT_PUBLIC_API_KEY` env (`aiyu-multi-agent-dashboard/src/lib/use-websocket.ts`)
+- **`sensitiveRouteAuth` blocks Docker network** — `/metrics` and `/agents/statuses` endpoints used `sensitiveRouteAuth` which only allowed localhost when no API key was set. In Docker, dashboard → API traffic goes over Docker network (non-localhost IP), causing 403 on all metric/status requests. Replaced Next.js rewrite proxy with server-side API route (`/api/[...path]`) that injects `x-api-key` header from `AIYU_API_KEY` env, bypassing localhost restriction (`aiyu-multi-agent-dashboard/src/app/api/[...path]/route.ts`)
+
+**P1 High:**
+- **Docker port mapping mismatch** — `docker-compose.yml` mapped `3001:3000` but Dashboard Dockerfile sets `ENV PORT=3001`. Next.js listened on 3001 inside container but Docker forwarded to container port 3000, making dashboard unreachable. Fixed to `3001:3001` (`windsurf-agent-cli/docker-compose.yml`)
+- **`NEXT_PUBLIC_WS_URL` not embedded at build time** — `AIYU_WS_URL` env var was used in `next.config.js` but `NEXT_PUBLIC_*` envs are only inlined during `next build`. Runtime env changes had no effect, causing wrong WS URL after build. Changed Dockerfile and next.config.js to use `NEXT_PUBLIC_WS_URL` as both build arg and env, with `AIYU_WS_URL` as fallback (`aiyu-multi-agent-dashboard/Dockerfile`, `aiyu-multi-agent-dashboard/next.config.js`)
+- **Next.js rewrite doesn't forward auth headers** — Old `next.config.js` rewrite `/api/:path*` → API server didn't forward `Authorization` or `x-api-key` headers. When `AIYU_API_KEY` was set, all proxied requests got 401. Removed rewrites, replaced with server-side API route that explicitly adds `x-api-key` (`aiyu-multi-agent-dashboard/next.config.js`, `aiyu-multi-agent-dashboard/src/app/api/[...path]/route.ts`)
+
+**P2 Medium:**
+- **Dashboard missing chat WS messages** — `use-websocket.ts` had no `sendChatCreate`/`sendChatSend` functions despite server supporting `chat.create`/`chat.send` and types already defined. Added both functions to hook and return type (`aiyu-multi-agent-dashboard/src/lib/use-websocket.ts`)
+- **`/agents/statuses` response missing ISO timestamp** — HTTP endpoint returned `{ status, runId, since }` with `since` as epoch ms, while WS `agent.status` event sent `timestamp` as ISO string. Dashboard merging data from both sources got inconsistent formats. Added `timestamp` ISO field to `getAgentStatuses()` response (`windsurf-agent-cli/lib/api/ws.js`)
+
+### Added — Dashboard Integration
+
+- **Server-side API proxy route** — `src/app/api/[...path]/route.ts` — proxies all `/api/*` requests to Aiyu API with automatic `x-api-key` header injection from `AIYU_API_KEY` env. Supports GET/POST/PUT/DELETE with proper content-type forwarding and 502 on unreachable API
+- **`NEXT_PUBLIC_API_KEY` env** — Client-side API key for WebSocket token auth. Set via `NEXT_PUBLIC_API_KEY` build arg in Dockerfile, auto-appended as `?token=` to WS URL
+
+### Changed — Dashboard Integration
+
+- **Removed `/api/metrics` static proxy** — Deleted `src/app/api/metrics/route.ts` (replaced by catch-all proxy route)
+- **Removed Next.js rewrites** — `next.config.js` no longer uses `async rewrites()`. All `/api/*` routing handled by server-side route handler
+- **`docker-compose.yml`** — `aiyu-dashboard` service: port `3001:3001`, `NEXT_PUBLIC_WS_URL` build arg (browser-accessible URL), `AIYU_API_KEY` env passthrough for server-side proxy auth
+
+### Fixed — Bug Audit 2026-05-07 Round 4 (2 Critical + 5 High + 7 Medium + 4 Low)
+
+**P0 Critical:**
+- **WS handleRun/handleChatSend timeout timer leak** — When `runPromise` or `sendPromise` rejected (not resolved), `Promise.race` jumped to `catch` block, skipping `clearTimeout(timeoutId)`. The timeout timer continued ticking, calling `abortController.abort()` on a completed agent after 5 minutes. Added `clearTimeout` in both catch blocks (`lib/api/ws.js`)
+- **agent.delegate missing _runId for WS broadcast** — `react-loop.js` passed `_currentAgent`, `_provider`, `_model` into tool args but not `_runId`, so `agent.delegate` broadcast events had no `runId` for dashboard tracking. Added `_runId: traceId` to toolArgs (`lib/core/react-loop.js`)
+
+**P1 High:**
+- **Context trim pair mismatch after splice** — `messages.splice(1, 2)` always dropped index 1+2 as a pair, but after splice the new `messages[1]` might not be `assistant` role, causing mismatched tool-call/result pairs sent to LLM. Added null/break checks before splice (`lib/core/react-loop.js`)
+- **Chat tool execution ignores timeout/abort** — `chatTimedOut` flag was only checked at the start of each tool loop iteration. If a tool was mid-execution when timeout fired, `Promise.race` rejected but the tool kept running (no AbortController). Added `chatTimedOut || signal?.aborted` checks after `Promise.race` and in catch block (`lib/core/chat-session.js`)
+- **Claude API missing Content-Length header** — `callClaude()` set `Content-Type` but not `Content-Length`, causing issues with some HTTP proxies/load balancers that reject chunked transfer. Added `Content-Length: Buffer.byteLength(body)` header (`lib/core/llm-providers.js`)
+- **Intervene API crashes when WS not loaded** — `POST /agents/intervene` called `require("./ws")` without try/catch. In CLI-only mode (no WS), the require succeeded but intervention was silently lost with no error feedback. Added try/catch with 503 response when WS unavailable (`lib/api/handoff.js`)
+- **Chat lastActivity updated before execution** — `handleChatSend` set `entry.lastActivity = Date.now()` before `session.send()`, so failed sends got a fresh timestamp preventing TTL cleanup. Moved update to after successful `Promise.race` (`lib/api/ws.js`)
+
+**P2 Medium:**
+- **Tracing _flushWriteQueue unbounded recursion** — `finally` block called `_flushWriteQueue()` recursively when queue had new items. Under high throughput, this caused stack overflow. Changed to `setImmediate(_flushWriteQueue)` for iterative scheduling (`lib/core/tracing.js`)
+- **Request queue deletes jobs with pending waitFor** — `_finishJob` cleanup deleted oldest jobs regardless of status, potentially removing queued/running jobs that had `waitFor()` promises attached. Changed to only delete completed/failed jobs (`lib/core/request-queue.js`)
+- **safeWrite temp file leak on crash** — If process crashed between `writeFileSync` and `renameSync`, orphaned `aiyu-multi-agent-*` temp files accumulated in `/tmp/` with no cleanup. Added periodic cleanup timer (5min interval, deletes files older than 1 hour, `.unref()` to not block exit) (`lib/core/guardrails.js`)
+- **search.grep memory spike before truncation** — `matches` array grew unbounded during file scanning, only truncated via `.slice(0, 200)` after the full walk. A regex matching every line could spike memory. Added `if (matches.length >= 200) break` inside the line loop (`lib/core/search-tools.js`)
+- **_broadcast uncaught error on client disconnect** — `client.send(payload)` could throw if client disconnected between `readyState` check and `send()`, crashing the process. Added try/catch around each `client.send()` (`lib/api/ws.js`)
+- **SKILL.md read has no size limit** — `loadSkillInstructions` used `fs.readFileSync` on SKILL.md without size check. A 10MB+ skill file would consume RAM even though `prompt-builder` truncates to 8000 chars. Added `MAX_SKILL_FILE_SIZE=100KB` with truncated read for oversized files (`lib/core/agent-loader.js`)
+- **Ollama health check socket leak** — `health-check.js` used the shared `httpAgent` (keepAlive:true) for Ollama ping, keeping sockets open in long-running servers. Created a fresh `Agent({ keepAlive: false })` for the health check request (`lib/core/health-check.js`)
+
+**P3 Low:**
+- **config.json malformed crash** — `loadConfig` used `JSON.parse` without try/catch on `config.json`, crashing the entire config system on malformed JSON. Added try/catch with warning log (`lib/core/config.js`)
+- **chatSessions exported as mutable Map** — `ws.js` exported `chatSessions` Map directly, allowing external modules to `.delete()/.clear()` internal state. Changed export to `() => new Map(chatSessions)` (read-only snapshot) (`lib/api/ws.js`)
+- **memory.save/load missing pathTraversal guard** — File paths constructed from `agentName` + `key` had no `pathTraversal()` check, relying only on character replacement. Added explicit `guardrails.pathTraversal(filePath, projectDir)` for both save and load (`lib/core/tool-definitions.js`)
+- **callMock UTF-8 slice breaks multi-byte chars** — `lastUserMsg.slice(0, 80)` could split a multi-byte UTF-8 character (Thai, CJK), producing replacement characters. Changed to `Array.from(lastUserMsg).slice(0, 80).join("")` for character-aware slicing (`lib/core/llm-providers.js`)
+
+### Fixed — Bug Audit 2026-05-07 Round 3 (2 Critical + 6 High + 5 Medium + 2 Low)
+
+**P0 Critical:**
+- **WS run/chat timeout doesn't cancel agent execution** — `Promise.race` with timeout only rejected the promise but the agent's ReAct loop continued running indefinitely, wasting LLM tokens and blocking resources. Added `AbortController` signal propagation: `ws.js` creates `AbortController` and calls `.abort()` on timeout; `react-loop.js` checks `signal?.aborted` at each step and tool iteration; `chat-session.js` accepts `signal` in `send()` and checks it in the ReAct loop and tool execution loop (`lib/api/ws.js`, `lib/core/react-loop.js`, `lib/core/chat-session.js`)
+- **agent-loader doesn't validate agentName for path traversal** — `loadAgentSpec()` accepted any string as `agentName` without validation, allowing path traversal characters (`/ \\ : * ? " < > |`) when called as a public API (e.g., MCP, Jobs). Added `isValidAgentName()` validation at the top of `loadAgentSpec()`, reusing the existing utility from `utils.js` (`lib/core/agent-loader.js`)
+
+**P1 High:**
+- **wsApiKeyAuth crashes on malformed URL** — `new URL(info.req.url, ...)` in WebSocket auth threw `TypeError` on malformed upgrade requests (e.g., invalid characters), crashing the WS connection handler. Wrapped in `try/catch` with safe 400 rejection (`lib/api/middleware.js`)
+- **prompt-builder hardcodes tool list** — `buildSystemPrompt()` listed 13 tools as a hardcoded string, missing any custom/plugin tools registered via `registerTool()`. Replaced with dynamic `toolRegistry.listTools()` + `TOOL_SCHEMAS` descriptions, so plugin tools appear in the system prompt automatically (`lib/core/prompt-builder.js`)
+- **usage.js exit handler uses writeFileSync** — `_syncFlushBuffer()` wrote `usage.json` directly with `fs.writeFileSync`, which could leave a truncated file if the process was killed mid-write. Changed to atomic write pattern: write to `.tmp` file first, then `fs.renameSync` for atomic replacement (`lib/core/usage.js`)
+- **search-tools uses synchronous file I/O** — `searchGrep` walk function used `fs.readdirSync`/`fs.statSync`/`fs.readFileSync`, blocking the Node.js event loop for seconds on large directories in API server mode. Converted to `fs.promises` (`fsp.readdir`/`fsp.stat`/`fsp.readFile`) for non-blocking async I/O. Same conversion for `fsGlob` fallback walk (`lib/core/search-tools.js`)
+- **chat-session doesn't support intervention** — `createChatSession` had no way to inject mid-turn feedback, unlike `runAgent` which checks `state._intervention`. Added `intervene(message)` method on the session object, `_pendingIntervention` state checked at each ReAct step, and wired `handleIntervene` in `ws.js` to call `session.intervene()` for chat sessions (`lib/core/chat-session.js`, `lib/api/ws.js`)
+
+**P2 Medium:**
+- **handoff error broadcast when WS not loaded** — `broadcastHandoffComplete` was declared inside `try` block via `require("./ws")`, causing `ReferenceError` in `catch` if WS wasn't loaded. Moved WS require + broadcast resolution before `try` with graceful fallback (noop functions) when WS module unavailable (`lib/api/handoff.js`)
+- **Claude API drops multiple system messages** — `callClaude()` used `messages.find(m => m.role === "system")` which only captured the first system message, silently dropping any additional ones (e.g., from intervention injection). Changed to `messages.filter()` + `.join("\n\n")` to merge all system messages into the `system` top-level field (`lib/core/llm-providers.js`)
+- **request-queue timeout=0 treated as default** — `options.timeout || this.jobTimeoutMs` coerced `timeout: 0` to the default 5-minute timeout, preventing intentional no-timeout jobs. Changed to `options.timeout !== undefined ? options.timeout : this.jobTimeoutMs` for explicit undefined check. Same fix in `waitFor()` (`lib/core/request-queue.js`)
+- **chat-session no context limit during tool execution** — Chat ReAct loop accumulated tool result messages without any context size limit, unlike `react-loop.js` which has `MAX_CONTEXT_CHARS` trimming. Added same `MAX_CONTEXT_CHARS` check after tool execution with oldest-message-pair eviction (`lib/core/chat-session.js`)
+
+**P3 Low:**
+- **ws.js exports mutable internal Maps** — `chatSessions` and `PENDING_INTERVENTIONS` Maps were exported directly, allowing external modules to mutate internal state. Added accessor functions (`getChatSession`, `getChatSessions`, `setPendingIntervention`, `getPendingIntervention`) and updated `handoff.js` to use `setPendingIntervention` instead of direct Map access. Legacy exports kept for backward compatibility (`lib/api/ws.js`, `lib/api/handoff.js`)
+- **health-check uses HEAD for Ollama** — Ollama's `/api/tags` endpoint returns 405 Method Not Allowed for HEAD requests in some versions. Changed to GET with `res.resume()` to consume response body and free the socket (`lib/core/health-check.js`)
+- **`chat.step` event missing `timestamp` field** — `handleChatSend` in `ws.js` sent `chat.step` events without a `timestamp`, causing dashboard to use `Date.now()` fallback instead of server time. Added `timestamp: _isoNow()` to match `step` and `chat.complete` events (`lib/api/ws.js`)
+
+### Fixed — Bug Audit 2026-05-07 Rounds 1-2 (2 Critical + 3 High + 5 Medium + 3 CI)
+
+**P0 Critical:**
+- **Failover chain mutation during `.filter()`** — `buildFailoverChain()` used `chain.splice()` + `chain.push()` inside `.filter()` callback, mutating the array during iteration. This caused "local" provider to appear twice and "mock" to be skipped entirely. Replaced with 2-phase approach: pure `.filter()` first, then deprioritize Ollama via splice on the filtered result (`lib/core/failover.js`)
+- **Handoff catch block `ReferenceError`** — `broadcastHandoffComplete` was declared with `const` inside the `try` block but referenced in the `catch` block. If the error occurred before the `require("./ws")` line, the catch block threw a `ReferenceError` masking the original error. Moved declarations outside `try` with null check in catch (`lib/api/handoff.js`)
+
+**P1 High:**
+- **`AIYU_ENABLE_MOCK` not set in tests** — Production unit test `checkReadiness` and integration/compliance tests expected mock provider to be available, but `AIYU_ENABLE_MOCK` was never set. `buildFailoverChain()` filtered out "mock" when the env var was missing, causing all mock-provider agent runs to fail. Added `process.env.AIYU_ENABLE_MOCK = "1"` to `production.test.js`, `flow.test.js`, and `compliance.js` (`lib/test/unit/production.test.js`, `lib/test/integration/flow.test.js`, `lib/test/compliance.js`)
+- **`agent.delegate` no context size limit** — The delegate's ReAct loop accumulated messages without any context size limit, unlike the main `react-loop.js` which has `MAX_CONTEXT_CHARS = 200000`. Long-running delegates with many tool calls could exhaust memory. Added `DELEGATE_MAX_CONTEXT = 100000` with content trimming and oldest-message-pair eviction (`lib/core/tool-definitions.js`)
+- **Chat session no overall timeout** — `createChatSession.send()` ran a ReAct loop with `maxChatSteps` but no overall timeout. A slow LLM provider could run indefinitely in CLI mode. Added `CHAT_TURN_TIMEOUT_MS = 300000` (5 minutes) with `chatTimedOut` flag checked each step and tool iteration (`lib/core/chat-session.js`)
+
+**P2 Medium:**
+- **Circuit breaker Map never cleaned** — `breakers` Map accumulated entries forever; `removeBreaker()` was never called anywhere. Added `cleanupStaleBreakers()` that removes CLOSED breakers with zero failures and no recent activity (>2x resetTimeoutMs idle), called automatically from `getAllBreakerStatuses()` (`lib/core/circuit-breaker.js`)
+- **Tracing Map only cleaned on new trace** — `traces` Map cleanup only ran inside `startTrace()`, leaving stale traces in memory during idle periods. Added periodic cleanup timer (`setInterval` with `.unref()`) that removes expired traces every 30 minutes (`lib/core/tracing.js`)
+- **Cache key delimiter collision** — `_cacheKey()` used pipe-delimited string (`input|agentName|...`), which could produce identical keys for different inputs (e.g. input `"a|b"` + agentName `""` = input `"a"` + agentName `"b"`). Changed to `JSON.stringify([components])` for collision-free key generation (`lib/core/cache.js`)
+- **WS run errors silently dropped** — When a WebSocket client disconnected before the agent run completed or errored, the result/error was silently dropped with no server-side logging. Added `logger.info`/`logger.warn` for dropped results and errors (`lib/api/ws.js`)
+
+**CI Fixes:**
+- **Integration test mock status mismatch** — `flow.test.js` expected `readiness.checks.llmProviders.mock === "available"` but `health-check.js` uses `"enabled"/"disabled"`. Fixed assertion to match actual values (`lib/test/integration/flow.test.js`)
+
+### Changed
+
+- **`chat-session.js`** — Exported `CHAT_TURN_TIMEOUT_MS` constant for module consumers
+- **`circuit-breaker.js`** — Exported `cleanupStaleBreakers` function for manual cleanup
+- **`ws.js`** — `getAgentStatuses()` now includes `timestamp` ISO field alongside `since` epoch ms
+
+---
+
 ## [2.6.0] - 2026-05-06
 
 ### Changed — Module Decomposition + Production Hardening

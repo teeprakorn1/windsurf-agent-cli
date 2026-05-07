@@ -241,6 +241,7 @@ Emitted for each step during a `chat.send`. Streamed after the full response com
 | `toolCalls` | array \| null | Tool call summaries |
 | `duration_ms` | number \| null | Step duration |
 | `error` | string \| null | Error if step failed |
+| `timestamp` | string | ISO 8601 timestamp |
 
 ```json
 {
@@ -250,7 +251,8 @@ Emitted for each step during a `chat.send`. Streamed after the full response com
   "thought": "Looking at the test file",
   "toolCalls": [{ "tool": "fs.read", "error": null }],
   "duration_ms": 950,
-  "error": null
+  "error": null,
+  "timestamp": "2026-05-07T10:00:00.000Z"
 }
 ```
 
