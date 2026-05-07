@@ -2,7 +2,7 @@
 trigger: always_on
 ---
 
-# GEMINI.md - Sub-Agent Kit
+# GEMINI.md - Aiyu Agent Kit
 
 > This file defines how the AI behaves in this workspace.
 

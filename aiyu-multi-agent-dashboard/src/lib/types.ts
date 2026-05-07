@@ -41,6 +41,7 @@ export interface ChatCreatedEvent {
 export interface ChatStepEvent {
   type: "chat.step";
   sessionId: string;
+  turnId?: string;
   step: number;
   thought: string | null;
   toolCalls: ToolCallSummary[] | null;
@@ -52,6 +53,7 @@ export interface ChatStepEvent {
 export interface ChatCompleteEvent {
   type: "chat.complete";
   sessionId: string;
+  turnId?: string;
   content: string | null;
   usage: { promptTokens: number; completionTokens: number; totalTokens: number } | null;
   traceId: string | null;

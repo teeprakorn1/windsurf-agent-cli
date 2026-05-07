@@ -29,7 +29,7 @@ export const MetricsPanel = memo(function MetricsPanel() {
         setStats([
           { label: "HTTP Requests", value: "—", trend: "flat", color: "text-blue-400", icon: BarChart3 },
           { label: "Avg Duration", value: "—", trend: "flat", color: "text-emerald-400", icon: TrendingDown },
-          { label: "Token Usage", value: "—", trend: "flat", color: "text-violet-400", icon: TrendingUp },
+          { label: "Token Usage", value: "—", trend: "flat", color: "text-cyan-400", icon: TrendingUp },
           { label: "Queue Size", value: "—", trend: "flat", color: "text-amber-400", icon: Minus },
         ]);
       } finally {
@@ -83,37 +83,43 @@ export const MetricsPanel = memo(function MetricsPanel() {
 function parsePrometheusMetrics(text: string): MetricStat[] {
   const stats: MetricStat[] = [];
 
-  const requestsMatch = text.match(/aiyu_http_requests_total(?:\{[^}]*\})?\s+(\d+)/);
-  if (requestsMatch) {
-    stats.push({ label: "HTTP Requests", value: parseInt(requestsMatch[1]).toLocaleString(), trend: "up", color: "text-blue-400", icon: BarChart3 });
+  // Only match lines that start with the metric name (not # HELP / # TYPE comments)
+  const lines = text.split("\n");
+  const findMetric = (name: string) => lines.find(l => l.startsWith(name))?.match(/\s+(\d+(?:\.\d+)?)$/)?.[1];
+
+  const requests = findMetric("aiyu_http_requests_total");
+  if (requests) {
+    stats.push({ label: "HTTP Requests", value: parseInt(requests).toLocaleString(), trend: "up", color: "text-blue-400", icon: BarChart3 });
   }
 
-  const durationSumMatch = text.match(/aiyu_http_request_duration_seconds_sum(?:\{[^}]*\})?\s+([\d.]+)/);
-  const durationCountMatch = text.match(/aiyu_http_request_duration_seconds_count(?:\{[^}]*\})?\s+(\d+)/);
-  if (durationSumMatch && durationCountMatch) {
-    const avg = parseFloat(durationSumMatch[1]) / parseInt(durationCountMatch[1]);
+  const durationSum = findMetric("aiyu_http_request_duration_seconds_sum");
+  const durationCount = findMetric("aiyu_http_request_duration_seconds_count");
+  if (durationSum && durationCount) {
+    const avg = parseFloat(durationSum) / parseInt(durationCount);
     const avgMs = Math.round(avg * 1000);
     stats.push({ label: "Avg Response", value: avgMs < 1000 ? `${avgMs}ms` : `${(avgMs / 1000).toFixed(1)}s`, trend: "flat", color: "text-emerald-400", icon: TrendingDown });
   }
 
-  const agentRunsMatch = text.match(/aiyu_agent_runs(?:\{[^}]*\})?\s+(\d+)/);
-  if (agentRunsMatch) {
-    stats.push({ label: "Agent Runs", value: agentRunsMatch[1], trend: agentRunsMatch[1] === "0" ? "flat" : "up", color: "text-violet-400", icon: TrendingUp });
+  const agentRuns = findMetric("aiyu_agent_runs");
+  if (agentRuns) {
+    stats.push({ label: "Agent Runs", value: agentRuns, trend: agentRuns === "0" ? "flat" : "up", color: "text-cyan-400", icon: TrendingUp });
   }
 
-  const commandsMatch = text.match(/aiyu_total_commands(?:\{[^}]*\})?\s+(\d+)/);
-  if (commandsMatch) {
-    stats.push({ label: "Commands", value: commandsMatch[1], trend: "up", color: "text-amber-400", icon: Minus });
+  const commands = findMetric("aiyu_total_commands");
+  if (commands) {
+    stats.push({ label: "Commands", value: commands, trend: "up", color: "text-amber-400", icon: Minus });
   }
 
-  const queueMatch = text.match(/aiyu_queue_size\{type="running"\}\s+(\d+)/);
-  if (queueMatch) {
-    stats.push({ label: "Queue", value: queueMatch[1], trend: queueMatch[1] === "0" ? "flat" : "up", color: "text-rose-400", icon: Minus });
+  const queueRunning = lines.find(l => l.includes('aiyu_queue_size{type="running"}'))?.match(/\s+(\d+)$/)?.[1];
+  const queueQueued = lines.find(l => l.includes('aiyu_queue_size{type="queued"}'))?.match(/\s+(\d+)$/)?.[1];
+  if (queueRunning && queueQueued) {
+    const totalQueue = parseInt(queueRunning) + parseInt(queueQueued);
+    stats.push({ label: "Queue", value: String(totalQueue), trend: totalQueue === 0 ? "flat" : "up", color: "text-rose-400", icon: Minus });
   }
 
-  const errorRateMatch = text.match(/aiyu_error_rate(?:\{[^}]*\})?\s+([\d.]+)/);
-  if (errorRateMatch) {
-    const rate = parseFloat(errorRateMatch[1]);
+  const errorRate = findMetric("aiyu_error_rate");
+  if (errorRate) {
+    const rate = parseFloat(errorRate);
     stats.push({ label: "Error Rate", value: `${(rate * 100).toFixed(1)}%`, trend: rate > 0 ? "down" : "flat", color: rate > 0 ? "text-red-400" : "text-emerald-400", icon: TrendingDown });
   }
 
@@ -121,7 +127,7 @@ function parsePrometheusMetrics(text: string): MetricStat[] {
     return [
       { label: "HTTP Requests", value: "—", trend: "flat", color: "text-blue-400", icon: BarChart3 },
       { label: "Avg Response", value: "—", trend: "flat", color: "text-emerald-400", icon: TrendingDown },
-      { label: "Agent Runs", value: "—", trend: "flat", color: "text-violet-400", icon: TrendingUp },
+      { label: "Agent Runs", value: "—", trend: "flat", color: "text-cyan-400", icon: TrendingUp },
       { label: "Error Rate", value: "—", trend: "flat", color: "text-amber-400", icon: Minus },
     ];
   }

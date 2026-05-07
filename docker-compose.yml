@@ -1,20 +1,23 @@
-version: "3.8"
 services:
   aiyu-api:
     build: .
     ports:
       - "3000:3000"
+    env_file:
+      - .env
     environment:
       - NODE_ENV=production
       - PORT=3000
-      - LLM_PROVIDER=mock
       - QUEUE_CONCURRENCY=5
       - QUEUE_MAX=100
+      - AIYU_ENABLE_MOCK=1
+    restart: unless-stopped
     healthcheck:
       test: ["CMD", "node", "-e", "const h=require('http');const r=h.request('http://localhost:3000/health',res=>process.exit(res.statusCode<500?0:1));r.on('error',()=>process.exit(1));r.setTimeout(3000,()=>{r.destroy();process.exit(1)});r.end()"]
       interval: 10s
       timeout: 5s
       retries: 3
+      start_period: 10s
 
   aiyu-dashboard:
     build:
@@ -25,9 +28,11 @@ services:
         NEXT_PUBLIC_API_KEY: ${AIYU_API_KEY:-}
     ports:
       - "3001:3001"
+    env_file:
+      - .env
     environment:
       - AIYU_API_URL=http://aiyu-api:3000
-      - AIYU_API_KEY=${AIYU_API_KEY:-}
+    restart: unless-stopped
     depends_on:
       aiyu-api:
         condition: service_healthy

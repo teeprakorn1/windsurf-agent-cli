@@ -44,7 +44,7 @@
 
 **Aiyu MultiAgent** is an open-source AI agent platform that helps developers automate software engineering tasks using large language models (LLMs). It features a **ReAct execution engine**, **MCP server integration** for Claude Code / Cursor / Windsurf, **WebSocket real-time streaming**, **agent handoff orchestration**, and a **plugin system** for extensible AI capabilities. Supports OpenAI GPT-4, Anthropic Claude, Ollama local models, and mock mode for testing.
 
-> **Latest Release: v2.7.1** — Bug fix release (5 rounds including Dashboard Integration: 10 critical + 22 high + 26 medium + 14 low + 3 CI). V2.7.0 added real-time monitoring dashboard, WS event schema, and 11 bug fixes. All changes backward compatible.
+> **Latest Release: v2.7.1** — Dashboard security hardening + refactoring: CSP headers, API proxy path whitelist, WS auth via `Sec-WebSocket-Protocol`, input validation, test suite (Jest + Playwright), component refactoring, and Docker standalone build fix. V2.7.0 added real-time monitoring dashboard, WS event schema, and 11 bug fixes. All changes backward compatible.
 
 ---
 
@@ -80,8 +80,19 @@ V2.7 brings a **real-time monitoring dashboard** and **bug fix hardening** — a
 | 🔄 Broadcasts | `agent.status`, `handoff.started/complete`, `delegate.started/complete` | Dashboard ⬆️ |
 | 🐛 V2.7.0 Fixes | 11 bugs — path traversal, timer leak, Ollama deprioritize, etc. | Security ⬆️ |
 | 🐛 V2.7.1 Fixes | 75 bugs across 5 rounds — Dashboard integration, WS disconnect abort, mutable Map export, server crash guard, input validation, path traversal in packager, npm --ignore-scripts, agent file size limit, env secret leak, true LRU, retry jitter, recursive secret scan, symlink warning, heading truncation, watch timer cleanup, .tmp file cleanup, health-check agent reuse, dev --provider flag, dynamic compliance agent, SKIP_DIRS | Stability ⬆️ |
+| 🔒 Dashboard Security | CSP headers, API proxy path whitelist, WS auth `Sec-WebSocket-Protocol`, input validation | Security ⬆️ |
+| 🧪 Test Suite | Jest + React Testing Library + Playwright E2E (29 unit + 9 E2E tests) | Quality ⬆️ |
+| 🏗️ Refactoring | `page.tsx` 479→160 lines, `DashboardHeader`/`RunPanel`/`ResetDialog` components | Maintainability ⬆️ |
 
 ### V2.7.1 Bug Fixes (10 Critical + 17 High + 19 Medium + 7 Low + 3 CI)
+
+**Dashboard Security Hardening (Post-release):**
+- **CSP Headers**: `Content-Security-Policy`, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy` via `next.config.js`
+- **API Proxy Whitelist**: `isPathAllowed()` blocks non-whitelisted paths (`admin/*`, `secrets/*`, etc.) with 403
+- **WS Auth**: Client sends token via `Sec-WebSocket-Protocol: aiyu-token.<key>` instead of query param; server `handleProtocols` selects subprotocol
+- **Input Validation**: `validateInput()` / `validateIdentifier()` in `use-websocket.ts` guards `sendRun`, `sendIntervene`, `sendChatCreate`, `sendChatSend`
+- **Component Refactoring**: `page.tsx` 479→160 lines — extracted `DashboardHeader`, `RunPanel`, `ResetDialog` components
+- **Test Suite**: Jest + React Testing Library (29 tests, 4 suites) + Playwright E2E (9 specs) — API proxy, input validation, component rendering
 
 **Dashboard Integration (2 Critical + 3 High + 2 Medium):**
 - **Critical**: WS client no API key token (auto `?token=` injection), `sensitiveRouteAuth` blocks Docker network (server-side API proxy with auth)

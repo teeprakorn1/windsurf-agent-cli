@@ -1,4 +1,4 @@
-# Sub-Agent Kit Architecture
+# Aiyu Agent Kit Architecture
 
 > Comprehensive AI Agent Capability Expansion Toolkit
 
@@ -6,7 +6,7 @@
 
 ## 📋 Overview
 
-Sub-Agent Kit is a modular system consisting of:
+Aiyu Agent Kit is a modular system consisting of:
 
 - **20 Specialist Agents** - Role-based AI personas
 - **36 Skills** - Domain-specific knowledge modules

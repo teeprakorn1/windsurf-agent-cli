@@ -42,7 +42,7 @@ You are a specialized AI agent for custom tasks.
 - Enabled — path traversal, safe write, rate limit, sandbox exec
 
 ## Instructions
-Follow the Sub-Agent Kit rules from GEMINI.md.
+Follow the Aiyu Agent Kit rules from GEMINI.md.
 Apply clean-code principles to all generated code.
 
 ## Interaction Map

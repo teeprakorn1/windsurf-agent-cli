@@ -3,7 +3,7 @@ trigger: on_request
 keywords: [test, testing, unit test, integration test, e2e, tdd, coverage, mock, stub, fixture]
 ---
 
-# Testing Rules — Sub-Agent Kit
+# Testing Rules — Aiyu Agent Kit
 
 > If it's not tested, it's broken. Test with purpose, not just coverage.
 

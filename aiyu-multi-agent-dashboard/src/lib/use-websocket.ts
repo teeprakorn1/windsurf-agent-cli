@@ -11,6 +11,26 @@ const MAX_RUNS = 50;
 const MAX_STEPS_PER_RUN = 100;
 const AGENT_STATUS_TTL_MS = 30 * 60 * 1000;
 
+// Input validation limits — match backend guardrails
+const MAX_INPUT_LENGTH = 10000;
+const MAX_MESSAGE_LENGTH = 10000;
+const MAX_IDENTIFIER_LENGTH = 256;
+const VALID_PROVIDERS = new Set(["mock", "openai", "claude", "ollama", "local", ""]);
+
+export function validateIdentifier(value: unknown, name: string): string | null {
+  if (value === undefined || value === null) return null;
+  if (typeof value !== "string") { throw new Error(`${name} must be a string`); }
+  if (value.length > MAX_IDENTIFIER_LENGTH) { throw new Error(`${name} exceeds max length (${MAX_IDENTIFIER_LENGTH})`); }
+  return value;
+}
+
+export function validateInput(value: string, name: string, maxLen: number): void {
+  if (typeof value !== "string") { throw new Error(`${name} must be a string`); }
+  const trimmed = value.trim();
+  if (!trimmed) { throw new Error(`${name} is required`); }
+  if (trimmed.length > maxLen) { throw new Error(`${name} exceeds max length (${maxLen})`); }
+}
+
 interface CompletedRun {
   status: string;
   output: string | null;
@@ -27,6 +47,7 @@ interface ChatSession {
 
 interface ChatStep {
   sessionId: string;
+  turnId?: string;
   step: number;
   thought: string | null;
   toolCalls: { tool: string; duration_ms?: number | null; error?: string | null }[] | null;
@@ -37,6 +58,7 @@ interface ChatStep {
 
 interface ChatCompletion {
   sessionId: string;
+  turnId?: string;
   content: string | null;
   usage: { promptTokens: number; completionTokens: number; totalTokens: number } | null;
   traceId: string | null;
@@ -76,7 +98,7 @@ interface UseWebSocketReturn {
   sendRun: (opts: { agentName?: string; input: string; provider?: string; maxSteps?: number }) => void;
   sendIntervene: (runId: string, message: string) => void;
   sendChatCreate: (opts: { agentName?: string; provider?: string; model?: string }) => void;
-  sendChatSend: (sessionId: string, input: string) => void;
+  sendChatSend: (sessionId: string, input: string, opts?: { turnId?: string }) => void;
   sendPing: () => void;
   clearErrors: () => void;
 }
@@ -94,20 +116,21 @@ export function useWebSocket(url?: string): UseWebSocketReturn {
   const [chatSessions, setChatSessions] = useState<Record<string, ChatSession>>({});
   const [chatSteps, setChatSteps] = useState<ChatStep[]>([]);
   const [chatCompletions, setChatCompletions] = useState<Record<string, ChatCompletion>>({});
+  const lastChatTurnIdRef = useRef<Record<string, string>>({});
   const [handoffs, setHandoffs] = useState<HandoffRecord[]>([]);
   const [delegates, setDelegates] = useState<DelegateRecord[]>([]);
 
   const wsUrl = useMemo(() => {
-    let base = url || (typeof window !== "undefined"
+    return url || (typeof window !== "undefined"
       ? (process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:3000/ws")
       : "ws://localhost:3000/ws");
-    const apiKey = process.env.NEXT_PUBLIC_API_KEY;
-    if (apiKey && base && !base.includes("token=")) {
-      const sep = base.includes("?") ? "&" : "?";
-      base = `${base}${sep}token=${encodeURIComponent(apiKey)}`;
-    }
-    return base;
   }, [url]);
+
+  const wsProtocols = useMemo((): string[] | undefined => {
+    const apiKey = process.env.NEXT_PUBLIC_API_KEY;
+    if (!apiKey) return undefined;
+    return [`aiyu-token.${apiKey}`];
+  }, []);
 
   const pushError = useCallback((msg: string) => {
     setErrors(prev => [...prev.slice(-49), { message: msg, time: Date.now() }]);
@@ -126,10 +149,17 @@ export function useWebSocket(url?: string): UseWebSocketReturn {
     }
   }, []);
 
+  const connectRef = useRef<() => void>(() => {});
+
   const connect = useCallback(() => {
     clearReconnect();
-    
-    const ws = new WebSocket(wsUrl);
+
+    // Guard against creating duplicate connections
+    if (wsRef.current && wsRef.current.readyState !== WebSocket.CLOSED) {
+      return;
+    }
+
+    const ws = wsProtocols ? new WebSocket(wsUrl, wsProtocols) : new WebSocket(wsUrl);
     wsRef.current = ws;
 
     ws.onopen = () => {
@@ -157,7 +187,7 @@ export function useWebSocket(url?: string): UseWebSocketReturn {
         pushError(`WebSocket closed. Reconnecting in ${delay / 1000}s... (attempt ${reconnectAttemptsRef.current}/${MAX_RECONNECT_ATTEMPTS})`);
         
         reconnectTimeoutRef.current = window.setTimeout(() => {
-          connect();
+          connectRef.current();
         }, delay);
       } else {
         pushError("WebSocket reconnection failed after max attempts. Please refresh the page.");
@@ -241,6 +271,7 @@ export function useWebSocket(url?: string): UseWebSocketReturn {
           const e = event as ChatStepEvent;
           setChatSteps(prev => [...prev.slice(-(MAX_ARRAY_SIZE - 1)), {
             sessionId: e.sessionId,
+            turnId: e.turnId || undefined,
             step: e.step,
             thought: e.thought,
             toolCalls: e.toolCalls,
@@ -257,6 +288,7 @@ export function useWebSocket(url?: string): UseWebSocketReturn {
             ...prev,
             [e.sessionId]: {
               sessionId: e.sessionId,
+              turnId: e.turnId || undefined,
               content: e.content,
               usage: e.usage,
               traceId: e.traceId,
@@ -338,9 +370,13 @@ export function useWebSocket(url?: string): UseWebSocketReturn {
           });
           break;
         }
+        default:
+          console.warn("[WS] Unknown event type:", (event as unknown as Record<string, unknown>).type);
       }
     };
-  }, [wsUrl, pushError, clearReconnect, parseServerTime]);
+  }, [wsUrl, wsProtocols, pushError, clearReconnect, parseServerTime]);
+
+  connectRef.current = connect;
 
   useEffect(() => {
     connect();
@@ -366,7 +402,7 @@ export function useWebSocket(url?: string): UseWebSocketReturn {
         return cleaned;
       });
     }, 60_000);
-    cleanupTimer.unref?.();
+    // cleanupTimer.unref is Node-only; skip in browser
     
     return () => {
       clearInterval(cleanupTimer);
@@ -378,6 +414,19 @@ export function useWebSocket(url?: string): UseWebSocketReturn {
   }, [connect, clearReconnect]);
 
   const sendRun = useCallback((opts: { agentName?: string; input: string; provider?: string; maxSteps?: number }) => {
+    try {
+      validateInput(opts.input, "Task input", MAX_INPUT_LENGTH);
+      if (opts.agentName) validateIdentifier(opts.agentName, "Agent name");
+      if (opts.provider && !VALID_PROVIDERS.has(opts.provider)) {
+        throw new Error(`Invalid provider: ${opts.provider}`);
+      }
+      if (opts.maxSteps !== undefined && (typeof opts.maxSteps !== "number" || opts.maxSteps < 1 || opts.maxSteps > 100)) {
+        throw new Error("maxSteps must be between 1 and 100");
+      }
+    } catch (err) {
+      pushError(err instanceof Error ? err.message : "Invalid run parameters");
+      return;
+    }
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify({ type: "run", ...opts }));
     } else {
@@ -386,6 +435,13 @@ export function useWebSocket(url?: string): UseWebSocketReturn {
   }, [pushError]);
 
   const sendIntervene = useCallback((runId: string, message: string) => {
+    try {
+      validateInput(runId, "Run ID", MAX_IDENTIFIER_LENGTH);
+      validateInput(message, "Message", MAX_MESSAGE_LENGTH);
+    } catch (err) {
+      pushError(err instanceof Error ? err.message : "Invalid intervention parameters");
+      return;
+    }
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify({ type: "intervene", runId, message }));
     } else {
@@ -394,6 +450,16 @@ export function useWebSocket(url?: string): UseWebSocketReturn {
   }, [pushError]);
 
   const sendChatCreate = useCallback((opts: { agentName?: string; provider?: string; model?: string }) => {
+    try {
+      if (opts.agentName) validateIdentifier(opts.agentName, "Agent name");
+      if (opts.provider && !VALID_PROVIDERS.has(opts.provider)) {
+        throw new Error(`Invalid provider: ${opts.provider}`);
+      }
+      if (opts.model) validateIdentifier(opts.model, "Model");
+    } catch (err) {
+      pushError(err instanceof Error ? err.message : "Invalid chat parameters");
+      return;
+    }
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify({ type: "chat.create", ...opts }));
     } else {
@@ -401,9 +467,22 @@ export function useWebSocket(url?: string): UseWebSocketReturn {
     }
   }, [pushError]);
 
-  const sendChatSend = useCallback((sessionId: string, input: string) => {
+  const sendChatSend = useCallback((sessionId: string, input: string, opts?: { turnId?: string }) => {
+    try {
+      validateInput(sessionId, "Session ID", MAX_IDENTIFIER_LENGTH);
+      validateInput(input, "Chat input", MAX_INPUT_LENGTH);
+      if (opts?.turnId) validateIdentifier(opts.turnId, "Turn ID");
+    } catch (err) {
+      pushError(err instanceof Error ? err.message : "Invalid chat send parameters");
+      return;
+    }
     if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify({ type: "chat.send", sessionId, input }));
+      const providedTurnId = opts?.turnId;
+      const resolvedTurnId = (typeof providedTurnId === "string" && providedTurnId.length > 0)
+        ? providedTurnId
+        : `turn_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+      lastChatTurnIdRef.current[sessionId] = resolvedTurnId;
+      wsRef.current.send(JSON.stringify({ type: "chat.send", sessionId, input, turnId: resolvedTurnId }));
     } else {
       pushError("Cannot send chat: WebSocket not connected");
     }

@@ -3,7 +3,7 @@ trigger: on_request
 keywords: [deploy, deployment, release, rollback, staging, production, ci, cd, pipeline, ship]
 ---
 
-# Deployment Rules — Sub-Agent Kit
+# Deployment Rules — Aiyu Agent Kit
 
 > Ship with confidence. Deploy safely, rollback quickly, monitor always.
 

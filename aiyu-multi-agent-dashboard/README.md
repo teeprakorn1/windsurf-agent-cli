@@ -31,10 +31,12 @@ The dashboard runs on **port 3001** by default. The API server must be running o
 | `AIYU_API_URL` | `http://localhost:3000` | Backend API URL (build-time + server-side proxy) |
 | `AIYU_API_KEY` | `""` | API key for server-side proxy auth (injected as `x-api-key` header) |
 | `NEXT_PUBLIC_WS_URL` | `ws://localhost:3000/ws` | WebSocket URL (client-side, embedded at build time) |
-| `NEXT_PUBLIC_API_KEY` | `""` | API key for WS auth (auto-appended as `?token=` param) |
+| `NEXT_PUBLIC_API_KEY` | `""` | API key for WS auth via `Sec-WebSocket-Protocol` (create `.env.local`) |
 | `NEXT_PUBLIC_API_URL` | derived from `AIYU_API_URL` | API URL (client-side, auto-set) |
 | `PORT` | `3001` | Dashboard HTTP port |
 | `NEXT_PUBLIC_APP_VERSION` | `package.json` version | App version shown in header |
+
+> **Note on `NEXT_PUBLIC_API_KEY`**: Create `.env.local` with `NEXT_PUBLIC_API_KEY=<your-aiyu-key>` so the dashboard can authenticate WebSocket connections. This key is sent via `Sec-WebSocket-Protocol` header (never exposed in URL query params).
 
 ## Docker
 
@@ -50,7 +52,7 @@ Standalone:
 ```bash
 docker build -t aiyu-dashboard \
   --build-arg AIYU_API_URL=http://host.docker.internal:3000 \
-  --build-arg NEXT_PUBLIC_WS_URL=ws://localhost:3000/ws \
+  --build-arg NEXT_PUBLIC_WS_URL=ws://host.docker.internal:3000/ws \
   --build-arg NEXT_PUBLIC_API_KEY=${AIYU_API_KEY:-} \
   .
 docker run -p 3001:3001 \
@@ -58,6 +60,8 @@ docker run -p 3001:3001 \
   -e AIYU_API_KEY=${AIYU_API_KEY:-} \
   aiyu-dashboard
 ```
+
+> **Standalone Build**: Uses `output: "standalone"` in `next.config.js`. The Dockerfile copies `.next/standalone`, `public/`, and `.next/static/` into the final image. Verified working with Node 20 Alpine.
 
 ---
 
@@ -96,7 +100,8 @@ docker run -p 3001:3001 \
 ```
 ┌─────────────────────┐     WebSocket      ┌──────────────────┐
 │   Dashboard (Next)  │ ◄────────────────► │  Aiyu API Server │
-│   :3001             │     /ws?token=      │  :3000            │
+│   :3001             │  Sec-WebSocket-   │  :3000            │
+│                     │   Protocol: token   │                   │
 │                     │                    │                   │
 │  ┌───────────────┐  │  HTTP (server)     │  Express + WS    │
 │  │ API Proxy     │──┼──────────────────►│  /metrics         │
@@ -168,10 +173,10 @@ WsProvider (context, useMemo)
 src/
 ├── app/
 │   ├── api/
-│   │   └── [...path]/route.ts  # Server-side API proxy (auth injection)
+│   │   └── [...path]/route.ts  # Server-side API proxy (auth injection, path whitelist)
 │   ├── globals.css          # Tailwind + custom CSS variables
 │   ├── layout.tsx           # Root layout with ThemeProvider
-│   └── page.tsx             # Main dashboard page
+│   └── page.tsx             # Main dashboard page (160 lines, refactored)
 ├── components/
 │   ├── agent-status-panel.tsx
 │   ├── execution-timeline.tsx
@@ -181,12 +186,29 @@ src/
 │   ├── metrics-panel.tsx
 │   ├── logs-viewer.tsx
 │   ├── theme-provider.tsx
-│   └── theme-toggle.tsx
+│   ├── theme-toggle.tsx
+│   ├── agent-select.tsx      # Custom searchable dropdown with provider badges
+│   ├── provider-select.tsx   # Custom LLM provider dropdown
+│   ├── dashboard-header.tsx  # App info, export, reset, connection status
+│   ├── run-panel.tsx         # New Run input panel
+│   └── reset-dialog.tsx      # Confirmation modal
 └── lib/
     ├── types.ts             # WS event type definitions
-    ├── use-websocket.ts     # WebSocket hook (connect, parse, state, chat)
+    ├── use-websocket.ts     # WebSocket hook (connect, parse, state, chat, validation)
     └── ws-context.tsx       # React context wrapper
 ```
+
+---
+
+## Security
+
+| Feature | Implementation |
+|---------|---------------|
+| **CSP Headers** | `default-src 'self'`, `frame-ancestors 'none'`, `X-Frame-Options: DENY` via `next.config.js` |
+| **API Proxy Whitelist** | Only `agents/*`, `jobs/*`, `health`, `metrics` allowed — 403 for everything else |
+| **WS Auth** | Token sent via `Sec-WebSocket-Protocol: aiyu-token.<key>` (no query param exposure) |
+| **Input Validation** | `validateInput()` / `validateIdentifier()` with length limits (10K chars, 256 id) |
+| **No API Key Leak** | `AIYU_API_KEY` injected server-side as `x-api-key` header; never exposed to client |
 
 ---
 
@@ -202,8 +224,17 @@ npm run lint
 # Type check
 npx tsc --noEmit
 
+# Unit + integration tests (Jest + RTL)
+npm test
+
+# E2E tests (Playwright)
+npm run test:e2e
+
 # Production build
 npm run build
+
+# Production server
+npm start
 ```
 
 ---

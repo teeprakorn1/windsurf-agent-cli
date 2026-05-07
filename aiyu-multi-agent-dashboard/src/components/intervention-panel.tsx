@@ -62,7 +62,7 @@ export const InterventionPanel = memo(function InterventionPanel() {
             <p className="text-xs text-gray-500 dark:text-zinc-400 mb-4">Force-stop this run after the current step? This cannot be undone.</p>
             <div className="flex gap-2 justify-end">
               <button onClick={() => setConfirmStop(false)} className="btn-ghost px-4 py-2 text-xs">Cancel</button>
-              <button onClick={() => { sendIntervene(selectedRun, "STOP: Terminate after current step"); setSelectedRun(""); setConfirmStop(false); }} className="flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-medium text-white bg-red-600 hover:bg-red-500 transition-colors">
+              <button onClick={() => { sendIntervene(selectedRun, JSON.stringify({ action: "stop", reason: "user-requested" })); setSelectedRun(""); setConfirmStop(false); }} className="flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-medium text-white bg-red-600 hover:bg-red-500 transition-colors">
                 <Square className="h-3 w-3" /> Stop
               </button>
             </div>

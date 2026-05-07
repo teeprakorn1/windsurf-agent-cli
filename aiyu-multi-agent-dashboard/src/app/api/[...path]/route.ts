@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isPathAllowed } from "./utils";
 
 const API_URL = process.env.AIYU_API_URL || "http://localhost:3000";
 const API_KEY = process.env.AIYU_API_KEY || "";
@@ -19,6 +20,9 @@ async function proxy(request: NextRequest, method: string) {
   const path = (request.nextUrl.pathname || "").replace(/^\/api\/?/, "");
   if (!path) {
     return NextResponse.json({ error: "Missing API path" }, { status: 400 });
+  }
+  if (!isPathAllowed(path)) {
+    return NextResponse.json({ error: "Path not allowed" }, { status: 403 });
   }
   const url = `${API_URL}/${path}${request.nextUrl.search}`;
 

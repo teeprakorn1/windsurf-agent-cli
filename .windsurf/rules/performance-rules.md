@@ -3,7 +3,7 @@ trigger: on_request
 keywords: [performance, optimize, slow, fast, cache, memory, cpu, latency, throughput, benchmark, profiling]
 ---
 
-# Performance Rules — Sub-Agent Kit
+# Performance Rules — Aiyu Agent Kit
 
 > Guidelines for building high-performance, efficient systems.
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Auto Preview - Sub-Agent Kit
+Auto Preview - Aiyu Agent Kit
 ==============================
 Manages (start/stop/status) the local development server for previewing the application.
 

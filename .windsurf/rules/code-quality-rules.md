@@ -3,7 +3,7 @@ trigger: on_request
 keywords: [quality, clean code, refactoring, maintainable, readable, test, coverage, lint, format]
 ---
 
-# Code Quality Rules — Sub-Agent Kit
+# Code Quality Rules — Aiyu Agent Kit
 
 > Standards for maintainable, readable, and testable code.
 

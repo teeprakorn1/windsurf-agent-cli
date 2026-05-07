@@ -35,12 +35,12 @@ export const MemoryViewer = memo(function MemoryViewer() {
     <div className="glass-card p-4">
       <div className="flex items-center gap-2 mb-3">
         <Database className="h-3.5 w-3.5 text-cyan-600 dark:text-cyan-400" />
-        <h2 className="section-title mb-0">Agent Memory</h2>
+        <h2 className="section-title mb-0">Interactions</h2>
       </div>
       {memoryEntries.length === 0 ? (
         <div className="flex flex-col items-center py-6 text-gray-500 dark:text-zinc-600">
           <Database className="h-8 w-8 mb-2 opacity-30" />
-          <p className="text-xs">No saved memories</p>
+          <p className="text-xs">No interactions yet</p>
           <p className="text-[10px] text-gray-400 dark:text-zinc-700">Handoffs and delegates appear here</p>
         </div>
       ) : (

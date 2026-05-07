@@ -155,6 +155,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`circuit-breaker.js`** — Exported `cleanupStaleBreakers` function for manual cleanup
 - **`ws.js`** — `getAgentStatuses()` now includes `timestamp` ISO field alongside `since` epoch ms
 
+### Added — Dashboard Security Hardening (Post-release)
+
+- **CSP Headers** — `Content-Security-Policy`, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy` via `next.config.js` (`aiyu-multi-agent-dashboard/next.config.js`)
+- **API Proxy Path Whitelist** — `isPathAllowed()` blocks non-whitelisted paths (`admin/*`, `secrets/*`, etc.) with 403. Only `agents/*`, `jobs/*`, `health`, `metrics` allowed (`aiyu-multi-agent-dashboard/src/app/api/[...path]/route.ts`)
+- **WebSocket Auth via `Sec-WebSocket-Protocol`** — Client sends token via `Sec-WebSocket-Protocol: aiyu-token.<key>` subprotocol instead of `?token=` query param; server `handleProtocols` selects subprotocol to prevent browser rejection (`aiyu-multi-agent-dashboard/src/lib/use-websocket.ts`, `windsurf-agent-cli/lib/api/ws.js`)
+- **Input Validation** — `validateInput()` / `validateIdentifier()` in `use-websocket.ts` guards `sendRun`, `sendIntervene`, `sendChatCreate`, `sendChatSend` with length limits (10K chars, 256 id) (`aiyu-multi-agent-dashboard/src/lib/use-websocket.ts`)
+- **Test Suite** — Jest + React Testing Library (29 tests, 4 suites: API proxy whitelist, input validation, utility functions, ResetDialog component) + Playwright E2E (9 specs: dashboard load, panels, dark mode, export menu, reset dialog, API proxy security) (`aiyu-multi-agent-dashboard/jest.config.js`, `aiyu-multi-agent-dashboard/playwright.config.ts`)
+
+### Changed — Dashboard Refactoring (Post-release)
+
+- **`page.tsx` decomposed** — 479→160 lines. Extracted `DashboardHeader` (app info, export, reset, connection status), `RunPanel` (agent select, input, provider, run button), `ResetDialog` (confirmation modal) (`aiyu-multi-agent-dashboard/src/app/page.tsx`, `src/components/dashboard-header.tsx`, `src/components/run-panel.tsx`, `src/components/reset-dialog.tsx`)
+- **`chat-panel.tsx` custom dropdowns** — Replaced native `<select>` elements with `AgentSelect` and `ProviderSelect` custom components (searchable, provider badges, consistent styling) (`aiyu-multi-agent-dashboard/src/components/chat-panel.tsx`)
+- **Docker standalone build verified** — `output: "standalone"` in `next.config.js`, Dockerfile copies `.next/standalone`, `public/`, `.next/static/`. Verified with Node 20 Alpine (`aiyu-multi-agent-dashboard/Dockerfile`)
+
 ---
 
 ## [2.6.0] - 2026-05-06
@@ -964,7 +978,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Rename: Antigravity Kit → Sub-Agent Kit
+- Rename: Sub-Agent Kit → Aiyu Agent Kit
+
+---
+
+## [1.1.5] - 2026-05-07
+
+### Changed
+
+- Rebrand: Agent Kit → Sub-Agent Kit (all docs, rules, scripts, agents)
 
 ---
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useMemo, type ReactNode } from "react";
+import { createContext, useContext, type ReactNode } from "react";
 import { useWebSocket } from "@/lib/use-websocket";
 
 type WsContextValue = ReturnType<typeof useWebSocket>;
@@ -9,13 +9,22 @@ const WsContext = createContext<WsContextValue | null>(null);
 
 export function WsProvider({ children }: { children: ReactNode }) {
   const ws = useWebSocket();
-  const value = useMemo(() => ws, // eslint-disable-next-line react-hooks/exhaustive-deps
-    [ws.connected, ws.agentStatuses, ws.runs, ws.completedRuns, ws.errors, ws.chatSessions, ws.chatSteps, ws.chatCompletions, ws.handoffs, ws.delegates, ws.sendRun, ws.sendIntervene, ws.sendPing, ws.clearErrors]);
-  return <WsContext.Provider value={value}>{children}</WsContext.Provider>;
+  return <WsContext.Provider value={ws}>{children}</WsContext.Provider>;
 }
+
+const noopWs: WsContextValue = {
+  connected: false, agentStatuses: {}, runs: {}, completedRuns: {}, errors: [],
+  chatSessions: {}, chatSteps: [], chatCompletions: {}, handoffs: [], delegates: [],
+  sendRun: () => {}, sendIntervene: () => {}, sendChatCreate: () => {},
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  sendChatSend: ((..._args: unknown[]) => {}) as WsContextValue["sendChatSend"], sendPing: () => {}, clearErrors: () => {},
+};
 
 export function useWs() {
   const ctx = useContext(WsContext);
-  if (!ctx) throw new Error("useWs must be used within <WsProvider>");
+  if (!ctx) {
+    console.warn("useWs called outside <WsProvider>; returning noop");
+    return noopWs;
+  }
   return ctx;
 }

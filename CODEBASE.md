@@ -11,6 +11,18 @@
 - **Added**: Server-side API proxy route (`/api/[...path]`), `NEXT_PUBLIC_API_KEY` env for WS auth
 - **Changed**: Removed `/api/metrics` static proxy, removed Next.js rewrites, `docker-compose.yml` port + env fixes
 
+**Dashboard Security Hardening (Post-release):**
+- **CSP Headers** — `Content-Security-Policy`, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy` via `next.config.js`
+- **API Proxy Whitelist** — `isPathAllowed()` blocks non-whitelisted paths (`admin/*`, `secrets/*`, etc.) with 403
+- **WS Auth** — Client sends token via `Sec-WebSocket-Protocol: aiyu-token.<key>` subprotocol; server `handleProtocols` selects it
+- **Input Validation** — `validateInput()` / `validateIdentifier()` guards `sendRun`, `sendIntervene`, `sendChatCreate`, `sendChatSend`
+- **Test Suite** — Jest + RTL (29 tests) + Playwright E2E (9 specs)
+
+**Dashboard Refactoring (Post-release):**
+- `page.tsx` 479→160 lines — extracted `DashboardHeader`, `RunPanel`, `ResetDialog`
+- `chat-panel.tsx` — native `<select>` → `AgentSelect` + `ProviderSelect` custom dropdowns
+- Docker standalone build verified (`output: "standalone"`)
+
 **Round 5 (2 Critical + 5 High + 7 Medium + 5 Low):**
 - **Critical**: WS disconnect doesn't cancel running agent (activeRuns Map + abort), PENDING_INTERVENTIONS mutable Map export (read-only snapshot)
 - **High**: /agents/statuses crash on ws require fail (try/catch + 503), jobs.js no input length validation (MAX_INPUT_LENGTH), packager bin/run.js path traversal (resolvedDest guard), plugin.js npm install runs scripts (--ignore-scripts), agent-loader no file size limit (MAX_AGENT_FILE_SIZE 200KB)

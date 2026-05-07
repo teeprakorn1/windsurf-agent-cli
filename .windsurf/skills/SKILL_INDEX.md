@@ -1,4 +1,4 @@
-# Skill Index — Sub-Agent Kit
+# Skill Index — Aiyu Agent Kit
 
 > Mapping of Skills and their Agents
 

@@ -12,7 +12,7 @@
     --text-muted: #6b7280;
     --glow-blue: rgba(59, 130, 246, 0.08);
     --glow-green: rgba(34, 197, 94, 0.08);
-    --glow-purple: rgba(168, 85, 247, 0.08);
+    --glow-cyan: rgba(6, 182, 212, 0.08);
     --glow-red: rgba(239, 68, 68, 0.08);
   }
   .dark {
@@ -24,7 +24,7 @@
     --text-muted: #a1a1aa;
     --glow-blue: rgba(59, 130, 246, 0.15);
     --glow-green: rgba(34, 197, 94, 0.15);
-    --glow-purple: rgba(168, 85, 247, 0.15);
+    --glow-cyan: rgba(6, 182, 212, 0.15);
     --glow-red: rgba(239, 68, 68, 0.15);
   }
   body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background: var(--bg-primary); color: var(--text-primary); }
@@ -51,20 +51,30 @@
 
   .glow-blue { box-shadow: 0 0 20px var(--glow-blue), inset 0 1px 0 rgba(59,130,246,0.1); }
   .glow-green { box-shadow: 0 0 20px var(--glow-green), inset 0 1px 0 rgba(34,197,94,0.1); }
-  .glow-purple { box-shadow: 0 0 20px var(--glow-purple), inset 0 1px 0 rgba(168,85,247,0.1); }
+  .glow-cyan { box-shadow: 0 0 20px var(--glow-cyan), inset 0 1px 0 rgba(6,182,212,0.1); }
   .glow-red { box-shadow: 0 0 20px var(--glow-red), inset 0 1px 0 rgba(239,68,68,0.1); }
+
+  .dropdown-panel {
+    @apply rounded-xl border;
+    border-color: #d1d5db;
+    background: #ffffff;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12), 0 2px 4px rgba(0,0,0,0.08);
+  }
+  .dark .dropdown-panel {
+    border-color: #3f3f46;
+    background: #1c1c20;
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 8px 24px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3);
+  }
 
   .input-field {
     @apply w-full rounded-lg border text-sm px-3 py-2.5
+           border-gray-300 bg-white text-gray-900 placeholder:text-gray-400
            focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500
            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus-visible:border-blue-500
            transition-all duration-200;
   }
   .dark .input-field {
     @apply border-zinc-700 bg-zinc-900 text-zinc-100 placeholder:text-zinc-500;
-  }
-  .input-field {
-    @apply border-gray-300 bg-white text-gray-900 placeholder:text-gray-400;
   }
 
   .btn-primary {
@@ -102,7 +112,7 @@
   @keyframes slide-in { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
   .gradient-text {
     @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg,#2563eb 0%,#7c3aed 50%,#db2777 100%);
+    background-image: linear-gradient(135deg,#2563eb 0%,#06b6d4 50%,#10b981 100%);
   }
   .dark .dot-pattern { background-image: radial-gradient(circle,#27272a 1px,transparent 1px); background-size: 20px 20px; }
   .dot-pattern { background-image: radial-gradient(circle,#d1d5db 1px,transparent 1px); background-size: 20px 20px; opacity: 0.5; }
