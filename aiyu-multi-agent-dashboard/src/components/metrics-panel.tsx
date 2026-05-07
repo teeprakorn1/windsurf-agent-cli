@@ -17,14 +17,16 @@ export const MetricsPanel = memo(function MetricsPanel() {
   const [offline, setOffline] = useState(false);
 
   useEffect(() => {
+    const controller = new AbortController();
     const poll = async () => {
       try {
-        const res = await fetch("/api/metrics");
+        const res = await fetch("/api/metrics", { signal: controller.signal });
         if (!res.ok) throw new Error("Failed to fetch");
         const text = await res.text();
         setStats(parsePrometheusMetrics(text));
         setOffline(false);
-      } catch {
+      } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") return;
         setOffline(true);
         setStats([
           { label: "HTTP Requests", value: "—", trend: "flat", color: "text-blue-400", icon: BarChart3 },
@@ -39,7 +41,10 @@ export const MetricsPanel = memo(function MetricsPanel() {
 
     poll();
     const interval = setInterval(poll, 30000);
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      controller.abort();
+    };
   }, []);
 
   if (loading) {

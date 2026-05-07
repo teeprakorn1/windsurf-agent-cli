@@ -22,6 +22,10 @@ describe("API proxy path whitelist", () => {
     expect(isPathAllowed("")).toBe(false);
   });
 
+  it("blocks sensitive subpaths", () => {
+    expect(isPathAllowed("agents/intervene")).toBe(false);
+  });
+
   it("blocks partial prefix matches", () => {
     expect(isPathAllowed("agents")).toBe(false);
     expect(isPathAllowed("jobs")).toBe(false);

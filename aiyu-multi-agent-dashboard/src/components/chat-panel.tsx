@@ -5,6 +5,7 @@ import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { AgentSelect } from "@/components/agent-select";
 import { ProviderSelect } from "@/components/provider-select";
 import { Send, Bot, User, Loader2, ChevronDown, MessageSquare, Copy, Check, Clock, Zap, Wrench, Plus } from "lucide-react";
+import { MarkdownRenderer } from "@/components/markdown-renderer";
 
 interface ChatMessage {
   id: string;
@@ -41,10 +42,14 @@ export function ChatPanel() {
   const sessions = useMemo(() => Object.values(chatSessions).sort((a, b) => a.sessionId.localeCompare(b.sessionId)), [chatSessions]);
 
   useEffect(() => {
-    if (sessions.length > 0 && !activeSessionId) {
-      setActiveSessionId(sessions[sessions.length - 1].sessionId);
+    if (sessions.length > 0) {
+      // Auto-select latest session if none selected, or if a new session was just created
+      const latestId = sessions[sessions.length - 1].sessionId;
+      if (!activeSessionId || !chatSessions[activeSessionId]) {
+        setActiveSessionId(latestId);
+      }
     }
-  }, [sessions, activeSessionId]);
+  }, [sessions, activeSessionId, chatSessions]);
 
   const activeSession = activeSessionId ? chatSessions[activeSessionId] : null;
 
@@ -228,6 +233,8 @@ export function ChatPanel() {
                         <Loader2 className="h-3.5 w-3.5 animate-spin text-cyan-500" />
                         <span className="text-[11px] text-gray-500 dark:text-zinc-400">Thinking...</span>
                       </div>
+                    ) : msg.role === "assistant" ? (
+                      <MarkdownRenderer content={msg.content || (msg.isStreaming ? "..." : "")} />
                     ) : (
                       <div className="whitespace-pre-wrap break-words">{msg.content || (msg.isStreaming ? "..." : "")}</div>
                     )}

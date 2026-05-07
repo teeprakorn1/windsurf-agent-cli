@@ -363,7 +363,7 @@ export function DashboardHeader({ version, onReset, showToast, connInfo, onConnI
                 <div className="p-3 space-y-2 text-[11px]">
                   <InfoRow label="API URL" value={process.env.NEXT_PUBLIC_API_URL || "localhost:3000"} />
                   <InfoRow label="WS URL" value={process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:3000/ws"} />
-                  <InfoRow label="API Key" value="••••••••" />
+                  <InfoRow label="API Key" value={process.env.NEXT_PUBLIC_API_KEY ? "Configured" : "Not set"} />
                   <InfoRow label="Version" value={connDisplayValues?.version || "—"} />
                   <InfoRow label="Node" value={connDisplayValues?.nodeVersion || "—"} />
                   <InfoRow label="Uptime" value={connDisplayValues ? formatUptime(connDisplayValues.uptimeMs) : "—"} />

@@ -10,7 +10,7 @@ const nextConfig = {
     NEXT_PUBLIC_WS_URL: wsUrl,
     NEXT_PUBLIC_API_URL: apiUrl,
     NEXT_PUBLIC_API_KEY: process.env.NEXT_PUBLIC_API_KEY || "",
-    NEXT_PUBLIC_APP_VERSION: process.env.npm_package_version || "2.7.1",
+    NEXT_PUBLIC_APP_VERSION: process.env.npm_package_version || "2.7.2",
   },
   async headers() {
     return [

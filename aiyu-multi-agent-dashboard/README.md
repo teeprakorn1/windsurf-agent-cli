@@ -1,6 +1,6 @@
 # Aiyu MultiAgent Dashboard
 
-> Real-time monitoring dashboard for [Aiyu MultiAgent](https://github.com/teeprakorn1/aiyu-multi-agent) — v2.7.1
+> Real-time monitoring dashboard for [Aiyu MultiAgent](https://github.com/teeprakorn1/aiyu-multi-agent) — v2.7.2
 
 Live agent status, execution timeline, intervention panel, metrics, and logs — all streaming via WebSocket from the Aiyu API server.
 
@@ -86,7 +86,7 @@ docker run -p 3001:3001 \
 - **Auto-Reconnect** — WebSocket reconnects with exponential backoff (5 attempts, 1s–30s), step deduplication on reconnect
 - **Mobile Responsive** — optimized for all screen sizes
 
-### Performance & Accessibility (v2.7.1)
+### Performance & Accessibility (v2.7.2)
 - **Context Memoization** — `WsProvider` memoizes context value with `useMemo`; all 7 leaf components wrapped with `React.memo`
 - **Memory Safety** — `completedRuns` capped at 50 entries with oldest-first eviction
 - **Reduced Motion** — `prefers-reduced-motion` media query disables animations for accessibility

@@ -7,6 +7,70 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.7.2] - 2026-05-07
+
+### Fixed — Mock Provider Default + Full System Bug Audit (45 bugs)
+
+**P0 Critical:**
+- **init fails without API keys** — Now falls back to `mock` provider with warning (`lib/commands/init.js`)
+- **failover chain rejects mock** — `mock` always available in chain (`lib/core/failover.js`)
+- **health-check reports limited** — Changed to `mock: "enabled"` (`lib/core/health-check.js`)
+- **`var` leaks tool result across iterations** — `react-loop.js:205` and `chat-session.js:170` used function-scoped `var` instead of block-scoped `let`, causing tool results to leak across iterations. Changed to `let`
+- **circuit-breaker deletes active breakers** — `cleanupStaleBreakers()` deleted recovered breakers because `lastFailureTime` wasn't cleared on HALF_OPEN→CLOSED. Added `lastFailureTime = null` in `recordSuccess` (`lib/core/circuit-breaker.js`)
+- **Ollama probe runs without OLLAMA_HOST** — `checkReadiness()` always probed localhost:11434 causing 2s timeout delay. Wrapped inside `if (process.env.OLLAMA_HOST)` (`lib/core/health-check.js`)
+- **chat timeout timer leaks on normal exit** — `chatTimeoutId` kept running after ReAct loop exited normally. Added `clearTimeout(chatTimeoutId)` on normal break (`lib/core/chat-session.js`)
+
+**Full System Bug Audit (10 fixes):**
+- **Core Engine** — `chat-session.js`: aborted message no longer overwritten by timeout; empty-string `finalContent` no longer treated as error
+- **API / WS** — `ws.js`: `provider ??` and `maxSteps ??` nullish coalescing; `handleChatSend` catch clears timeout
+- **CLI / Jobs** — `jobs.js`: `provider ??` and `max_steps ??` nullish coalescing
+- **Handoff** — `handoff.js`: `provider ??` nullish coalescing
+- **Metrics** — `server.js`: percentile index `floor(n * p)` → `floor((n-1) * p)`
+- **Output** — `react-loop.js`: JSON enforcement triggers on empty-string (`!= null`)
+- **UX Audit** — `ux_audit.py`: `has_form` regex no longer matches `glass-card`
+
+**Core Logic Bug Audit (7 fixes — 5H + 2M):**
+- **Failover indexOf in loop** — Used `chain.indexOf(provider)` inside `for...of` instead of loop index. Changed to `for (let i = 0; ...)` with `i < chain.length - 1` check (`lib/core/failover.js`)
+- **Claude model not passed** — `callClaude(messages, options)` didn't receive resolved model, unlike `callOpenAI`. Changed to `callClaude(messages, { ...options, model })` (`lib/core/llm-providers.js`)
+- **Queue job timeout race** — Job timeout timer could fire after completion. Added `settled` flag guard in `_executeJob` (`lib/core/request-queue.js`)
+- **Health-check queue error vague** — Changed `"Queue not initialized"` to `Queue health check failed: ${err.message}` (`lib/core/health-check.js`)
+- **Handoff naive decision match** — `includes("decided")` matched false positives. Changed to sentence-boundary regex (`lib/core/handoff.js`)
+- **Cache frozen fallback** — `Object.freeze` on shallow copy prevented `_fromCache` mutation. Changed to mutable shallow copy (`lib/core/cache.js`)
+- **halfOpenMaxAttempts too aggressive** — Default 1 allowed only single probe before re-opening. Changed default to 3 (`lib/core/circuit-breaker.js`)
+
+**Deep System Bug Audit Round 3 (3 Critical + 4 High + 1 Medium fixed):**
+- **Critical**: `react-loop.js:204` tool result `let result` scoped inside `try` block — inaccessible after `Promise.race`, making all tool results `undefined`. Moved declaration before `try` so `truncateResult` receives actual result
+- **Critical**: `chat-session.js:170` same tool result scoping bug — `let result` inside `try` was `undefined` outside. Moved declaration before `try`
+- **Critical**: `tool-definitions.js:317` delegate timeout timer never cleared after `Promise.race` — memory leak under frequent delegation. Added `clearTimeout(delegateTimeoutId)` after race resolves
+- **High**: `health-check.js:93` `_ollamaAgent.destroy()` called on every successful Ollama check — destroyed keep-alive agent unnecessarily, forcing recreation each check. Removed destroy on success; only destroy on error
+- **High**: `tracing.js:250` p95 percentile index off-by-one — `floor(n * 0.95)` instead of `floor((n-1) * 0.95)`, matching the fix already applied in `server.js`
+- **High**: `tool-definitions.js:727` `executeToolIsolated` leaked API keys to child process — `...process.env` passed all env vars including `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` to forked process. Added sensitive env var stripping (same pattern as `guardrails.sandboxExec`)
+- **High**: `llm-providers.js:10-11` keep-alive HTTP agents never destroyed on shutdown — `httpsAgent`/`httpAgent` sockets leaked on process exit. Added `destroyAgents()` function + `process.on("exit")` handler
+- **Medium**: `handoff.js:147,168` `broadcastHandoffComplete` passed `.length` numbers instead of arrays — signature expects `(handoffId, status, artifacts, pendingTasks)` but received `(id, status, number, number)`, causing dashboard to display wrong data. Changed to pass `bundle.artifacts` and `bundle.pendingTasks` directly
+
+**Core Logic Bug Audit Round 2 (4 Medium fixes):**
+- **`_ollamaLastOk` shared state** — Documented single-process Node.js assumption with inline comment (`lib/core/failover.js`)
+- **Context trimming breaks tool-call/result pairs** — `react-loop.js` dropped only 2 messages (1 assistant + 1 user), leaving orphaned tool results when multiple tools called per step. Changed to drop assistant + ALL consecutive user messages together (`lib/core/react-loop.js`)
+- **Sliding window splits tool-result pairs** — `chat-session.js` sliced messages without checking if the cut point orphaned a tool result. Added pair-preservation: if window starts with `user` message, include the preceding `assistant` message (`lib/core/chat-session.js`)
+- **`isRetryableError` matches partial strings** — `"429"` matched `"1429"`, `"timeout"` matched `"connection_timeout_custom"`. Changed to word-boundary regex patterns (`\b429\b`, `\btimeout\b`, etc.) (`lib/core/llm-providers.js`)
+
+**Dashboard + API Bug Audit Round 4 (1 Critical + 2 High + 6 Medium fixed):**
+- **Critical**: `react-loop.js:251-266` context trimming dropped `messages[1]` (original user task) — the while-loop started splicing from index 1, which is the user's original input (role="user"), not an assistant message. The pair-check failed, falling to the else branch that deleted the task. After trimming, LLM received `system→assistant` sequence (invalid for most APIs) and lost task context entirely. Changed to start dropping from `messages[2]`, always preserving system prompt + original user task (`lib/core/react-loop.js`)
+
+**Deep System Bug Audit Round 6 (1 High + 3 Medium fixed):**
+- **High**: `tool-definitions.js:605,632` `plan.update` and `plan.list` used `planId` directly in path construction without sanitization — `planId` containing `../` allowed directory traversal to read/write files outside `.agent/plans/`. Added `planId.replace(/[^a-zA-Z0-9_-]/g, "_")` sanitization and `guardrails.pathTraversal()` check (`lib/core/tool-definitions.js`)
+- **Medium**: `mcp/server.js:55-56` MCP `run_agent` timeout timer never cleared after `Promise.race` — `setTimeout` kept running for 2 minutes after agent completed, causing memory leak in long-running MCP sessions. Added `clearTimeout(timeoutId)` in both success and error paths (`lib/mcp/server.js`)
+- **Medium**: `metrics-panel.tsx:22` `fetch("/api/metrics")` had no `AbortController` — in-flight requests continued after component unmount, calling `setState` on unmounted component (React memory leak). Added `AbortController` with `controller.abort()` in cleanup (`aiyu-multi-agent-dashboard/src/components/metrics-panel.tsx`)
+- **Medium**: `tool-definitions.js:376-382` delegate context trim `splice` assumed `messages[1]` was always `assistant` role — after previous splice operations, index 1 could be any role, and `messages[1].role` access without null-check could throw `TypeError`. Added optional chaining and pair-preservation logic matching `react-loop.js` fix (`lib/core/tool-definitions.js`)
+- **High**: `ws.js` `pendingInterventions` Map never cleaned on run completion — when a run completed or errored before an intervention was consumed, the entry persisted forever causing unbounded memory growth. Added `PENDING_INTERVENTIONS.delete(runId)` in both success and error paths of `handleRun` (`lib/api/ws.js`)
+- **High**: `use-websocket.ts` no re-subscription after reconnect — on WS reconnect, the client didn't re-send `subscribe` messages for active runs, causing steps/completions from in-progress runs to be silently lost. Added subscribe messages for all active runIds in `ws.onopen` handler (`aiyu-multi-agent-dashboard/src/lib/use-websocket.ts`)
+- **Medium**: `llm-providers.js` `callOllama` didn't receive resolved model — `callOpenAI` and `callClaude` both received `{ ...options, model }` but `callOllama(messages, options)` used raw options, always falling back to `options.model || "llama3"`. Changed to `callOllama(messages, { ...options, model })` (`lib/core/llm-providers.js`)
+- **Medium**: `handoff.js` decision regex missed mid-sentence patterns — regex required sentence boundary (`^|\n|.\s`) before keywords like "decided", missing "Based on this, I decided to...". Added `.,;!?` as boundary characters (`lib/core/handoff.js`)
+- **Medium**: `server.js` `apiKeyAuth` on `/health` breaks K8s probes — when `AIYU_API_KEY` was set, health check endpoints required authentication, breaking Kubernetes liveness/readiness probes and load balancer health checks. Added path check to skip `apiKeyAuth` for `/health` (`lib/api/server.js`)
+- **Medium**: `agent-status-panel.tsx` `formatSince` never refreshes — duration was computed once on render and became stale for running agents. Added 1-second interval tick (only when any agent is in running state) to force re-render (`aiyu-multi-agent-dashboard/src/components/agent-status-panel.tsx`)
+- **Medium**: `dashboard-header.tsx` API Key display misleading — showed `••••••••` implying the key was hidden from page source, but `NEXT_PUBLIC_*` vars are embedded in the JS bundle. Changed to show "Configured"/"Not set" for honest labeling (`aiyu-multi-agent-dashboard/src/components/dashboard-header.tsx`)
+- **Medium**: `tracing.js` p95 percentile off-by-one for small samples — `Math.floor((n-1) * 0.95)` with `n=2` gives index 0 (the minimum), but p95 should be index 1. Changed to `Math.round` to avoid low bias on small sample sizes (`lib/core/tracing.js`)
+
 ## [2.7.1] - 2026-05-07
 
 ### Fixed — Dashboard Integration Bugs (2 Critical + 3 High + 2 Medium)
@@ -173,13 +237,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.6.0] - 2026-05-06
 
-### Changed — Module Decomposition + Production Hardening
+### Changed — Module Decomposition + Reliability Hardening
 
 **Module Decomposition (Backward Compatible):**
 - **`agent-runtime.js` decomposed** (843 → 69 lines + 8 focused modules) — `react-loop.js` (ReAct loop), `chat-session.js` (interactive chat), `failover.js` (per-provider circuit breaker + failover chain), `cache.js` (LRU cache), `agent-loader.js` (agent spec + skill loading), `prompt-builder.js` (system prompt construction), `input-sanitizer.js` (input validation + prompt injection detection), `tool-parser.js` (tool call parsing from LLM responses). `agent-runtime.js` is now a thin re-export for backward compatibility.
 - **`tool-registry.js` decomposed** (543 → 3 modules) — `tool-definitions.js` (builtin tools, schemas, registry, truncation), `search-tools.js` (search.grep + fs.glob), `command-parser.js` (shell arg parsing + ReDoS-safe regex). `tool-registry.js` is now a thin re-export for backward compatibility.
 
-**Production Fixes:**
+**Reliability Fixes:**
 - **Tracing async write queue** — `_appendTraceToFile()` replaced `fs.appendFileSync` (sync, blocks event loop) with async batched write queue (`fs.promises.appendFile`). Traces are buffered and flushed in batches, preventing event loop stalls under high trace volume.
 - **MCP `run_agent` timeout + maxSteps cap** — Added 2-minute timeout and maxSteps cap of 20 for MCP tool calls. Prevents runaway agent execution from blocking MCP clients. Returns `isError: true` on timeout.
 - **Usage flush fix** — `process.on("exit", _flushBuffer)` (sync-only, no async) replaced with `process.on("beforeExit")` (allows async) + `_syncFlushBuffer` fallback on forced exit. Prevents data loss on graceful and forced termination.
@@ -231,7 +295,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`/metrics` exposed without auth** — Prometheus metrics endpoint required no authentication, leaking usage data and internal counters. Added `apiKeyAuth` middleware to `/metrics` route, consistent with other sensitive endpoints (`lib/api/server.js`)
 - **No security headers** — Express app set no security headers (CSP, HSTS, X-Frame-Options, etc.), leaving it vulnerable to clickjacking, MIME sniffing, and XSS injection. Added `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `X-XSS-Protection: 1; mode=block`, `Referrer-Policy: strict-origin-when-cross-origin`, and `Strict-Transport-Security` (HTTPS only) as global middleware (`lib/api/server.js`)
 
-### Fixed — API Production Hardening (3 Critical + 3 High + 2 Medium)
+### Fixed — API Reliability Hardening (3 Critical + 3 High + 2 Medium)
 
 **P0 Critical:**
 - **WebSocket no maxPayload limit** — `WebSocketServer` accepted arbitrarily large messages, enabling memory exhaustion attacks before `MAX_INPUT_LENGTH` check could reject. Added `maxPayload: 1MB` + `perMessageDeflate: false` (zip bomb prevention) to WebSocketServer options (`lib/api/ws.js`)
@@ -247,7 +311,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **No request ID propagation** — No `X-Request-Id` header was generated or propagated, making it impossible to trace a request across API → Queue → LLM → Tool → Response. Added `requestIdMiddleware` that reads `X-Request-Id` from client or generates UUID, sets it on `req.id` and response header. Enhanced `requestLogger` to include request/response sizes and request ID (`lib/api/middleware.js`, `lib/api/server.js`)
 - **`/jobs/:id` returns unbounded result** — `GET /jobs/:id` returned the full agent output without truncation, potentially exposing MB-sized tool outputs through the API. Added 10KB truncation with `_truncated` flag, consistent with tool result truncation pattern (`lib/api/jobs.js`)
 
-### Added — API Production Hardening
+### Added — API Reliability Hardening
 
 - **LLM keep-alive agents** — `httpsAgent` and `httpAgent` with `keepAlive: true`, `maxSockets: 10` for OpenAI, Claude, and Ollama HTTP requests. Reuses TCP connections across LLM calls, reducing latency and preventing socket exhaustion under high concurrency (`lib/core/llm-providers.js`)
 - **CORS preflight cache** — `maxAge: 86400` (24h) on CORS configuration, reducing preflight request overhead (`lib/api/server.js`)
@@ -523,7 +587,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added — HTTP API + Operational Readiness
 
-- **🔥 `aiyu-multi-agent serve`** — Start HTTP API server (Express) with `/health`, `/metrics`, `/traces`, `/jobs` endpoints
+- **`aiyu-multi-agent serve`** — Start HTTP API server (Express) with `/health`, `/metrics`, `/traces`, `/jobs` endpoints
 - **`POST /jobs`** — Async job model: enqueue agent run → `{jobId, status: "queued"}`, integrates with request-queue
 - **`GET /jobs/:id`** — Job status + result polling
 - **`GET /jobs`** — List recent jobs with queue metrics
@@ -553,7 +617,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added — MCP Server (Issue #1)
 
-- **🔥 `aiyu-multi-agent mcp`** — Start MCP server (stdio transport) for integration with Claude Code, Cursor, Zed, Windsurf
+- **`aiyu-multi-agent mcp`** — Start MCP server (stdio transport) for integration with Claude Code, Cursor, Zed, Windsurf
 - **`list_agents` tool** — Discover available agents in the project
 - **`run_agent` tool** — Execute an agent with input, optional provider/model/max_steps overrides
 - **`inspect_agent` tool** — Get detailed agent metadata (skills, tools, instructions)
@@ -820,9 +884,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added — Platform Features
 
 - **Smart Init** — Interactive agent generator with use case, provider, memory, and guardrails selection (`aiyu-multi-agent init`)
-- **🔥 Execution Engine** — ReAct loop with tool calling, state management, and 4 LLM providers (`aiyu-multi-agent run`)
-- **🔥 `aiyu-multi-agent run`** — Execute agent with input, supports --agent, --provider, --model, --json, --max-steps
-- **🔥 `aiyu-multi-agent chat`** — Interactive session mode with continuous context, history, and tool calls
+- **Execution Engine** — ReAct loop with tool calling, state management, and 4 LLM providers (`aiyu-multi-agent run`)
+- **`aiyu-multi-agent run`** — Execute agent with input, supports --agent, --provider, --model, --json, --max-steps
+- **`aiyu-multi-agent chat`** — Interactive session mode with continuous context, history, and tool calls
 - **Plugin System** — Install/uninstall skills from npm (`aiyu-multi-agent add skill <name>`, `aiyu-multi-agent remove skill <name>`)
 - **Permission System** — Skills declare permissions in config.json, user prompted on install, rollback if denied
 - **Agent Testing** — Test framework with markdown-based test files (`aiyu-multi-agent test`, `aiyu-multi-agent test --tap`, `aiyu-multi-agent test --watch`)
@@ -833,10 +897,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Built-in Guardrails** — Path traversal protection, atomic safe write, rate limiting, sandboxed command execution
 - **Structured Logger** — Debug/info/warn/error/success/fail with color output and configurable log levels
 - **Error Boundary** — Top-level `program.parseAsync().catch()` prevents CLI crash
-- **🔥 Tool Namespace** — All tools namespaced (`fs.read`, `fs.write`, `fs.edit`, `fs.glob`, `search.grep`, `shell.exec`), legacy aliases supported, namespace enforced on registration
-- **🔥 Parser Fallback Chain** — 4-strategy action parsing: structured JSON → TOOL_CALL regex → JSON code blocks → final answer
-- **🔥 Validation Layer** — Tool argument schemas with required/optional fields, validated before execution
-- **🔥 Step Logging Structure** — Standard step shape: `{ step, thought, action, result, error, duration_ms, toolCalls }`
+- **Tool Namespace** — All tools namespaced (`fs.read`, `fs.write`, `fs.edit`, `fs.glob`, `search.grep`, `shell.exec`), legacy aliases supported, namespace enforced on registration
+- **Parser Fallback Chain** — 4-strategy action parsing: structured JSON → TOOL_CALL regex → JSON code blocks → final answer
+- **Validation Layer** — Tool argument schemas with required/optional fields, validated before execution
+- **Step Logging Structure** — Standard step shape: `{ step, thought, action, result, error, duration_ms, toolCalls }`
 - **Output Contract** — `outputFormat: json` enforces JSON output, wraps text if needed
 - **Deterministic Mode** — `temperature: 0` for stable test results
 - **Tool Timeout** — Default 30s per tool call, configurable per tool
@@ -884,9 +948,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added — Core Modules
 
 - `lib/core/config.js` — Config loader with `.agent/` primary + `.windsurf/` symlink support
-- `lib/core/agent-runtime.js` — 🔥 ReAct loop, chat session, agent loader (imports from tool-registry + llm-providers)
-- `lib/core/tool-registry.js` — 🔥 Tool definitions, schemas, namespace resolution, arg validation
-- `lib/core/llm-providers.js` — 🔥 OpenAI, Claude (tool_use), Ollama (tools), Mock (simulated tool calls), retry/backoff
+- `lib/core/agent-runtime.js` — ReAct loop, chat session, agent loader (imports from tool-registry + llm-providers)
+- `lib/core/tool-registry.js` — Tool definitions, schemas, namespace resolution, arg validation
+- `lib/core/llm-providers.js` — OpenAI, Claude (tool_use), Ollama (tools), Mock (simulated tool calls), retry/backoff
 - `lib/core/plugin.js` — Plugin lifecycle manager + permission system (install, remove, validate, checkPermissions)
 - `lib/core/guardrails.js` — Security layer (pathTraversal, safeWrite, rateLimit, sandboxExec with timeout/cwd/maxBuffer)
 - `lib/core/runtime.js` — Node/Bun runtime detection
@@ -895,8 +959,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `lib/commands/init.js` — Interactive agent generator using inquirer
 - `lib/commands/add.js` — Skill installer from npm with permission check
 - `lib/commands/remove.js` — Skill uninstaller
-- `lib/commands/run.js` — 🔥 Agent execution entry (aiyu-multi-agent run)
-- `lib/commands/chat.js` — 🔥 Interactive chat session (aiyu-multi-agent chat)
+- `lib/commands/run.js` — Agent execution entry (aiyu-multi-agent run)
+- `lib/commands/chat.js` — Interactive chat session (aiyu-multi-agent chat)
 - `lib/commands/test.js` — Test runner with --watch and --tap options
 - `lib/commands/publish.js` — npm publisher with validation and packaging
 - `lib/test/runner.js` — Discovers and runs `.test.md` files

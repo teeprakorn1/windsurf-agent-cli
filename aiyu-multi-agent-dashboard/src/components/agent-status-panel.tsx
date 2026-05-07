@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import { useWs } from "@/lib/ws-context";
 import type { AgentStatus } from "@/lib/types";
 import { Activity, CheckCircle, AlertCircle, Clock, ChevronDown, X } from "lucide-react";
@@ -24,6 +24,14 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 export const AgentStatusPanel = memo(function AgentStatusPanel() {
   const { agentStatuses, runs, completedRuns, connected } = useWs();
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
+  // Force re-render every second so running agent durations stay fresh
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const hasRunning = Object.values(agentStatuses).some(s => s.status === "running");
+    if (!hasRunning) return;
+    const id = setInterval(() => setTick(t => t + 1), 1000);
+    return () => clearInterval(id);
+  }, [agentStatuses]);
   const entries = Object.entries(agentStatuses);
 
   const selectedStatus = selectedAgent ? agentStatuses[selectedAgent] : null;

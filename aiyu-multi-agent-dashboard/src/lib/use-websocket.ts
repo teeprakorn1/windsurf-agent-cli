@@ -166,6 +166,14 @@ export function useWebSocket(url?: string): UseWebSocketReturn {
       setConnected(true);
       reconnectAttemptsRef.current = 0;
       setErrors([]);
+      // Re-subscribe to active runs so we don't miss steps after reconnect
+      setRuns(prev => {
+        const activeRunIds = Object.keys(prev);
+        for (const runId of activeRunIds) {
+          try { ws.send(JSON.stringify({ type: "subscribe", runId })); } catch { /* ignore */ }
+        }
+        return prev;
+      });
     };
 
     ws.onclose = () => {
@@ -251,6 +259,16 @@ export function useWebSocket(url?: string): UseWebSocketReturn {
               ...prev,
               [e.runId]: { status: e.status, output: e.output, usage: e.usage, completedAt: parseServerTime(e.timestamp) },
             };
+            // Immediate eviction when over limit
+            const keys = Object.keys(updated);
+            if (keys.length > MAX_RUNS) {
+              keys.sort((a, b) => (updated[a]?.completedAt ?? 0) - (updated[b]?.completedAt ?? 0));
+              const cleaned: Record<string, CompletedRun> = {};
+              for (let i = keys.length - MAX_RUNS; i < keys.length; i++) {
+                cleaned[keys[i]] = updated[keys[i]];
+              }
+              return cleaned;
+            }
             return updated;
           });
           break;

@@ -99,7 +99,7 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash
    ├─ Section 7: JavaScript Performance
    └─ Section 8: Advanced Patterns
 
-🔥 **MODERN (Next.js 16+):**
+**MODERN (Next.js 16+):**
    └─ Section 9: Cache Components (Replaces most traditional revalidation)
 ```
 

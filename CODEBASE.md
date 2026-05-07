@@ -1,6 +1,51 @@
-# CODEBASE.md — Aiyu MultiAgent V2.7.1
+# CODEBASE.md — Aiyu MultiAgent V2.7.2
 
 ## Version History
+
+### V2.7.2 (2026-05-07) — Mock Provider Default + Core Logic Bug Audit
+
+**v2.7.2** makes `mock` the default provider when no API keys are configured, eliminating the "No LLM provider detected" error on `init`. A warning is shown so users know they're in mock mode.
+
+- **Critical**: init no longer requires API keys — falls back to `mock` provider with warning
+- **High**: failover chain accepts `mock` without requiring `AIYU_ENABLE_MOCK`
+- **High**: health-check reports `mock: enabled` instead of `limited`
+
+**System-Wide Bug Audit (3 Critical + 3 High + 1 Medium fixed):**
+- **Critical**: `react-loop.js` tool timeout timer never cleared after `Promise.race` — wrapped in `try/finally` with `clearTimeout(toolTimer)` to prevent memory leak under high tool-call load
+- **Critical**: `chat-session.js` same tool timeout leak pattern — fixed with matching `try/finally` + `clearTimeout`
+- **Critical**: `health-check.js` dead ternary `hasAnyProvider ? "ok" : "ok"` — changed to `"not_configured"` with actionable message when no LLM keys are set
+- **High**: `failover.js` `isAnyLlmAvailable()` hardcoded `"openai"` starting point — now uses `resolveProvider()` for correct failover chain
+- **High**: Dashboard API proxy `agents/` prefix allowed `agents/intervene` — added `BLOCKED_SUBPATHS` set to block sensitive endpoints
+- **Medium**: `failover.js` `_isOllamaLikelyAvailable` returned `true` for `openai`/`claude` — changed `default` to `false` for semantic correctness
+
+**Core Logic Bug Audit (4 Critical + 5 High + 2 Medium fixed):**
+- **Critical**: `var` → `let` in `react-loop.js` and `chat-session.js` — function-scoped `var result` leaked tool results across iterations; changed to block-scoped `let`
+- **Critical**: `circuit-breaker.js` `cleanupStaleBreakers` deleted active breakers — `lastFailureTime` not cleared on HALF_OPEN→CLOSED recovery; added `lastFailureTime = null` in `recordSuccess`
+- **Critical**: `health-check.js` Ollama probe ran without `OLLAMA_HOST` — 2s timeout delay on every check; wrapped inside `if (process.env.OLLAMA_HOST)`
+- **Critical**: `chat-session.js` `chatTimeoutId` leaked on normal exit — timer kept running after ReAct loop break; added `clearTimeout(chatTimeoutId)`
+- **High**: `failover.js` used `indexOf` inside loop — changed to `for (let i = 0; ...)` with index-based last-provider check
+- **High**: `llm-providers.js` `callClaude` didn't receive resolved model — changed to `callClaude(messages, { ...options, model })`
+- **High**: `request-queue.js` job timeout race — added `settled` flag guard in `_executeJob`
+- **High**: `health-check.js` queue error message vague — changed to `Queue health check failed: ${err.message}`
+- **High**: `handoff.js` naive `includes("decided")` — changed to sentence-boundary regex for decision extraction
+- **Medium**: `cache.js` `Object.freeze` on fallback copy — prevented `_fromCache` mutation; changed to mutable shallow copy
+- **Medium**: `circuit-breaker.js` `halfOpenMaxAttempts` default 1→3 — single probe was too aggressive for recovery
+
+**Deep System Bug Audit Round 3 (3 Critical + 4 High + 1 Medium fixed):**
+- **Critical**: `react-loop.js:204` tool result `let result` scoped inside `try` block — inaccessible after `Promise.race`, making all tool results `undefined`. Moved declaration before `try`
+- **Critical**: `chat-session.js:170` same tool result scoping bug — `let result` inside `try` was `undefined` outside. Moved declaration before `try`
+- **Critical**: `tool-definitions.js:317` delegate timeout timer never cleared after `Promise.race` — memory leak. Added `clearTimeout(delegateTimeoutId)`
+- **High**: `health-check.js:93` `_ollamaAgent.destroy()` on every successful Ollama check — removed; only destroy on error
+- **High**: `tracing.js:250` p95 percentile index off-by-one — `floor(n*0.95)` → `floor((n-1)*0.95)`
+- **High**: `tool-definitions.js:727` `executeToolIsolated` leaked API keys to child process — added sensitive env var stripping
+- **High**: `llm-providers.js:10-11` keep-alive agents never destroyed on shutdown — added `destroyAgents()` + `process.on("exit")`
+- **Medium**: `handoff.js:147,168` `broadcastHandoffComplete` passed `.length` numbers instead of arrays — changed to pass `bundle.artifacts` and `bundle.pendingTasks`
+
+**Core Logic Bug Audit Round 2 (4 Medium fixed):**
+- **Medium**: `failover.js` `_ollamaLastOk` shared state — documented single-process Node.js assumption
+- **Medium**: `react-loop.js` context trimming broke tool-call/result pairs — dropped only 2 messages leaving orphaned results; changed to drop assistant + ALL consecutive user messages together
+- **Medium**: `chat-session.js` sliding window split tool-result pairs — added pair-preservation: if window starts with `user` message, include preceding `assistant` message
+- **Medium**: `llm-providers.js` `isRetryableError` matched partial strings — `"429"` matched `"1429"`; changed to word-boundary regex (`\b429\b`, `\btimeout\b`, etc.)
 
 ### V2.7.1 (2026-05-07) — Bug Fix Release
 
@@ -58,7 +103,7 @@
 - **Docker** — `aiyu-dashboard` service on port 3001
 - **11 Bug fixes** — path traversal, timer leak, Ollama deprioritize, sensitiveRouteAuth, etc.
 
-### V2.6.0 (2026-05-06) — Module Decomposition + Production Hardening
+### V2.6.0 (2026-05-06) — Module Decomposition + Reliability Hardening
 
 - **Decomposition** — `agent-runtime.js` (843→69+8 modules), `tool-registry.js` (543→3 modules)
 - **Karpathy Principles** — 4 behavioral rules across 84 agents + 10 locations
@@ -82,7 +127,7 @@
 
 ## System Overview
 
-Production-grade AI Agent Platform — Smart Init, Plugin System, Agent Testing, and Publishing.
+AI Agent Platform — Smart Init, Plugin System, Agent Testing, and Publishing.
 
 ### V2.4.1 — Bug Fix Release
 
@@ -111,23 +156,23 @@ Production-grade AI Agent Platform — Smart Init, Plugin System, Agent Testing,
 ┌─────────────────────────────────────────┐
 │   lib/core/ — Core Engine               │
 │   agent-runtime.js — Re-export (V2.6)   │
-│   react-loop.js  — 🔥 ReAct loop        │
-│   chat-session.js — 🔥 Chat session     │
-│   failover.js   — 🔥 Per-provider CB    │
-│   cache.js      — 🔥 LRU cache          │
-│   agent-loader.js — 🔥 Agent spec load  │
-│   prompt-builder.js — 🔥 System prompt  │
-│   input-sanitizer.js — 🔥 Input valid.  │
-│   tool-parser.js — 🔥 Tool call parse   │
+│   react-loop.js  — ReAct loop        │
+│   chat-session.js — Chat session     │
+│   failover.js   — Per-provider CB    │
+│   cache.js      — LRU cache          │
+│   agent-loader.js — Agent spec load  │
+│   prompt-builder.js — System prompt  │
+│   input-sanitizer.js — Input valid.  │
+│   tool-parser.js — Tool call parse   │
 │   tool-registry.js — Re-export (V2.6)   │
-│   tool-definitions.js — 🔥 Tools+schema │
-│   search-tools.js — 🔥 Grep + Glob      │
-│   command-parser.js — 🔥 Shell arg parse│
-│   llm-providers.js — 🔥 LLM + retry     │
-│   circuit-breaker.js — 🔥 Failure guard │
-│   request-queue.js — 🔥 Concurrency ctrl │
-│   tracing.js   — 🔥 Async trace queue   │
-│   health-check.js — 🔥 Health monitor   │
+│   tool-definitions.js — Tools+schema │
+│   search-tools.js — Grep + Glob      │
+│   command-parser.js — Shell arg parse│
+│   llm-providers.js — LLM + retry     │
+│   circuit-breaker.js — Failure guard │
+│   request-queue.js — Concurrency ctrl │
+│   tracing.js   — Async trace queue   │
+│   health-check.js — Health monitor   │
 │   tool-runner.js  — Isolated exec       │
 │   config.js    — .agent/ + .windsurf/   │
 │   plugin.js    — Skill install/remove   │
@@ -140,8 +185,8 @@ Production-grade AI Agent Platform — Smart Init, Plugin System, Agent Testing,
               ▼
 ┌─────────────────────────────────────────┐
 │   lib/commands/ — CLI Commands          │
-│   run.js       — 🔥 aiyu-multi-agent run        │
-│   chat.js      — 🔥 aiyu-multi-agent chat       │
+│   run.js       — aiyu-multi-agent run        │
+│   chat.js      — aiyu-multi-agent chat       │
 │   init.js      — Smart Init             │
 │   add.js       — aiyu-multi-agent add skill     │
 │   remove.js    — aiyu-multi-agent remove skill  │
@@ -167,21 +212,21 @@ Production-grade AI Agent Platform — Smart Init, Plugin System, Agent Testing,
               ▼
 ┌─────────────────────────────────────────┐
 │   lib/mcp/ — MCP Server                 │
-│   server.js — 🔥 MCP stdio server       │
+│   server.js — MCP stdio server       │
 │   tools/list-agents.js                  │
 │   tools/run-agent.js                    │
 │   tools/inspect-agent.js                │
 ├─────────────────────────────────────────┤
 │   lib/api/ — HTTP + WebSocket API       │
 │   server.js — Express app + routes      │
-│   ws.js — 🔥 WebSocket real-time stream │
-│   handoff.js — 🔥 Agent handoff + intervene│
+│   ws.js — WebSocket real-time stream │
+│   handoff.js — Agent handoff + intervene│
 │   jobs.js — Async job model             │
 │   config.js / middleware.js / etc.      │
 ├─────────────────────────────────────────┤
 │   lib/core/ — Core Engine (continued)   │
-│   handoff.js — 🔥 Agent-to-agent bundles│
-│   agent-system.js — 🔥 Auto-apply profile│
+│   handoff.js — Agent-to-agent bundles│
+│   agent-system.js — Auto-apply profile│
 └─────────────────────────────────────────┘
 ```
 
@@ -201,19 +246,19 @@ Production-grade AI Agent Platform — Smart Init, Plugin System, Agent Testing,
 
 ### V2 Modules
 - `lib/core/agent-runtime.js` — **Re-export** (V2.6): thin re-export of decomposed modules for backward compatibility. All `require("./agent-runtime")` calls work unchanged.
-- `lib/core/react-loop.js` — 🔥 ReAct loop execution (`runAgent`, **accepts AbortSignal for timeout cancellation**, **passes _runId to tool args for WS broadcast tracking**), per-provider failover, tracing, context trimming (**null/break-safe pair eviction**), output format enforcement, **Karpathy large-change guardrail** (fs.write/fs.edit >5KB triggers surgical change warning)
-- `lib/core/chat-session.js` — 🔥 Interactive chat (`createChatSession`, **accepts maxSteps override**, **intervene() method for mid-turn feedback**, **signal support for timeout cancellation**, **chatTimedOut/signal checks after tool Promise.race**), sliding window, char-based context limit, step records
-- `lib/core/failover.js` — 🔥 Per-provider circuit breaker (`llm:openai`, `llm:claude`, `llm:local`, `llm:mock`) with `callLLMWithFailover()` chain + `isAnyLlmAvailable()` check
-- `lib/core/cache.js` — 🔥 LRU cache (100 entries, 5min TTL, deep-copy-on-read, Object.freeze fallback for circular refs)
-- `lib/core/agent-loader.js` — 🔥 Load agent specs (frontmatter parsing, runtime spec version enforcement, **isValidAgentName path traversal validation**) + skill instructions (**MAX_SKILL_FILE_SIZE=100KB with truncated read for oversized files**)
-- `lib/core/prompt-builder.js` — 🔥 Build system prompts (agent spec + skills + project profile + guardrails + **Karpathy Behavioral Rules**), section-aware skill truncation (MAX_SKILL_INSTRUCTION_CHARS=8000), **dynamic tool list from registry** (no hardcoded tools)
-- `lib/core/input-sanitizer.js` — 🔥 Input validation (100K char limit) + heuristic prompt injection detection
-- `lib/core/tool-parser.js` — 🔥 Parse tool calls from LLM responses (4 strategies: API structured → TOOL_CALL regex → JSON blocks → final answer), balanced-depth paren parser
+- `lib/core/react-loop.js` — ReAct loop execution (`runAgent`, **accepts AbortSignal for timeout cancellation**, **passes _runId to tool args for WS broadcast tracking**), per-provider failover, tracing, context trimming (**null/break-safe pair eviction**), output format enforcement, **Karpathy large-change guardrail** (fs.write/fs.edit >5KB triggers surgical change warning)
+- `lib/core/chat-session.js` — Interactive chat (`createChatSession`, **accepts maxSteps override**, **intervene() method for mid-turn feedback**, **signal support for timeout cancellation**, **chatTimedOut/signal checks after tool Promise.race**), sliding window, char-based context limit, step records
+- `lib/core/failover.js` — Per-provider circuit breaker (`llm:openai`, `llm:claude`, `llm:local`, `llm:mock`) with `callLLMWithFailover()` chain (**loop-index based last-provider check** instead of indexOf) + `isAnyLlmAvailable()` check
+- `lib/core/cache.js` — LRU cache (100 entries, 5min TTL, deep-copy-on-read, **mutable shallow copy fallback** for circular refs (was Object.freeze — broke `_fromCache` mutation))
+- `lib/core/agent-loader.js` — Load agent specs (frontmatter parsing, runtime spec version enforcement, **isValidAgentName path traversal validation**) + skill instructions (**MAX_SKILL_FILE_SIZE=100KB with truncated read for oversized files**)
+- `lib/core/prompt-builder.js` — Build system prompts (agent spec + skills + project profile + guardrails + **Karpathy Behavioral Rules**), section-aware skill truncation (MAX_SKILL_INSTRUCTION_CHARS=8000), **dynamic tool list from registry** (no hardcoded tools)
+- `lib/core/input-sanitizer.js` — Input validation (100K char limit) + heuristic prompt injection detection
+- `lib/core/tool-parser.js` — Parse tool calls from LLM responses (4 strategies: API structured → TOOL_CALL regex → JSON blocks → final answer), balanced-depth paren parser
 - `lib/core/tool-registry.js` — **Re-export** (V2.6): thin re-export of decomposed tool modules for backward compatibility
-- `lib/core/tool-definitions.js` — 🔥 Builtin tools (fs.read/write/edit, shell.exec, fetch.url, **memory.save/load with pathTraversal guard**), TOOL_SCHEMAS, LEGACY_ALIAS, registerTool, validateToolArgs, truncateResult (shallow copy + HALF_MAX), executeToolIsolated (forked child with cwd)
-- `lib/core/search-tools.js` — 🔥 search.grep (**async fs.promises** — no event loop blocking, for-loop with lastIndex reset, ReDoS-safe regex) + fs.glob (glob@10+ Promise API with glob@8 callback fallback, brace alternation `{a,b}` with individual metachar escaping)
-- `lib/core/command-parser.js` — 🔥 parseCommandArgs (escape sequences \\, \", \') + _safeRegex (ReDoS protection)
-- `lib/core/llm-providers.js` — 🔥 OpenAI, Claude (**merges multiple system messages**, **Content-Length header for proxy compatibility**), Ollama (tools, **http/https transport selection by URL protocol**), Mock (respects outputFormat, **UTF-8 safe slice for multi-byte chars**), retry/backoff (**fixed off-by-one: exactly MAX_RETRIES attempts**), 1MB response size limit, default temperature 0.7 for all providers
+- `lib/core/tool-definitions.js` — Builtin tools (fs.read/write/edit, shell.exec, fetch.url, **memory.save/load with pathTraversal guard**), TOOL_SCHEMAS, LEGACY_ALIAS, registerTool, validateToolArgs, truncateResult (shallow copy + HALF_MAX), executeToolIsolated (forked child with cwd)
+- `lib/core/search-tools.js` — search.grep (**async fs.promises** — no event loop blocking, for-loop with lastIndex reset, ReDoS-safe regex) + fs.glob (glob@10+ Promise API with glob@8 callback fallback, brace alternation `{a,b}` with individual metachar escaping)
+- `lib/core/command-parser.js` — parseCommandArgs (escape sequences \\, \", \') + _safeRegex (ReDoS protection)
+- `lib/core/llm-providers.js` — OpenAI, Claude (**merges multiple system messages**, **Content-Length header for proxy compatibility**), Ollama (tools, **http/https transport selection by URL protocol**), Mock (respects outputFormat, **UTF-8 safe slice for multi-byte chars**), retry/backoff (**fixed off-by-one: exactly MAX_RETRIES attempts**), 1MB response size limit, default temperature 0.7 for all providers
 - `lib/core/tool-runner.js` — Isolated tool runner (forked child process with cwd, restricted env, HALF_MAX truncation consistent with tool-registry, `_truncated` flag, exit code 1 on errors)
 - `lib/core/config.js` — Config loader (.agent/ primary, .windsurf/ symlink). **try/catch on config.json parse** to prevent crash on malformed JSON. initConfigDir supports windsurfOnly and agentOnly options. saveVersion uses guardrails.safeWrite
 - `lib/core/plugin.js` — npm skill install/remove + permission system (guardrails.safeWrite for config.yaml writes, crypto.randomUUID for temp dirs, exports getSkillDir)
@@ -221,13 +266,13 @@ Production-grade AI Agent Platform — Smart Init, Plugin System, Agent Testing,
 - `lib/core/usage.js` — Usage statistics + deployment tracking + agentRuns counter + Prometheus metrics export (formatPrometheusMetrics) + getMetrics + safeWrite with projectDir (not cfgDir) for correct pathTraversal scope + **beforeExit + sync fallback flush** + **atomic write (temp+rename) in exit handler** to prevent truncated file
 - `lib/core/runtime.js` — Node/Bun dual
 - `lib/core/logger.js` — Structured JSON logging (LOG_FORMAT=json), meta field support, setJsonOutput()
-- `lib/core/circuit-breaker.js` — 🔥 Circuit breaker pattern (CLOSED→OPEN→HALF_OPEN→CLOSED), failure threshold, reset timeout, per-service breakers. Guards null lastFailureTime to prevent instant OPEN→HALF_OPEN. resetBreaker clears lastFailureTime/lastFailureError. successCount resets on HALF_OPEN→CLOSED recovery. removeBreaker() for cleanup. **Now used with per-provider keys** (`llm:openai`, `llm:claude`, `llm:local`, `llm:mock`) via `ensureLlmBreaker()` in failover.js
-- `lib/core/request-queue.js` — 🔥 Async job queue with concurrency control, priority ordering, backpressure (QUEUE_FULL), job timeout (**explicit undefined check for timeout=0**), metrics, **_finishJob emits events before _processNext** for correct listener order
-- `lib/core/tracing.js` — 🔥 Distributed tracing (trace+span IDs, OpenTelemetry export), trace storage, metrics (avg/p95 duration with Math.min p95 index clamp). **Async batched write queue with setImmediate scheduling** (prevents unbounded recursion under high throughput)
-- `lib/core/health-check.js` — 🔥 System health (liveness, readiness, component checks: memory, queue, breakers, LLM providers with status+message, Ollama reachability check with **GET method** + **http/https transport selection** + **keepAlive:false agent to prevent socket leak**, config, error logging in catch blocks). Async checkReadiness/getFullHealthReport
+- `lib/core/circuit-breaker.js` — Circuit breaker pattern (CLOSED→OPEN→HALF_OPEN→CLOSED), failure threshold, reset timeout, per-service breakers. Guards null lastFailureTime to prevent instant OPEN→HALF_OPEN. resetBreaker clears lastFailureTime/lastFailureError. **recordSuccess clears lastFailureTime on HALF_OPEN→CLOSED recovery** (prevents stale cleanup from deleting active breakers). **halfOpenMaxAttempts default 3** (was 1 — too aggressive for recovery). removeBreaker() for cleanup. **Now used with per-provider keys** (`llm:openai`, `llm:claude`, `llm:local`, `llm:mock`) via `ensureLlmBreaker()` in failover.js
+- `lib/core/request-queue.js` — Async job queue with concurrency control, priority ordering, backpressure (QUEUE_FULL), job timeout (**explicit undefined check for timeout=0**), metrics, **_finishJob emits events before _processNext** for correct listener order
+- `lib/core/tracing.js` — Distributed tracing (trace+span IDs, OpenTelemetry export), trace storage, metrics (avg/p95 duration with Math.min p95 index clamp). **Async batched write queue with setImmediate scheduling** (prevents unbounded recursion under high throughput)
+- `lib/core/health-check.js` — System health (liveness, readiness, component checks: memory, queue, breakers, LLM providers with status+message, **Ollama reachability check only when OLLAMA_HOST is set** with GET method + http/https transport selection + keepAlive:false agent, config, error logging in catch blocks). Async checkReadiness/getFullHealthReport
 - `lib/utils.js` — Shared utilities: parseFrontmatter (YAML.parse only, no fallback), copyRecursive (with skipDirs, rootDir param), findDefaultAgent, isValidAgentName, updateGitignore
-- `lib/commands/run.js` — 🔥 Agent execution entry (--verbose, --dry-run, --no-cache, streaming output)
-- `lib/commands/chat.js` — 🔥 Interactive chat session (sliding window MAX_CONTEXT_MESSAGES=20, agent validation on session creation)
+- `lib/commands/run.js` — Agent execution entry (--verbose, --dry-run, --no-cache, streaming output)
+- `lib/commands/chat.js` — Interactive chat session (sliding window MAX_CONTEXT_MESSAGES=20, agent validation on session creation)
 - `lib/commands/init.js` — Interactive agent generator (with agent name validation, utils import, projectRoot in safeWrite calls). Supports `--windsurf-only` (.windsurf/ only) and `--agent-only` (.agent/ only, no symlink)
 - `lib/commands/add.js` — Skill installer (with permission check)
 - `lib/commands/remove.js` — Skill remover
@@ -240,7 +285,7 @@ Production-grade AI Agent Platform — Smart Init, Plugin System, Agent Testing,
 - `lib/test/integration/flow.test.js` — Integration tests: full agent flow with tracing, breaker, queue, health, metrics (12 tests)
 - `lib/test/` — Test framework (runner, assertions, simulator, reporter)
 - `lib/publish/` — Publish system (packager uses utils.copyRecursive + crypto.randomUUID for temp dirs, validator, registry)
-- `lib/mcp/server.js` — 🔥 MCP server (McpServer + StdioServerTransport, dynamic import for ESM-only SDK). Exposes 3 tools: list_agents, run_agent, inspect_agent. **V2.6: run_agent has 2min timeout + maxSteps cap at 20**
+- `lib/mcp/server.js` — MCP server (McpServer + StdioServerTransport, dynamic import for ESM-only SDK). Exposes 3 tools: list_agents, run_agent, inspect_agent. **V2.6: run_agent has 2min timeout + maxSteps cap at 20**
 - `lib/mcp/tools/list-agents.js` — Lists all agents in project with name + description (optional verbose: skills, tools, provider, model)
 - `lib/mcp/tools/run-agent.js` — Executes agent via agentRuntime.runAgent, returns output + steps + usage. Output truncated at 50KB
 - `lib/mcp/tools/inspect-agent.js` — Returns full agent spec (frontmatter + instructions, maxSteps capped at 50)

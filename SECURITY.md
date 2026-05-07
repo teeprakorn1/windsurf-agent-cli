@@ -70,6 +70,7 @@ This project implements defense-in-depth for shell execution:
 
 | Version | Fix |
 |---------|-----|
+| 2.7.2 | Mock provider default — init works without API keys (with warning), failover chain accepts mock without AIYU_ENABLE_MOCK, health-check reports mock enabled |
 | 2.7.1 | Failover chain mutation fix, handoff catch block scope fix, chat session timeout, circuit breaker cleanup, tracing cleanup timer, cache key collision fix |
 | 2.7.0 | plan.create/memory.save path traversal fix, WS timer leak fix, agentStatuses TTL cleanup, sensitiveRouteAuth for /agents/statuses |
 | 2.6.0 | fetch.url SSRF protection (DNS + private IP block), WS maxPayload 1MB + perMessageDeflate:false, WS heartbeat + stale connection termination, WS handleRun/handleChatSend 5min timeout, sensitiveRouteAuth for /traces + /metrics, security headers (X-Content-Type-Options, X-Frame-Options, X-XSS-Protection, Referrer-Policy, HSTS), WS terminateAllConnections on shutdown |

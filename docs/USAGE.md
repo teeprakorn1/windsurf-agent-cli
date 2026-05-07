@@ -141,7 +141,7 @@ ws.send(JSON.stringify({
 
 ---
 
-## 🔥 Execution Engine
+## Execution Engine
 
 ### `aiyu-multi-agent run`
 
@@ -249,13 +249,13 @@ aiyu-multi-agent run "..." --provider local --model mistral
 aiyu-multi-agent run "..." --provider local --model codellama
 ```
 
-### Mock (Testing)
+### Mock (Testing / Default)
 
 ```bash
-AIYU_ENABLE_MOCK=1 aiyu-multi-agent run "..." --provider mock
+aiyu-multi-agent run "..." --provider mock
 ```
 
-Returns canned responses. Requires `AIYU_ENABLE_MOCK=1` env var. Perfect for testing and demos.
+Returns canned responses. Mock is the default provider when no API keys are configured. No env var required. Perfect for testing and demos.
 
 ---
 
@@ -602,7 +602,7 @@ Agent names are validated to prevent path traversal attacks. Characters not allo
 |----------|---------|-------------|
 | `OPENAI_API_KEY` | OpenAI API access | `--provider openai` |
 | `ANTHROPIC_API_KEY` | Anthropic API access | `--provider claude` |
-| `AIYU_ENABLE_MOCK` | Enable mock provider (`1` to enable) | `--provider mock` |
+| `AIYU_ENABLE_MOCK` | (Legacy, no longer required) | `--provider mock` |
 | `AIYU_API_KEY` | API server auth key | `serve` command |
 | `AIYU_CORS_ORIGIN` | CORS origin for API server | `serve` command |
 | `AIYU_TRUST_PROXY` | Trust X-Forwarded-For header | Reverse proxy |

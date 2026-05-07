@@ -1,6 +1,6 @@
 # Aiyu MultiAgent Dashboard — Architecture
 
-> Version 2.7.1
+> Version 2.7.2
 
 ## System Overview
 

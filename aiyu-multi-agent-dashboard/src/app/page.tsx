@@ -16,7 +16,7 @@ import { ResetDialog } from "@/components/reset-dialog";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Zap } from "lucide-react";
 
-const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION || "2.7.1";
+const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION || "2.7.2";
 
 type Provider = "openai" | "claude" | "local" | "mock";
 
