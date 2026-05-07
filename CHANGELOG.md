@@ -35,6 +35,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Removed Next.js rewrites** — `next.config.js` no longer uses `async rewrites()`. All `/api/*` routing handled by server-side route handler
 - **`docker-compose.yml`** — `aiyu-dashboard` service: port `3001:3001`, `NEXT_PUBLIC_WS_URL` build arg (browser-accessible URL), `AIYU_API_KEY` env passthrough for server-side proxy auth
 
+### Fixed — Bug Audit 2026-05-07 Round 5 (2 Critical + 5 High + 7 Medium + 5 Low)
+
+**P0 Critical:**
+- **WS client disconnect doesn't cancel running agent** — When a WebSocket client disconnected, the agent's ReAct loop continued running indefinitely, wasting LLM tokens and CPU. Added `activeRuns` Map to track `AbortController` per client, abort all runs on `ws.close` event (`lib/api/ws.js`)
+- **`PENDING_INTERVENTIONS` exported as mutable Map** — External modules could directly mutate the interventions Map, bypassing validation and timestamp tracking. Changed export from raw Map to `() => new Map(PENDING_INTERVENTIONS)` read-only snapshot, consistent with `chatSessions` export (`lib/api/ws.js`)
+
+**P1 High:**
+- **`/agents/statuses` crashes if ws module fails** — `require("./ws")` in route handler had no try/catch. If ws npm package was not installed or module failed to load, unhandled exception crashed the server. Added try/catch with 503 response (`lib/api/server.js`)
+- **`jobs.js` doesn't validate input length** — `POST /jobs` only validated input existence, not length. Oversized inputs consumed queue slots before `sanitizeInput` could reject. Added `MAX_INPUT_LENGTH` check at route level (`lib/api/jobs.js`)
+- **`packager.js` generated `bin/run.js` has no path traversal protection** — Published agent packages could contain filenames like `../../../.bashrc` that escape `.agent/` during copy. Added `resolvedDest.startsWith(path.resolve(dest))` guard in generated script (`lib/publish/packager.js`)
+- **`plugin.js` install doesn't use `--ignore-scripts`** — `npm install` ran package lifecycle scripts (preinstall, install, postinstall), allowing malicious packages to execute arbitrary code. Added `--ignore-scripts` flag to npm install args (`lib/core/plugin.js`)
+- **`agent-loader.js` no file size limit on agent `.md`** — `loadAgentSpec` used `fs.readFileSync` without size check. A maliciously large agent file could cause OOM. Added `MAX_AGENT_FILE_SIZE=200KB` with `fs.statSync` pre-check (`lib/core/agent-loader.js`)
+
+**P2 Medium:**
+- **`sandboxExec` doesn't strip env secrets when caller provides `options.env`** — Secret stripping only ran when `!options.env`. Caller-provided env with inherited `process.env` keys leaked API keys into child processes. Now always strips regardless of env source (`lib/core/guardrails.js`)
+- **`cache.js` LRU eviction not true LRU** — Reading a cache entry didn't update its access time, so frequently accessed entries could be evicted. Added `lastAccess` tracking on read and use it for eviction decisions (`lib/core/cache.js`)
+- **`llm-providers.js` retry has no jitter** — Retry delay was deterministic `Math.min(1000 * 2^attempt, 10000)`. Under high concurrency with simultaneous failures, all retries fired at the same instant (thundering herd). Added `+ Math.random() * 1000` jitter (`lib/core/llm-providers.js`)
+- **`validator.js` secret scanning only checks agent `.md` files** — Leaked API keys in skill files, workflow files, or `config.yaml` were not detected before publishing. Changed to recursive `scanDir()` that scans all `.md`, `.yaml`, `.yml`, `.json` files under `cfgDir/` (`lib/publish/validator.js`)
+- **`config.js` symlink fallback creates divergent directories** — When `fs.symlinkSync` failed, `copyRecursive` created a separate copy. Changes to `.agent/` wouldn't appear in `.windsurf/` with no warning. Added `logger.warn` when fallback is used (`lib/core/config.js`)
+- **`prompt-builder.js` skill heading not counted toward truncation** — `truncateSkillContent` limited content to `MAX_SKILL_INSTRUCTION_CHARS` but `buildSystemPrompt` prepended `### name\n` heading before the truncated content, exceeding the limit. Added `headingOffset` parameter to `truncateSkillContent` (`lib/core/prompt-builder.js`)
+- **`test.js` watch mode `setInterval` never cleaned up** — Polling interval had no `.unref()` and no cleanup mechanism, keeping the event loop alive unnecessarily. Added `watchTimer.unref()` (`lib/commands/test.js`)
+
+**P3 Low:**
+- **`usage.js` `.tmp` file on crash** — If process crashed between `writeFileSync` and `renameSync`, a stale `usage.json.tmp` file remained with no cleanup. Added pre-write stale `.tmp` cleanup in `_syncFlushBuffer` and periodic cleanup in guardrails timer (`lib/core/usage.js`, `lib/core/guardrails.js`)
+- **`health-check.js` un-reused HTTP agent per check** — `new transport.Agent({ keepAlive: false })` was created per readiness check without `.destroy()`, causing minor GC pressure in long-running servers. Added agent reuse + destroy after use (`lib/core/health-check.js`)
+- **`cli.js` dev command hardcodes `provider: "mock"`** — Dev mode always used mock provider, impossible to test with real LLM. Added `--provider` flag to dev command, defaults to mock for safety (`bin/cli.js`)
+- **`compliance.js` hardcodes `agentName: "accessibility-specialist"`** — If this agent didn't exist in test environment, compliance tests failed with confusing error. Added `resolveComplianceAgent()` that dynamically finds first available agent (`lib/test/compliance.js`)
+- **`search-tools.js` fallback glob doesn't respect `.gitignore`** — Fallback `fsGlob` walk only skipped `node_modules` and `.git` but not `dist/`, `build/`, `.next/`, etc. Changed to `SKIP_DIRS` Set with common build artifact directories (`lib/core/search-tools.js`)
+
+### Changed — Bug Audit Round 5
+
+- **`agent-loader.js`** — Exported `MAX_AGENT_FILE_SIZE` constant
+- **`agent-runtime.js`** — Re-exports `MAX_AGENT_FILE_SIZE` from agent-loader
+- **`ws.js`** — Added `activeRuns` Map for per-client run tracking; `PENDING_INTERVENTIONS` export changed from mutable Map to read-only snapshot function
+
 ### Fixed — Bug Audit 2026-05-07 Round 4 (2 Critical + 5 High + 7 Medium + 4 Low)
 
 **P0 Critical:**

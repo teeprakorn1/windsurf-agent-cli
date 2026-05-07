@@ -48,3 +48,9 @@ ROADMAP-PRODUCTION.md
 .npmrc
 .agent/memory/
 .agent/plans/
+
+# Dashboard (Next.js)
+aiyu-multi-agent-dashboard/.next/
+aiyu-multi-agent-dashboard/out/
+aiyu-multi-agent-dashboard/node_modules/
+aiyu-multi-agent-dashboard/package-lock.json

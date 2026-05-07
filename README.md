@@ -44,7 +44,7 @@
 
 **Aiyu MultiAgent** is an open-source AI agent platform that helps developers automate software engineering tasks using large language models (LLMs). It features a **ReAct execution engine**, **MCP server integration** for Claude Code / Cursor / Windsurf, **WebSocket real-time streaming**, **agent handoff orchestration**, and a **plugin system** for extensible AI capabilities. Supports OpenAI GPT-4, Anthropic Claude, Ollama local models, and mock mode for testing.
 
-> **Latest Release: v2.7.1** — Bug fix release (5 rounds including Dashboard Integration: 8 critical + 17 high + 19 medium + 9 low + 3 CI). V2.7.0 added real-time monitoring dashboard, WS event schema, and 11 bug fixes. All changes backward compatible.
+> **Latest Release: v2.7.1** — Bug fix release (5 rounds including Dashboard Integration: 10 critical + 22 high + 26 medium + 14 low + 3 CI). V2.7.0 added real-time monitoring dashboard, WS event schema, and 11 bug fixes. All changes backward compatible.
 
 ---
 
@@ -79,20 +79,20 @@ V2.7 brings a **real-time monitoring dashboard** and **bug fix hardening** — a
 | 📡 WS Schema | `docs/WS-SCHEMA.md` — formal contract (6 client→server, 10 server→client) | Reliability ⬆️ |
 | 🔄 Broadcasts | `agent.status`, `handoff.started/complete`, `delegate.started/complete` | Dashboard ⬆️ |
 | 🐛 V2.7.0 Fixes | 11 bugs — path traversal, timer leak, Ollama deprioritize, etc. | Security ⬆️ |
-| 🐛 V2.7.1 Fixes | 20 bugs — Dashboard integration (WS auth, Docker port, API proxy), WS timeout cancellation, path traversal in agent-loader, wsApiKeyAuth crash, prompt-builder hardcoded tools, usage atomic write, search-tools async, chat intervention, handoff broadcast, Claude system messages, queue timeout=0, chat context limit, WS Map exports, Ollama GET | Stability ⬆️ |
+| 🐛 V2.7.1 Fixes | 75 bugs across 5 rounds — Dashboard integration, WS disconnect abort, mutable Map export, server crash guard, input validation, path traversal in packager, npm --ignore-scripts, agent file size limit, env secret leak, true LRU, retry jitter, recursive secret scan, symlink warning, heading truncation, watch timer cleanup, .tmp file cleanup, health-check agent reuse, dev --provider flag, dynamic compliance agent, SKIP_DIRS | Stability ⬆️ |
 
-### V2.7.1 Bug Fixes (8 Critical + 11 High + 12 Medium + 2 Low + 3 CI)
+### V2.7.1 Bug Fixes (10 Critical + 17 High + 19 Medium + 7 Low + 3 CI)
 
 **Dashboard Integration (2 Critical + 3 High + 2 Medium):**
 - **Critical**: WS client no API key token (auto `?token=` injection), `sensitiveRouteAuth` blocks Docker network (server-side API proxy with auth)
 - **High**: Docker port mapping `3001:3000` → `3001:3001`, `NEXT_PUBLIC_WS_URL` build-time embedding, Next.js rewrite no auth forwarding (API route proxy)
 - **Medium**: Dashboard missing `sendChatCreate`/`sendChatSend`, `/agents/statuses` missing ISO `timestamp` field
 
-**Server-side (6 Critical + 8 High + 10 Medium + 2 Low + 3 CI):**
-- **Critical**: WS run/chat timeout doesn't cancel agent execution (AbortController), agent-loader `isValidAgentName` path traversal, WS timeout timer leak, agent.delegate missing `_runId`, failover `.filter()` mutation, handoff catch `ReferenceError`
-- **High**: `wsApiKeyAuth` crashes on malformed URL, prompt-builder hardcodes tool list, usage.js atomic write, search-tools async, chat-session intervention, `AIYU_ENABLE_MOCK` not set in tests, context trim pair mismatch, chat tool timeout/abort, Claude Content-Length, intervene WS fallback, chat lastActivity timing
-- **Medium**: Handoff WS broadcast fallback, Claude system message merge, request-queue `timeout=0`, chat context limit, circuit breaker leak, tracing idle leak, cache key collision, tracing recursion → setImmediate, queue job deletion, safeWrite temp cleanup, grep early match limit, _broadcast error handling, SKILL.md size limit, Ollama health check
-- **Low**: ws.js Map accessor functions, health-check GET for Ollama, config.json try/catch, chatSessions read-only, memory pathTraversal, callMock UTF-8 slice
+**Server-side (8 Critical + 14 High + 17 Medium + 5 Low + 3 CI):**
+- **Critical**: WS run/chat timeout doesn't cancel agent execution (AbortController), agent-loader `isValidAgentName` path traversal, WS timeout timer leak, agent.delegate missing `_runId`, failover `.filter()` mutation, handoff catch `ReferenceError`, WS disconnect doesn't cancel running agent (activeRuns Map), PENDING_INTERVENTIONS mutable Map export (read-only snapshot)
+- **High**: `wsApiKeyAuth` crashes on malformed URL, prompt-builder hardcodes tool list, usage.js atomic write, search-tools async, chat-session intervention, `AIYU_ENABLE_MOCK` not set in tests, context trim pair mismatch, chat tool timeout/abort, Claude Content-Length, intervene WS fallback, chat lastActivity timing, `/agents/statuses` crash on ws require fail, jobs.js no input length validation, packager bin/run.js path traversal, plugin.js `--ignore-scripts`, agent-loader no file size limit (200KB)
+- **Medium**: Handoff WS broadcast fallback, Claude system message merge, request-queue `timeout=0`, chat context limit, circuit breaker leak, tracing idle leak, cache key collision, tracing recursion → setImmediate, queue job deletion, safeWrite temp cleanup, grep early match limit, _broadcast error handling, SKILL.md size limit, Ollama health check, sandboxExec env secret leak, cache not true LRU (lastAccess), retry no jitter, validator secret scan too narrow (recursive), config symlink fallback no warning, prompt-builder heading overflow, test.js watch timer no unref
+- **Low**: ws.js Map accessor functions, health-check GET for Ollama, config.json try/catch, chatSessions read-only, memory pathTraversal, callMock UTF-8 slice, usage.js stale .tmp file, health-check agent GC pressure, dev hardcodes mock (`--provider` flag), compliance hardcodes agent name, search-tools SKIP_DIRS
 
 ---
 
@@ -248,6 +248,10 @@ aiyu-multi-agent run "..." --json            # JSON output (CI/CD)
 aiyu-multi-agent run "..." --max-steps 20    # Override max ReAct steps
 aiyu-multi-agent run "..." --verbose         # Streaming step-by-step
 aiyu-multi-agent run "..." --no-cache        # Skip cache
+
+aiyu-multi-agent dev                         # Dev REPL (mock provider)
+aiyu-multi-agent dev --provider openai       # Dev REPL with real LLM
+aiyu-multi-agent dev --verbose               # Dev REPL with step logging
 
 aiyu-multi-agent chat                        # Interactive session
 aiyu-multi-agent chat --agent backend        # Chat with specific agent
@@ -520,8 +524,8 @@ Aiyu MultiAgent is built with **security-first design** for safe AI agent execut
 | **Sandbox Exec** | Command isolation | `execFileSync` only (no shell). Whitelist-only commands. `path.basename()` pre-check |
 | **Command Injection** | Input sanitization | Blocks `$()`, `` ` ``, `rm -rf`, `mkfs`, `dd`, destructive patterns |
 | **API Key Auth** | Access control | `AIYU_API_KEY` env var. Bearer token with `crypto.timingSafeEqual` (timing-attack safe) |
-| **Env Leak Prevention** | Secret protection | Strips `API_KEY` / `TOKEN` / `SECRET` / `PASSWORD` from child process `env` |
-| **Secret Scanning** | Pre-publish safety | Detects leaked keys on `publish`. Blocks with `--strict`. Scans for `ghp_`, `sk-`, `AKIA` |
+| **Env Leak Prevention** | Secret protection | Strips `API_KEY` / `TOKEN` / `SECRET` / `PASSWORD` from child process `env` regardless of env source |
+| **Secret Scanning** | Pre-publish safety | Detects leaked keys on `publish`. Blocks with `--strict`. Recursive scan of all `.md`, `.yaml`, `.json` files for `ghp_`, `sk-`, `AKIA` |
 | **Permission System** | Explicit consent | Skills declare `permissions: { fs, network, exec }`. User must approve on install |
 
 ---
@@ -579,7 +583,7 @@ aiyu-multi-agent add skill postgres          # Install aiyu-multi-agent-skill-po
 aiyu-multi-agent add skill @org/custom       # Scoped packages supported
 ```
 
-Skills add new capabilities — database helpers, cloud APIs, testing frameworks, and more. Each skill declares its required permissions, and you approve before installation.
+Skills add new capabilities — database helpers, cloud APIs, testing frameworks, and more. Each skill declares its required permissions, and you approve before installation. npm install uses `--ignore-scripts` for safety.
 
 <details>
 <summary><b>📝 Publish Your Own Skill</b></summary>

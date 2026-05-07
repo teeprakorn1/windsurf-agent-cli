@@ -45,5 +45,8 @@ service-account.json
 
 # DO NOT ignore .windsurf/ — it IS the package payload
 
+# Dashboard — separate Next.js app, not part of npm package
+aiyu-multi-agent-dashboard/
+
 # Internal roadmap — not for public
 ROADMAP-PRODUCTION.md

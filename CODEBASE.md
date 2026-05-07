@@ -11,6 +11,12 @@
 - **Added**: Server-side API proxy route (`/api/[...path]`), `NEXT_PUBLIC_API_KEY` env for WS auth
 - **Changed**: Removed `/api/metrics` static proxy, removed Next.js rewrites, `docker-compose.yml` port + env fixes
 
+**Round 5 (2 Critical + 5 High + 7 Medium + 5 Low):**
+- **Critical**: WS disconnect doesn't cancel running agent (activeRuns Map + abort), PENDING_INTERVENTIONS mutable Map export (read-only snapshot)
+- **High**: /agents/statuses crash on ws require fail (try/catch + 503), jobs.js no input length validation (MAX_INPUT_LENGTH), packager bin/run.js path traversal (resolvedDest guard), plugin.js npm install runs scripts (--ignore-scripts), agent-loader no file size limit (MAX_AGENT_FILE_SIZE 200KB)
+- **Medium**: sandboxExec env secret leak with options.env (always strip), cache not true LRU (lastAccess tracking), retry no jitter (+random*1000), validator secret scan too narrow (recursive scanDir), config symlink fallback no warning (logger.warn), prompt-builder heading overflow (headingOffset param), test.js watch timer no unref (watchTimer.unref)
+- **Low**: usage.js stale .tmp file (pre-write cleanup + guardrails periodic), health-check agent GC pressure (reuse+destroy), dev hardcodes mock (--provider flag), compliance hardcodes agent name (resolveComplianceAgent), search-tools SKIP_DIRS for build artifacts
+
 **Round 4 (2 Critical + 5 High + 7 Medium + 4 Low):**
 - **Critical**: WS timeout timer leak (clearTimeout in catch), agent.delegate missing _runId for broadcast
 - **High**: context trim pair mismatch, chat tool timeout/abort check, Claude Content-Length header, intervene WS fallback, chat lastActivity timing

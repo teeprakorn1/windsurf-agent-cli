@@ -18,7 +18,7 @@ services:
 
   aiyu-dashboard:
     build:
-      context: ../aiyu-multi-agent-dashboard
+      context: ./aiyu-multi-agent-dashboard
       args:
         AIYU_API_URL: http://aiyu-api:3000
         NEXT_PUBLIC_WS_URL: ws://localhost:3000/ws
