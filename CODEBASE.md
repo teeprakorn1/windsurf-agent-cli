@@ -38,6 +38,7 @@
 ### V2.7.0 (2026-05-07) — Dashboard Release
 
 - **Dashboard** — Next.js 14 real-time monitoring (`aiyu-multi-agent-dashboard/`)
+- **Monorepo** — Dashboard merged into main repo as subdirectory (previously separate repo)
 - **Features** — Agent Status, Execution Timeline, Intervention, Interaction Map, Memory Viewer, Metrics, Logs
 - **P3 Polish** — Dark mode, export trace, keyboard shortcuts, WS auto-reconnect, mobile responsive
 - **WS Schema** — `docs/WS-SCHEMA.md` (6 client→server, 10 server→client, 5 planned)

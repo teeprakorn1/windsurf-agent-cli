@@ -457,7 +457,8 @@ aiyu-multi-agent/
 │   └── publish/                 # Packager + validator + registry
 ├── templates/                  # Agent + skill scaffolds
 ├── docs/                       # Architecture, runtime spec, roadmap, usage
-└── .windsurf/                  # 84 Agents, 46 Skills, 78 Workflows, 10 Rules
+├── .windsurf/                  # 84 Agents, 46 Skills, 78 Workflows, 10 Rules
+└── aiyu-multi-agent-dashboard/ # Real-time monitoring dashboard (Next.js 14)
 ```
 </details>
 

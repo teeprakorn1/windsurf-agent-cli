@@ -29,6 +29,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Server-side API proxy route** — `src/app/api/[...path]/route.ts` — proxies all `/api/*` requests to Aiyu API with automatic `x-api-key` header injection from `AIYU_API_KEY` env. Supports GET/POST/PUT/DELETE with proper content-type forwarding and 502 on unreachable API
 - **`NEXT_PUBLIC_API_KEY` env** — Client-side API key for WebSocket token auth. Set via `NEXT_PUBLIC_API_KEY` build arg in Dockerfile, auto-appended as `?token=` to WS URL
 
+### Changed — Monorepo Migration
+
+- **Dashboard merged into main repo** — `aiyu-multi-agent-dashboard/` moved from separate repo (`github.com/teeprakorn1/aiyu-multi-agent-dashboard`) to subdirectory in main repo. Old repo archived on GitHub
+- **`.npmignore`** — Added `aiyu-multi-agent-dashboard/` to exclude dashboard from npm package
+- **`.gitignore`** — Added Next.js build artifacts (`.next/`, `out/`, `node_modules/`, `package-lock.json`) for dashboard subdirectory
+- **`docker-compose.yml`** — Changed dashboard build context from `../aiyu-multi-agent-dashboard` to `./aiyu-multi-agent-dashboard`
+
 ### Changed — Dashboard Integration
 
 - **Removed `/api/metrics` static proxy** — Deleted `src/app/api/metrics/route.ts` (replaced by catch-all proxy route)
