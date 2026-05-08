@@ -5,6 +5,35 @@ All notable changes to **aiyu-multi-agent-dashboard** will be documented in this
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.7.3] — 2026-05-08
+
+### Fixed
+
+**Critical**
+- **[C1] WebSocket disconnects immediately in React Strict Mode** — `useWebSocket` cleanup called `wsRef.current?.close()` synchronously on unmount. React Strict Mode's mount→unmount→remount cycle closed the WS before it could establish, then stale `onclose` handler nulled `wsRef.current`, preventing the remounted connection from persisting. Fixed with **deferred close pattern**: cleanup sets a 100ms `closeTimer` instead of closing immediately; remount cancels the timer so WS stays alive. Added stale WS guard (`wsRef.current !== ws`) in all handlers (`src/lib/use-websocket.ts`)
+
+**High**
+- **[H1] Markdown not rendered in Execution Timeline, Agent Status, Logs** — `step.thought`, `step.result`, `completed.output`, and log entries used plain `<p>`/`<pre>` tags instead of `MarkdownRenderer`. Now all agent output renders markdown (bold, lists, code blocks, blockquotes, etc.) (`execution-timeline.tsx`, `agent-status-panel.tsx`, `logs-viewer.tsx`)
+- **[H2] Global Enter handler conflicts with Chat textarea** — `page.tsx` global `keydown` handler triggered `handleRun()` on `Enter` in any `<textarea>`, causing both chat-send and run-agent to fire simultaneously. Fixed: global handler now only triggers on `Ctrl/Cmd+Enter`; plain `Enter` in chat only sends chat message (`page.tsx`)
+- **[H3] Agent Status Panel hover flickers in dark mode** — Missing `dark:border` and `dark:hover:border` classes caused border to appear/disappear on hover. Added proper dark mode border variants (`agent-status-panel.tsx`)
+
+**Medium**
+- **[M1] Dropdown menus clipped by parent overflow** — `glass-card` had `overflow-hidden` which clipped absolute-positioned dropdowns. Removed `overflow-hidden` from container, raised dropdown z-index to `z-[999]` (`chat-panel.tsx`, `agent-select.tsx`, `provider-select.tsx`)
+- **[M2] AgentSelect dropdown hidden behind ProviderSelect** — `z-50` on wrapper divs created stacking context overlap. Removed `z-50` from wrappers, kept high z-index only on dropdown panels (`agent-select.tsx`, `provider-select.tsx`)
+- **[M3] ProviderSelect shows unavailable providers** — Health endpoint uses `"configured"` status but filter only checked `"enabled"/"available"`. Fixed filter to include `"configured"` and `"ok"`. Defaults `availableProviders` to `["mock"]` so unavailable providers never appear before health responds. Auto-switches to `mock` if selected provider becomes unavailable. Applied to both `RunPanel` and `ChatPanel` (`chat-panel.tsx`, `page.tsx`, `run-panel.tsx`, `provider-select.tsx`)
+
+### Added
+
+- **`react-markdown` + `remark-gfm`** — Required by `markdown-renderer.tsx` (chat panel) but missing from `package.json` in v2.7.2
+- **Chat auto-create session** — Pressing Enter in chat textarea auto-creates a session if none exists, with pending message queue that auto-sends once session is ready (`chat-panel.tsx`)
+- **Provider filtering** — `ProviderSelect` now accepts `availableProviders` prop and only shows providers that are actually configured on the backend (fetched from `/api/health` every 30s). Auto-switches to `mock` if selected provider becomes unavailable. Applied to both `RunPanel` and `ChatPanel` (`provider-select.tsx`, `chat-panel.tsx`, `run-panel.tsx`, `page.tsx`)
+
+### Changed
+
+- **Split layout** — Dashboard restructured from 12-column grid to flex split: left sidebar (420px, scrollable) for Run/Status/Metrics/Timeline/Logs, right panel (flex-1, full-height) for Chat (`page.tsx`)
+- **Chat panel rewrite** — Full-height chat with session sidebar (rename/export/close), collapsible inline steps, handoff visualization (purple badge), intervention bar, streaming indicator, and auto-scroll (`chat-panel.tsx`)
+- **New Chat dropdown** — "+" button now opens a dropdown with Agent/Provider selection before creating session (`chat-panel.tsx`)
+
 ## [2.7.2] — 2026-05-07
 
 ### Fixed

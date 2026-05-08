@@ -119,10 +119,14 @@ export function DashboardHeader({ version, onReset, showToast, connInfo, onConnI
           blob = new Blob([JSON.stringify(data, safeReplacer, 2)], { type: "application/json" });
           filename = `aiyu-trace-${ts}.json`;
         } else if (format === "csv") {
+          const csvEscape = (v: unknown) => {
+            const s = String(v ?? "");
+            return s.includes(",") || s.includes('"') || s.includes("\n") ? `"${s.replace(/"/g, '""')}"` : s;
+          };
           const rows = Object.entries(completedRuns).map(([id, r]) => {
             const cr = r as unknown as Record<string, unknown>;
             const u = cr.usage as Record<string, number> | null;
-            return `${id},${cr.status ?? ""},${cr.completedAt ?? ""},${u?.promptTokens ?? ""},${u?.completionTokens ?? ""},${u?.totalTokens ?? ""}`;
+            return `${csvEscape(id)},${csvEscape(cr.status)},${csvEscape(cr.completedAt)},${csvEscape(u?.promptTokens)},${csvEscape(u?.completionTokens)},${csvEscape(u?.totalTokens)}`;
           });
           const header = "runId,status,completedAt,promptTokens,completionTokens,totalTokens";
           blob = new Blob([header + "\n" + rows.join("\n")], { type: "text/csv" });
@@ -188,7 +192,7 @@ export function DashboardHeader({ version, onReset, showToast, connInfo, onConnI
 
   return (
     <header className="sticky top-0 z-50 border-b bg-white/80 dark:bg-zinc-950/80 backdrop-blur-xl" style={{ borderColor: "var(--border-color)" }}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 py-2 sm:py-3 flex items-center justify-between">
         <div ref={appRef} className="flex items-center gap-3 relative">
           <button
             type="button"
@@ -200,10 +204,10 @@ export function DashboardHeader({ version, onReset, showToast, connInfo, onConnI
               <Zap className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               <div className="absolute inset-0 blur-md bg-blue-600/40 dark:bg-blue-400/40" />
             </div>
-            <h1 className="text-base font-bold tracking-tight gradient-text group-hover:opacity-80 transition-opacity">
+            <h1 className="text-sm sm:text-base font-bold tracking-tight gradient-text group-hover:opacity-80 transition-opacity">
               Aiyu MultiAgent
             </h1>
-            <span className="text-[10px] text-gray-500 dark:text-zinc-600 border border-gray-300 dark:border-zinc-800 rounded-full px-2 py-0.5">
+            <span className="hidden sm:inline-flex text-[10px] text-gray-500 dark:text-zinc-600 border border-gray-300 dark:border-zinc-800 rounded-full px-2 py-0.5">
               v{version}
             </span>
             <ChevronDown
@@ -229,7 +233,7 @@ export function DashboardHeader({ version, onReset, showToast, connInfo, onConnI
                 <InfoRow label="CLI" value={'aiyu-multi-agent run "<task>"'} />
                 <InfoRow label="Node" value={connDisplayValues?.nodeVersion || "—"} />
                 <InfoRow label="Platform" value={connInfo ? (connInfo as Record<string, string>).platform : "—"} />
-                <InfoRow label="PID" value={connInfo ? String((connInfo as Record<string, number>).pid) : "—"} />
+                {/* PID intentionally hidden — info disclosure risk */}
                 <div className="pt-2 mt-2 border-t border-gray-200 dark:border-zinc-700 space-y-1.5">
                   <a
                     href="https://github.com/teeprakorn1/aiyu-multi-agent"

@@ -2,6 +2,7 @@
 
 import { memo, useMemo, useRef, useState, useCallback, useEffect } from "react";
 import { useWs } from "@/lib/ws-context";
+import { MarkdownRenderer } from "./markdown-renderer";
 import { Search, ChevronDown, FileText, Layers, Footprints, CheckCircle, AlertTriangle, ArrowRight, Users, X, Copy, Check, Wrench, Brain } from "lucide-react";
 
 interface LogEntry {
@@ -70,7 +71,7 @@ export const LogsViewer = memo(function LogsViewer() {
     Object.entries(runs).forEach(([runId, steps]) => {
       steps.forEach((step) => {
         list.push({
-          id: `step-${runId}-${step.step}-${step.timestamp}`,
+          id: `step-${runId}-${step.step}-${step.timestamp}-${Math.random().toString(16).slice(2, 6)}`,
           time: step.timestamp,
           displayTime: new Date(step.timestamp).toLocaleTimeString(),
           type: "step",
@@ -83,7 +84,7 @@ export const LogsViewer = memo(function LogsViewer() {
 
     Object.entries(completedRuns).forEach(([runId, result]) => {
       list.push({
-        id: `complete-${runId}-${result.completedAt}-${result.status}`,
+        id: `complete-${runId}-${result.completedAt}-${result.status}-${Math.random().toString(16).slice(2, 6)}`,
         time: result.completedAt,
         displayTime: new Date(result.completedAt).toLocaleTimeString(),
         type: "complete",
@@ -237,7 +238,7 @@ export const LogsViewer = memo(function LogsViewer() {
                           {raw.thought && (
                             <div className="pt-2 mt-2 border-t border-gray-200 dark:border-zinc-700/60">
                               <div className="flex items-center gap-1 mb-1"><Brain className="h-3 w-3 text-cyan-500" /><span className="text-[9px] text-gray-500 uppercase tracking-wider">Thought</span></div>
-                              <p className="text-xs text-gray-800 dark:text-zinc-300 whitespace-pre-wrap">{String(raw.thought)}</p>
+                              <MarkdownRenderer content={String(raw.thought)} className="text-xs text-gray-800 dark:text-zinc-300" />
                             </div>
                           )}
                           {raw.toolCalls && Array.isArray(raw.toolCalls) && (raw.toolCalls as Array<Record<string, unknown>>).length > 0 && (
@@ -259,7 +260,7 @@ export const LogsViewer = memo(function LogsViewer() {
                                 <span className="text-[9px] text-gray-500 uppercase tracking-wider">Result</span>
                                 <CopyButton text={String(raw.result)} />
                               </div>
-                              <pre className="text-[10px] text-gray-700 dark:text-zinc-400 bg-gray-50 dark:bg-zinc-950/60 rounded px-2 py-1.5 overflow-x-auto max-h-40 whitespace-pre-wrap border border-gray-200 dark:border-zinc-800/40">{String(raw.result)}</pre>
+                              <MarkdownRenderer content={String(raw.result)} className="text-[10px] text-gray-700 dark:text-zinc-400 bg-gray-50 dark:bg-zinc-950/60 rounded px-2 py-1.5 overflow-x-auto max-h-40 border border-gray-200 dark:border-zinc-800/40" />
                             </div>
                           )}
                           {raw.error && (
@@ -284,7 +285,7 @@ export const LogsViewer = memo(function LogsViewer() {
                                 <span className="text-[9px] text-gray-500 uppercase tracking-wider">Output</span>
                                 <CopyButton text={String(raw.output)} />
                               </div>
-                              <pre className="text-[10px] text-gray-700 dark:text-zinc-400 bg-gray-50 dark:bg-zinc-950/60 rounded px-2 py-1.5 overflow-x-auto max-h-40 whitespace-pre-wrap border border-gray-200 dark:border-zinc-800/40">{String(raw.output)}</pre>
+                              <MarkdownRenderer content={String(raw.output)} className="text-[10px] text-gray-700 dark:text-zinc-400 bg-gray-50 dark:bg-zinc-950/60 rounded px-2 py-1.5 overflow-x-auto max-h-40 border border-gray-200 dark:border-zinc-800/40" />
                             </div>
                           )}
                           {usage && (

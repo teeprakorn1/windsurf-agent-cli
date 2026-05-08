@@ -49,34 +49,34 @@ export const MetricsPanel = memo(function MetricsPanel() {
 
   if (loading) {
     return (
-      <div className="glass-card p-4">
-        <h2 className="section-title">Metrics</h2>
-        <div className="flex items-center justify-center py-4">
-          <div className="h-4 w-4 border-2 border-blue-500/30 dark:border-blue-400/30 border-t-blue-500 dark:border-t-blue-400 rounded-full animate-spin" />
+      <div className="glass-card p-3">
+        <h2 className="section-title text-[10px]">Metrics</h2>
+        <div className="flex items-center justify-center py-3">
+          <div className="h-3 w-3 border-2 border-blue-500/30 dark:border-blue-400/30 border-t-blue-500 dark:border-t-blue-400 rounded-full animate-spin" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="glass-card p-4">
-      <div className="flex items-center justify-between mb-1">
-        <h2 className="section-title mb-0">Metrics</h2>
-        {offline && <span className="text-[9px] text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-full px-2 py-0.5">Offline</span>}
+    <div className="glass-card p-3">
+      <div className="flex items-center justify-between mb-2">
+        <h2 className="section-title mb-0 text-[10px]">Metrics</h2>
+        {offline && <span className="text-[8px] text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-full px-1.5 py-0">Offline</span>}
       </div>
-      <div className="grid grid-cols-2 gap-2.5">
+      <div className="grid grid-cols-2 gap-1.5">
         {stats.map((stat) => {
           const Icon = stat.icon;
           return (
-            <div key={stat.label} className="rounded-lg bg-gray-50 dark:bg-zinc-900/50 border border-gray-200 dark:border-zinc-800/40 p-3 transition-all duration-200 hover:border-gray-300 dark:hover:border-zinc-700/50">
-              <div className="flex items-center justify-between mb-1">
-                <Icon className="h-3 w-3 text-gray-500 dark:text-zinc-600" />
-                <span className={`text-[9px] font-medium ${stat.color}`}>
+            <div key={stat.label} className="rounded-lg bg-gray-50 dark:bg-zinc-900/50 border border-gray-200 dark:border-zinc-800/40 p-2 transition-all duration-200 hover:border-gray-300 dark:hover:border-zinc-700/50">
+              <div className="flex items-center justify-between mb-0.5">
+                <Icon className="h-2.5 w-2.5 text-gray-500 dark:text-zinc-600" />
+                <span className={`text-[8px] font-medium ${stat.color}`}>
                   {stat.trend === "up" ? "↑" : stat.trend === "down" ? "↓" : "→"}
                 </span>
               </div>
-              <p className={`text-lg font-bold ${stat.color}`}>{stat.value}</p>
-              <p className="text-[9px] text-gray-500 dark:text-zinc-600 uppercase tracking-wider">{stat.label}</p>
+              <p className={`text-sm font-bold ${stat.color}`}>{stat.value}</p>
+              <p className="text-[8px] text-gray-500 dark:text-zinc-600 uppercase tracking-wider">{stat.label}</p>
             </div>
           );
         })}
@@ -88,9 +88,23 @@ export const MetricsPanel = memo(function MetricsPanel() {
 function parsePrometheusMetrics(text: string): MetricStat[] {
   const stats: MetricStat[] = [];
 
-  // Only match lines that start with the metric name (not # HELP / # TYPE comments)
-  const lines = text.split("\n");
-  const findMetric = (name: string) => lines.find(l => l.startsWith(name))?.match(/\s+(\d+(?:\.\d+)?)$/)?.[1];
+  // Match metric lines (skip # HELP / # TYPE comments), handle labeled metrics like metric{label="val"}
+  const lines = text.split("\n").filter(l => l && !l.startsWith("#"));
+  const sumMetric = (name: string): number | null => {
+    let total = 0;
+    let found = false;
+    for (const l of lines) {
+      if (l.startsWith(name + "{") || l.startsWith(name + " ")) {
+        const m = l.match(/\s+(\d+(?:\.\d+)?)$/);
+        if (m) { total += parseFloat(m[1]); found = true; }
+      }
+    }
+    return found ? total : null;
+  };
+  const findMetric = (name: string) => {
+    const v = sumMetric(name);
+    return v !== null ? String(v) : null;
+  };
 
   const requests = findMetric("aiyu_http_requests_total");
   if (requests) {

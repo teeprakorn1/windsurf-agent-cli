@@ -3,6 +3,7 @@
 import { memo, useEffect, useState } from "react";
 import { useWs } from "@/lib/ws-context";
 import type { AgentStatus } from "@/lib/types";
+import { MarkdownRenderer } from "./markdown-renderer";
 import { Activity, CheckCircle, AlertCircle, Clock, ChevronDown, X } from "lucide-react";
 
 const statusConfig: Record<string, { icon: typeof Activity; color: string; bg: string; label: string; glow: string }> = {
@@ -41,21 +42,21 @@ export const AgentStatusPanel = memo(function AgentStatusPanel() {
 
   if (entries.length === 0) {
     return (
-      <div className="glass-card p-4">
-        <h2 className="section-title">Agent Status</h2>
-        <div className="flex flex-col items-center py-6 text-gray-500 dark:text-zinc-600">
-          <Activity className="h-8 w-8 mb-2 opacity-30" />
-          <p className="text-xs">{connected ? "No agents running" : "Connecting..."}</p>
-          <p className="text-[10px] text-gray-400 dark:text-zinc-700">{connected ? "Start a run to see status here" : "Waiting for WebSocket connection"}</p>
+      <div className="glass-card p-3">
+        <h2 className="section-title text-[10px]">Agent Status</h2>
+        <div className="flex flex-col items-center py-4 text-gray-500 dark:text-zinc-600">
+          <Activity className="h-6 w-6 mb-1.5 opacity-30" />
+          <p className="text-[10px]">{connected ? "No agents running" : "Connecting..."}</p>
+          <p className="text-[9px] text-gray-400 dark:text-zinc-700">{connected ? "Start a run to see status" : "Waiting for connection"}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="glass-card p-4">
-      <h2 className="section-title">Agent Status</h2>
-      <div className="space-y-2">
+    <div className="glass-card p-3">
+      <h2 className="section-title text-[10px]">Agent Status</h2>
+      <div className="space-y-1.5">
         {entries.map(([name, status]: [string, AgentStatus]) => {
           const cfg = statusConfig[status.status] || statusConfig.idle;
           const Icon = cfg.icon;
@@ -65,17 +66,17 @@ export const AgentStatusPanel = memo(function AgentStatusPanel() {
               <button
                 type="button"
                 onClick={() => setSelectedAgent(isSelected ? null : name)}
-                className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 border transition-all duration-200 cursor-pointer text-left ${cfg.bg} ${cfg.glow} ${status.status === "running" ? "border-blue-500/10" : "hover:border-zinc-700/50"} ${isSelected ? "ring-2 ring-blue-500 dark:ring-blue-400 shadow-md" : ""}`}
+                className={`w-full flex items-center gap-2.5 rounded-lg px-2.5 py-2 border border-gray-200 dark:border-zinc-700/40 transition-all duration-200 cursor-pointer text-left ${cfg.bg} ${cfg.glow} ${status.status === "running" ? "border-blue-500/30 dark:border-blue-500/20" : "hover:border-zinc-400 dark:hover:border-zinc-500/60"} ${isSelected ? "ring-2 ring-blue-500 dark:ring-blue-400 shadow-md" : ""}`}
               >
-                <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${cfg.bg}`}>
-                  <Icon className={`h-4 w-4 ${cfg.color} ${status.status === "running" ? "animate-glow-pulse" : ""}`} />
+                <div className={`flex h-7 w-7 items-center justify-center rounded-lg ${cfg.bg}`}>
+                  <Icon className={`h-3.5 w-3.5 ${cfg.color} ${status.status === "running" ? "animate-glow-pulse" : ""}`} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 dark:text-zinc-200 truncate">{name}</p>
-                  <p className={`text-[10px] font-medium uppercase tracking-wider ${cfg.color}`}>{cfg.label}</p>
+                  <p className="text-[11px] font-medium text-gray-900 dark:text-zinc-200 truncate">{name}</p>
+                  <p className={`text-[9px] font-medium uppercase tracking-wider ${cfg.color}`}>{cfg.label}</p>
                 </div>
                 {status.runId && (
-                  <span className="text-[9px] text-zinc-500 dark:text-zinc-600 font-mono truncate max-w-[100px] bg-zinc-100 dark:bg-zinc-900/50 px-1.5 py-0.5 rounded">{status.runId}</span>
+                  <span className="text-[8px] text-zinc-500 dark:text-zinc-600 font-mono truncate max-w-[80px] bg-zinc-100 dark:bg-zinc-900/50 px-1 py-0 rounded">{status.runId}</span>
                 )}
                 <ChevronDown className={`h-3 w-3 text-gray-400 dark:text-zinc-600 shrink-0 transition-transform ${isSelected ? "rotate-180" : ""}`} />
               </button>
@@ -111,7 +112,7 @@ export const AgentStatusPanel = memo(function AgentStatusPanel() {
                       {selectedComplete.output && (
                         <div className="mt-1.5">
                           <p className="text-[9px] text-gray-500 dark:text-zinc-500 uppercase tracking-wider mb-0.5">Output</p>
-                          <pre className="text-[10px] text-gray-700 dark:text-zinc-400 bg-gray-50 dark:bg-zinc-950/60 rounded px-2 py-1.5 overflow-x-auto max-h-24 whitespace-pre-wrap border border-gray-200 dark:border-zinc-800/40">{selectedComplete.output.length > 200 ? selectedComplete.output.slice(0, 200) + "..." : selectedComplete.output}</pre>
+                          <MarkdownRenderer content={selectedComplete.output.length > 200 ? selectedComplete.output.slice(0, 200) + "..." : selectedComplete.output} className="text-[10px] text-gray-700 dark:text-zinc-400 bg-gray-50 dark:bg-zinc-950/60 rounded px-2 py-1.5 overflow-x-auto max-h-24 border border-gray-200 dark:border-zinc-800/40" />
                         </div>
                       )}
                       {(() => {

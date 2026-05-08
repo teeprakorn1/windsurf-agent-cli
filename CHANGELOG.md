@@ -7,6 +7,66 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.7.3] - 2026-05-08
+
+### Fixed — React Strict Mode WebSocket Bug (1 Critical)
+
+**P0 Critical:**
+- **WebSocket disconnects immediately in React Strict Mode** — `useWebSocket` hook's cleanup called `wsRef.current?.close()` synchronously on unmount. React Strict Mode's mount→unmount→remount cycle closed the WS before it could establish, then stale `onclose` handler nulled `wsRef.current`, preventing the remounted connection from persisting. Fixed with **deferred close pattern**: cleanup sets a 100ms `closeTimer` instead of closing immediately; remount cancels the timer so WS stays alive. Added stale WS guard (`wsRef.current !== ws`) in all handlers to prevent stale closures from affecting the active connection (`aiyu-multi-agent-dashboard/src/lib/use-websocket.ts`)
+
+### Fixed — Dashboard UI & Keyboard Shortcuts (3 High)
+
+- **Markdown not rendered in Execution Timeline, Agent Status, Logs** — `step.thought`, `step.result`, `completed.output`, and log entries used plain `<p>`/`<pre>` tags instead of `MarkdownRenderer`. Now all agent output renders markdown (bold, lists, code blocks, blockquotes, etc.) (`execution-timeline.tsx`, `agent-status-panel.tsx`, `logs-viewer.tsx`)
+- **Global Enter handler conflicts with Chat textarea** — `page.tsx` global `keydown` handler triggered `handleRun()` on `Enter` in any `<textarea>`, causing both chat-send and run-agent to fire simultaneously when pressing Enter in chat. Fixed: global handler now only triggers on `Ctrl/Cmd+Enter`; plain `Enter` in chat only sends chat message (`page.tsx`)
+- **Agent Status Panel hover flickers in dark mode** — Missing `dark:border` and `dark:hover:border` classes caused border to appear/disappear on hover. Added proper dark mode border variants (`agent-status-panel.tsx`)
+
+### Fixed — Dropdown & Overflow Bugs (3 Medium)
+
+- **Dropdown menus clipped by parent overflow** — `glass-card` had `overflow-hidden` which clipped absolute-positioned dropdowns (New Chat, AgentSelect, ProviderSelect). Removed `overflow-hidden` from container, added `overflow-visible` to sidebar, raised dropdown z-index to `z-[999]` (`chat-panel.tsx`, `agent-select.tsx`, `provider-select.tsx`)
+- **AgentSelect dropdown hidden behind ProviderSelect** — `z-50` on wrapper divs created stacking context that caused sibling dropdowns to overlap incorrectly. Removed `z-50` from wrappers, kept high z-index only on dropdown panels (`agent-select.tsx`, `provider-select.tsx`)
+- **ProviderSelect shows unavailable providers** — Health endpoint uses `"configured"` status but filter only checked `"enabled"/"available"`, causing fallback to show all providers including unconfigured ones. Fixed filter to include `"configured"` and `"ok"` statuses. Also defaults `availableProviders` to `["mock"]` instead of `[]` so unavailable providers never appear before health responds (`chat-panel.tsx`, `page.tsx`)
+
+### Fixed — Chat Duplicate Keys (1 Medium)
+
+- **Duplicate React keys on Fast Refresh** — `turnKey` used `turn-N` format which repeated after component remount (React Strict Mode / Fast Refresh), causing "Encountered two children with the same key" warnings. Added `timestamp` to key: `turn-N-{timestamp}` ensures uniqueness across remounts (`chat-panel.tsx`)
+
+### Added — Missing Dependencies & Features
+
+- **`react-markdown` + `remark-gfm`** — Required by `markdown-renderer.tsx` (chat panel) but missing from `package.json` in v2.7.2
+- **Mock provider markdown responses** — `callMock()` now returns markdown-formatted responses (bold, blockquotes, code blocks, lists) so dashboard can demonstrate markdown rendering without a real LLM (`lib/core/llm-providers.js`)
+- **Chat auto-create session** — Pressing Enter in chat textarea auto-creates a session if none exists, with pending message queue that auto-sends once session is ready (`chat-panel.tsx`)
+
+### Changed — Dashboard Layout & Chat Upgrade
+
+- **Split layout** — Dashboard restructured from 12-column grid to flex split: left sidebar (420px, scrollable) for Run/Status/Metrics/Timeline/Logs, right panel (flex-1, full-height) for Chat (`page.tsx`)
+- **Chat panel rewrite** — Full-height chat with session sidebar (rename/export/close), collapsible inline steps, handoff visualization (purple badge), intervention bar, streaming indicator, and auto-scroll (`chat-panel.tsx`)
+- **New Chat dropdown** — "+" button now opens a dropdown with Agent/Provider selection before creating session, instead of navigating to a setup screen (`chat-panel.tsx`)
+- **Provider filtering** — `ProviderSelect` now accepts `availableProviders` prop and only shows providers that are actually configured on the backend (fetched from `/api/health` every 30s). Auto-switches to `mock` if selected provider becomes unavailable. Applied to both `RunPanel` and `ChatPanel` (`provider-select.tsx`, `chat-panel.tsx`, `run-panel.tsx`, `page.tsx`)
+- **Chat UX upgrade** — Scroll-to-bottom button when scrolled up, bouncing dots typing indicator, sender name + timestamp above each message, hover copy button on assistant messages, token usage in session header (`chat-panel.tsx`)
+- **Session sidebar upgrade** — Search/filter sessions, message count per session, provider-only display in session items (`chat-panel.tsx`)
+- **Avatar detail dialog** — Click agent/user avatar in chat to open centered modal with agent details (name, description, resolved provider/model) or user info (session ID, messages sent) (`chat-panel.tsx`)
+- **Agent info popup** — Click agent name in session header to show agent details popup with resolved provider/model (`chat-panel.tsx`)
+
+### Changed — Dashboard UI Polish (v2.7.3 Session 2)
+
+- **Unified ChatPanel** — Merged Run mode and Chat mode into single ChatPanel. Removed left sidebar from `page.tsx`; ChatPanel takes full width with internal sidebar for sessions/monitor (`page.tsx`, `chat-panel.tsx`, `execution-timeline.tsx`)
+- **Sidebar tab redesign** — Changed from pill toggle to underline-style tabs (Chat=blue, Monitor=cyan) with icon labels (`chat-panel.tsx`)
+- **Compact header controls** — AgentSelect and ProviderSelect in pill-style wrappers with token usage badge and streaming indicator in one row (`chat-panel.tsx`)
+- **Compact AgentSelect font** — Reduced font size from `text-sm` to `text-xs` for header fit (`agent-select.tsx`)
+- **Clear All button** — Subtle icon button with red hover danger state instead of text button (`chat-panel.tsx`)
+- **Session cards** — Rounded cards with hover effects, avatar icon, active ring, provider badge, action buttons with color-coded hover (`chat-panel.tsx`)
+- **New Chat button** — Prominent blue pill with gradient icon in dialog header (`chat-panel.tsx`)
+- **New Chat dialog fix** — Removed conflicting outside-click listener that closed dialog immediately on open (`chat-panel.tsx`)
+
+### Changed — Responsive Design (v2.7.3 Session 3)
+
+- **Mobile sidebar** — Sidebar hidden on mobile (<1024px) with floating toggle button; slides in as overlay with dark backdrop; auto-closes on session select (`chat-panel.tsx`)
+- **Responsive header** — Button labels hidden on small screens (icon-only), flex-wrap for selectors, smaller title on mobile (`chat-panel.tsx`, `dashboard-header.tsx`)
+- **Responsive page padding** — `p-2 sm:p-4 lg:p-6` progression for mobile/tablet/desktop (`page.tsx`)
+- **Compact monitor panels** — Tighter spacing, smaller fonts and icons in MetricsPanel and AgentStatusPanel for sidebar fit (`metrics-panel.tsx`, `agent-status-panel.tsx`)
+
+---
+
 ## [2.7.2] - 2026-05-07
 
 ### Fixed — Mock Provider Default + Full System Bug Audit (45 bugs)

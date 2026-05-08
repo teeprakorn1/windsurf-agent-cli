@@ -10,12 +10,58 @@ const MAX_ARRAY_SIZE = 500;
 const MAX_RUNS = 50;
 const MAX_STEPS_PER_RUN = 100;
 const AGENT_STATUS_TTL_MS = 30 * 60 * 1000;
+const CHAT_HISTORY_KEY = "aiyu-chat-history";
+const MAX_HISTORY_SESSIONS = 50;
 
 // Input validation limits — match backend guardrails
 const MAX_INPUT_LENGTH = 10000;
 const MAX_MESSAGE_LENGTH = 10000;
 const MAX_IDENTIFIER_LENGTH = 256;
 const VALID_PROVIDERS = new Set(["mock", "openai", "claude", "ollama", "local", ""]);
+
+// Chat history persistence helpers
+function loadChatHistory() {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(CHAT_HISTORY_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    // Migrate old format: completions was Record<string, ChatCompletion>, now Record<string, ChatCompletion[]>
+    if (data.completions) {
+      for (const key of Object.keys(data.completions)) {
+        const val = data.completions[key];
+        if (Array.isArray(val)) continue;
+        if (val && typeof val === "object" && val.sessionId) {
+          data.completions[key] = [val];
+        } else {
+          data.completions[key] = [];
+        }
+      }
+    }
+    return data;
+  } catch { return null; }
+}
+
+function saveChatHistory(data: {
+  sessions: Record<string, ChatSession>;
+  steps: ChatStep[];
+  completions: Record<string, ChatCompletion[]>;
+  userMsgs: { sessionId: string; input: string; timestamp: number; turnKey: string; turnId: string }[];
+}) {
+  if (typeof window === "undefined") return;
+  try {
+    const sessionIds = Object.keys(data.sessions);
+    const keepIds = sessionIds.slice(-MAX_HISTORY_SESSIONS);
+    const keepSet = new Set(keepIds);
+    const trimmed = {
+      sessions: Object.fromEntries(Object.entries(data.sessions).filter(([k]) => keepSet.has(k))),
+      steps: data.steps.filter(s => keepSet.has(s.sessionId)).slice(-MAX_ARRAY_SIZE),
+      completions: Object.fromEntries(Object.entries(data.completions).filter(([k]) => keepSet.has(k))),
+      userMsgs: data.userMsgs.filter(m => keepSet.has(m.sessionId)).slice(-MAX_ARRAY_SIZE),
+    };
+    localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(trimmed));
+  } catch { /* quota exceeded — ignore */ }
+}
 
 export function validateIdentifier(value: unknown, name: string): string | null {
   if (value === undefined || value === null) return null;
@@ -92,7 +138,10 @@ interface UseWebSocketReturn {
   errors: { message: string; time: number }[];
   chatSessions: Record<string, ChatSession>;
   chatSteps: ChatStep[];
-  chatCompletions: Record<string, ChatCompletion>;
+  chatCompletions: Record<string, ChatCompletion[]>;
+  chatUserMsgs: { sessionId: string; input: string; timestamp: number; turnKey: string; turnId: string }[];
+  addChatUserMsg: (msg: { sessionId: string; input: string; timestamp: number; turnKey: string; turnId: string }) => void;
+  clearChatHistory: () => void;
   handoffs: HandoffRecord[];
   delegates: DelegateRecord[];
   sendRun: (opts: { agentName?: string; input: string; provider?: string; maxSteps?: number }) => void;
@@ -101,6 +150,7 @@ interface UseWebSocketReturn {
   sendChatSend: (sessionId: string, input: string, opts?: { turnId?: string }) => void;
   sendPing: () => void;
   clearErrors: () => void;
+  deleteChatSession: (sessionId: string) => void;
 }
 
 export function useWebSocket(url?: string): UseWebSocketReturn {
@@ -108,6 +158,7 @@ export function useWebSocket(url?: string): UseWebSocketReturn {
   const reconnectAttemptsRef = useRef(0);
   const reconnectTimeoutRef = useRef<number | null>(null);
   const intentionalCloseRef = useRef(false);
+  const closeTimerRef = useRef<number | null>(null);
   const [connected, setConnected] = useState(false);
   const [agentStatuses, setAgentStatuses] = useState<Record<string, AgentStatus>>({});
   const [runs, setRuns] = useState<Record<string, RunStep[]>>({});
@@ -115,10 +166,29 @@ export function useWebSocket(url?: string): UseWebSocketReturn {
   const [errors, setErrors] = useState<{ message: string; time: number }[]>([]);
   const [chatSessions, setChatSessions] = useState<Record<string, ChatSession>>({});
   const [chatSteps, setChatSteps] = useState<ChatStep[]>([]);
-  const [chatCompletions, setChatCompletions] = useState<Record<string, ChatCompletion>>({});
-  const lastChatTurnIdRef = useRef<Record<string, string>>({});
+  const [chatCompletions, setChatCompletions] = useState<Record<string, ChatCompletion[]>>({});
+  const [chatUserMsgs, setChatUserMsgs] = useState<{ sessionId: string; input: string; timestamp: number; turnKey: string; turnId: string }[]>([]);
+  const historyLoadedRef = useRef(false);
   const [handoffs, setHandoffs] = useState<HandoffRecord[]>([]);
   const [delegates, setDelegates] = useState<DelegateRecord[]>([]);
+
+  // Load chat history from localStorage after hydration to avoid mismatch
+  useEffect(() => {
+    const h = loadChatHistory();
+    if (h) {
+      setChatSessions(h.sessions ?? {});
+      setChatSteps(h.steps ?? []);
+      setChatCompletions(h.completions ?? {});
+      setChatUserMsgs(h.userMsgs ?? []);
+    }
+    historyLoadedRef.current = true;
+  }, []);
+
+  // Auto-save chat history to localStorage on changes (only after initial load)
+  useEffect(() => {
+    if (!historyLoadedRef.current) return;
+    saveChatHistory({ sessions: chatSessions, steps: chatSteps, completions: chatCompletions, userMsgs: chatUserMsgs });
+  }, [chatSessions, chatSteps, chatCompletions, chatUserMsgs]);
 
   const wsUrl = useMemo(() => {
     return url || (typeof window !== "undefined"
@@ -153,6 +223,7 @@ export function useWebSocket(url?: string): UseWebSocketReturn {
 
   const connect = useCallback(() => {
     clearReconnect();
+    intentionalCloseRef.current = false; // Reset — new connect means we want to stay connected
 
     // Guard against creating duplicate connections
     if (wsRef.current && wsRef.current.readyState !== WebSocket.CLOSED) {
@@ -163,6 +234,7 @@ export function useWebSocket(url?: string): UseWebSocketReturn {
     wsRef.current = ws;
 
     ws.onopen = () => {
+      if (wsRef.current !== ws) return; // Stale WS from previous mount (React Strict Mode)
       setConnected(true);
       reconnectAttemptsRef.current = 0;
       setErrors([]);
@@ -177,8 +249,9 @@ export function useWebSocket(url?: string): UseWebSocketReturn {
     };
 
     ws.onclose = () => {
+      if (wsRef.current === ws) wsRef.current = null; // Only nullify if still current
+      if (wsRef.current !== null) return; // New WS already created by remount — skip
       setConnected(false);
-      wsRef.current = null;
       
       if (intentionalCloseRef.current) {
         intentionalCloseRef.current = false;
@@ -203,10 +276,12 @@ export function useWebSocket(url?: string): UseWebSocketReturn {
     };
 
     ws.onerror = () => {
+      if (wsRef.current !== ws) return; // Stale WS
       pushError("WebSocket connection error");
     };
 
     ws.onmessage = (ev) => {
+      if (wsRef.current !== ws) return; // Stale WS
       let event: WsServerEvent;
       try {
         event = JSON.parse(ev.data);
@@ -302,16 +377,17 @@ export function useWebSocket(url?: string): UseWebSocketReturn {
 
         case "chat.complete": {
           const e = event as ChatCompleteEvent;
+          const completion: ChatCompletion = {
+            sessionId: e.sessionId,
+            turnId: e.turnId || undefined,
+            content: e.content,
+            usage: e.usage,
+            traceId: e.traceId,
+            completedAt: parseServerTime(e.timestamp),
+          };
           setChatCompletions(prev => ({
             ...prev,
-            [e.sessionId]: {
-              sessionId: e.sessionId,
-              turnId: e.turnId || undefined,
-              content: e.content,
-              usage: e.usage,
-              traceId: e.traceId,
-              completedAt: parseServerTime(e.timestamp),
-            },
+            [e.sessionId]: [...(prev[e.sessionId] || []), completion],
           }));
           break;
         }
@@ -397,8 +473,13 @@ export function useWebSocket(url?: string): UseWebSocketReturn {
   connectRef.current = connect;
 
   useEffect(() => {
-    connect();
-    
+    // Strict Mode safe: cancel any pending close from simulated unmount, then connect
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+    connectRef.current();
+
     // Periodic cleanup: evict stale agent statuses (TTL 30min) and orphaned completedRuns
     const cleanupTimer = setInterval(() => {
       const now = Date.now();
@@ -424,12 +505,20 @@ export function useWebSocket(url?: string): UseWebSocketReturn {
     
     return () => {
       clearInterval(cleanupTimer);
-      intentionalCloseRef.current = true;
-      clearReconnect();
-      wsRef.current?.close();
-      wsRef.current = null;
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
+      // Defer close: Strict Mode unmount→remount happens synchronously.
+      // If remount cancels this timer, WS stays alive. Real unmount closes after 100ms.
+      closeTimerRef.current = window.setTimeout(() => {
+        intentionalCloseRef.current = true;
+        wsRef.current?.close();
+        wsRef.current = null;
+        closeTimerRef.current = null;
+      }, 100);
     };
-  }, [connect, clearReconnect]);
+  }, []);
 
   const sendRun = useCallback((opts: { agentName?: string; input: string; provider?: string; maxSteps?: number }) => {
     try {
@@ -499,7 +588,6 @@ export function useWebSocket(url?: string): UseWebSocketReturn {
       const resolvedTurnId = (typeof providedTurnId === "string" && providedTurnId.length > 0)
         ? providedTurnId
         : `turn_${Date.now()}_${Math.random().toString(16).slice(2)}`;
-      lastChatTurnIdRef.current[sessionId] = resolvedTurnId;
       wsRef.current.send(JSON.stringify({ type: "chat.send", sessionId, input, turnId: resolvedTurnId }));
     } else {
       pushError("Cannot send chat: WebSocket not connected");
@@ -516,5 +604,32 @@ export function useWebSocket(url?: string): UseWebSocketReturn {
 
   const clearErrors = useCallback(() => setErrors([]), []);
 
-  return { connected, agentStatuses, runs, completedRuns, errors, chatSessions, chatSteps, chatCompletions, handoffs, delegates, sendRun, sendIntervene, sendChatCreate, sendChatSend, sendPing, clearErrors };
+  const addChatUserMsg = useCallback((msg: { sessionId: string; input: string; timestamp: number; turnKey: string; turnId: string }) => {
+    setChatUserMsgs(prev => [...prev, msg]);
+  }, []);
+
+  const clearChatHistory = useCallback(() => {
+    setChatSessions({});
+    setChatSteps([]);
+    setChatCompletions({});
+    setChatUserMsgs([]);
+    if (typeof window !== "undefined") localStorage.removeItem(CHAT_HISTORY_KEY);
+  }, []);
+
+  const deleteChatSession = useCallback((sessionId: string) => {
+    setChatSessions(prev => {
+      const { [sessionId]: _removed, ...rest } = prev;
+      void _removed;
+      return rest;
+    });
+    setChatSteps(prev => prev.filter(s => s.sessionId !== sessionId));
+    setChatCompletions(prev => {
+      const { [sessionId]: _removed, ...rest } = prev;
+      void _removed;
+      return rest;
+    });
+    setChatUserMsgs(prev => prev.filter(m => m.sessionId !== sessionId));
+  }, []);
+
+  return { connected, agentStatuses, runs, completedRuns, errors, chatSessions, chatSteps, chatCompletions, chatUserMsgs, addChatUserMsg, clearChatHistory, handoffs, delegates, sendRun, sendIntervene, sendChatCreate, sendChatSend, sendPing, clearErrors, deleteChatSession };
 }

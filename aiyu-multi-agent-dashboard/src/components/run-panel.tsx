@@ -16,6 +16,7 @@ interface RunPanelProps {
   onRun: () => void;
   agentCount: number;
   activeRunCount: number;
+  availableProviders?: string[];
 }
 
 export function RunPanel({
@@ -28,6 +29,7 @@ export function RunPanel({
   onRun,
   agentCount,
   activeRunCount,
+  availableProviders,
 }: RunPanelProps) {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey && (e.ctrlKey || e.metaKey)) {
@@ -55,7 +57,7 @@ export function RunPanel({
             className="input-field resize-none"
           />
           <div className="flex gap-2">
-            <ProviderSelect value={provider} onChange={(v) => setProvider(v as Provider)} />
+            <ProviderSelect value={provider} onChange={(v) => setProvider(v as Provider)} availableProviders={availableProviders} />
             <button onClick={onRun} disabled={!input.trim()} className="btn-primary flex-[2] py-2.5 text-sm">
               <Play className="h-4 w-4" />
               Run Agent

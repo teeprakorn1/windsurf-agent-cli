@@ -27,13 +27,26 @@ const ICON_MAP: Record<string, typeof TestTube> = {
 interface ProviderSelectProps {
   value: string;
   onChange: (value: string) => void;
+  availableProviders?: string[];
 }
 
-export function ProviderSelect({ value, onChange }: ProviderSelectProps) {
+export function ProviderSelect({ value, onChange, availableProviders }: ProviderSelectProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const selected = PROVIDERS.find(p => p.value === value) || PROVIDERS[0];
   const Icon = ICON_MAP[selected.icon];
+
+  const isAvailable = useCallback((provider: string) => {
+    if (!availableProviders || availableProviders.length === 0) return true;
+    return availableProviders.includes(provider);
+  }, [availableProviders]);
+
+  // Auto-switch to mock if selected provider is no longer available
+  useEffect(() => {
+    if (availableProviders && availableProviders.length > 0 && !availableProviders.includes(value)) {
+      onChange("mock");
+    }
+  }, [availableProviders, value, onChange]);
 
   const handleClickOutside = useCallback((e: MouseEvent) => {
     if (ref.current && !ref.current.contains(e.target as Node)) {
@@ -63,9 +76,9 @@ export function ProviderSelect({ value, onChange }: ProviderSelectProps) {
       </button>
 
       {open && (
-        <div className="absolute z-50 mt-1.5 w-full dropdown-panel overflow-hidden animate-slide-in" style={{ maxHeight: "240px" }}>
+        <div className="absolute z-[999] mt-1.5 w-full dropdown-panel overflow-hidden animate-slide-in" style={{ maxHeight: "240px" }}>
           <ul className="overflow-y-auto">
-            {PROVIDERS.map((p) => {
+            {PROVIDERS.filter(p => isAvailable(p.value)).map((p) => {
               const PIcon = ICON_MAP[p.icon];
               const isSelected = value === p.value;
               return (

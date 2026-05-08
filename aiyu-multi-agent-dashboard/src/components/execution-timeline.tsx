@@ -3,6 +3,7 @@
 import { memo, useState } from "react";
 import { useWs } from "@/lib/ws-context";
 import type { RunStep } from "@/lib/types";
+import { MarkdownRenderer } from "./markdown-renderer";
 import { ChevronRight, Wrench, Brain, Clock, Zap, CheckCircle2, AlertTriangle, ChevronDown, X, Copy, Check } from "lucide-react";
 
 function formatDuration(ms: number | null): string {
@@ -57,7 +58,7 @@ function StepEntry({ step, index, total }: { step: RunStep; index: number; total
           {step.thought && (
             <div className="flex items-start gap-2 mb-1.5">
               <Brain className="h-3 w-3 text-cyan-600 dark:text-cyan-400 mt-0.5 shrink-0" />
-              <p className="text-xs text-gray-800 dark:text-zinc-300 leading-relaxed">{step.thought}</p>
+              <MarkdownRenderer content={step.thought} className="text-xs text-gray-800 dark:text-zinc-300 leading-relaxed" />
             </div>
           )}
           {step.toolCalls && step.toolCalls.length > 0 && (
@@ -72,9 +73,9 @@ function StepEntry({ step, index, total }: { step: RunStep; index: number; total
             </div>
           )}
           {!expanded && step.result && (
-            <pre className="text-[10px] text-gray-700 dark:text-zinc-500 bg-gray-50 dark:bg-zinc-900/60 rounded-lg px-3 py-2 overflow-x-auto max-h-20 mt-1 border border-gray-200 dark:border-zinc-800/40">
-              {step.result.length > 300 ? step.result.slice(0, 300) + "..." : step.result}
-            </pre>
+            <div className="text-[10px] text-gray-700 dark:text-zinc-500 bg-gray-50 dark:bg-zinc-900/60 rounded-lg px-3 py-2 overflow-x-auto max-h-20 mt-1 border border-gray-200 dark:border-zinc-800/40">
+              <MarkdownRenderer content={step.result.length > 300 ? step.result.slice(0, 300) + "..." : step.result} />
+            </div>
           )}
           {!expanded && step.error && (
             <div className="flex items-center gap-1.5 mt-1 text-red-700 dark:text-red-400">
@@ -104,7 +105,7 @@ function StepEntry({ step, index, total }: { step: RunStep; index: number; total
                   <span className="text-[9px] text-gray-500 dark:text-zinc-500 uppercase tracking-wider">Thought</span>
                   <CopyButton text={step.thought} />
                 </div>
-                <p className="text-xs text-gray-800 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap">{step.thought}</p>
+                <MarkdownRenderer content={step.thought} className="text-xs text-gray-800 dark:text-zinc-300 leading-relaxed" />
               </div>
             )}
             {step.action && Object.keys(step.action).length > 0 && (
@@ -137,9 +138,9 @@ function StepEntry({ step, index, total }: { step: RunStep; index: number; total
                   <span className="text-[9px] text-gray-500 dark:text-zinc-500 uppercase tracking-wider">Result</span>
                   <CopyButton text={step.result} />
                 </div>
-                <pre className="text-[10px] text-gray-700 dark:text-zinc-400 bg-gray-50 dark:bg-zinc-950/60 rounded-lg px-3 py-2 overflow-x-auto max-h-60 border border-gray-200 dark:border-zinc-800/40 whitespace-pre-wrap">
-                  {step.result}
-                </pre>
+                <div className="text-[10px] text-gray-700 dark:text-zinc-400 bg-gray-50 dark:bg-zinc-950/60 rounded-lg px-3 py-2 overflow-x-auto max-h-60 border border-gray-200 dark:border-zinc-800/40">
+                  <MarkdownRenderer content={step.result} />
+                </div>
               </div>
             )}
             {step.error && (
@@ -215,7 +216,7 @@ export const ExecutionTimeline = memo(function ExecutionTimeline() {
                       <ChevronDown className={`h-3 w-3 text-gray-400 transition-transform ${isCompleteExpanded ? "rotate-180" : ""}`} />
                     </div>
                     {!isCompleteExpanded && (
-                      <p className="text-xs text-gray-900 dark:text-zinc-300 whitespace-pre-wrap leading-relaxed mt-1 line-clamp-3">{completed.output}</p>
+                      <MarkdownRenderer content={completed.output} className="text-xs text-gray-900 dark:text-zinc-300 leading-relaxed mt-1 line-clamp-3" />
                     )}
                   </button>
                   {isCompleteExpanded && (
@@ -242,7 +243,7 @@ export const ExecutionTimeline = memo(function ExecutionTimeline() {
                           <p className="text-[9px] text-gray-500 dark:text-zinc-500 uppercase tracking-wider">Full Output</p>
                           <CopyButton text={completed.output || ""} />
                         </div>
-                        <pre className="text-xs text-gray-900 dark:text-zinc-300 whitespace-pre-wrap leading-relaxed max-h-60 overflow-y-auto">{completed.output}</pre>
+                        <MarkdownRenderer content={completed.output || ""} className="text-xs text-gray-900 dark:text-zinc-300 leading-relaxed max-h-60 overflow-y-auto" />
                       </div>
                     </div>
                   )}

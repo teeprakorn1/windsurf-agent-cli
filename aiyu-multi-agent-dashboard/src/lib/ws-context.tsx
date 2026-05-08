@@ -14,10 +14,10 @@ export function WsProvider({ children }: { children: ReactNode }) {
 
 const noopWs: WsContextValue = {
   connected: false, agentStatuses: {}, runs: {}, completedRuns: {}, errors: [],
-  chatSessions: {}, chatSteps: [], chatCompletions: {}, handoffs: [], delegates: [],
+  chatSessions: {}, chatSteps: [], chatCompletions: {}, chatUserMsgs: [], addChatUserMsg: () => {}, clearChatHistory: () => {}, handoffs: [], delegates: [],
   sendRun: () => {}, sendIntervene: () => {}, sendChatCreate: () => {},
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  sendChatSend: ((..._args: unknown[]) => {}) as WsContextValue["sendChatSend"], sendPing: () => {}, clearErrors: () => {},
+  sendChatSend: ((..._args: unknown[]) => {}) as WsContextValue["sendChatSend"], sendPing: () => {}, clearErrors: () => {}, deleteChatSession: () => {},
 };
 
 export function useWs() {

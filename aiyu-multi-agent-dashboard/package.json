@@ -1,6 +1,6 @@
 {
   "name": "aiyu-multi-agent-dashboard",
-  "version": "2.7.2",
+  "version": "2.7.3",
   "description": "Real-time monitoring dashboard for Aiyu MultiAgent — agent status, execution timeline, intervention panel",
   "private": true,
   "scripts": {
@@ -21,6 +21,7 @@
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
     "react-markdown": "^10.1.0",
+    "rehype-sanitize": "^6.0.0",
     "remark-gfm": "^4.0.1",
     "tailwind-merge": "^2.5.0"
   },

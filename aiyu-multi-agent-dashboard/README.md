@@ -1,6 +1,6 @@
 # Aiyu MultiAgent Dashboard
 
-> Real-time monitoring dashboard for [Aiyu MultiAgent](https://github.com/teeprakorn1/aiyu-multi-agent) — v2.7.2
+> Real-time monitoring dashboard for [Aiyu MultiAgent](https://github.com/teeprakorn1/aiyu-multi-agent) — v2.7.3
 
 Live agent status, execution timeline, intervention panel, metrics, and logs — all streaming via WebSocket from the Aiyu API server.
 
@@ -86,6 +86,17 @@ docker run -p 3001:3001 \
 - **Auto-Reconnect** — WebSocket reconnects with exponential backoff (5 attempts, 1s–30s), step deduplication on reconnect
 - **Mobile Responsive** — optimized for all screen sizes
 
+### Chat & UI Upgrade (v2.7.3)
+- **Unified ChatPanel** — Run mode merged into ChatPanel; full-width with internal sidebar for sessions and monitor
+- **Session sidebar** — Search/filter sessions, message count per session, rounded cards with avatar, active ring, provider badge
+- **Sidebar tabs** — Underline-style tabs (Chat=blue, Monitor=cyan) with icon labels
+- **Compact header** — Pill-style AgentSelect/ProviderSelect with token usage badge and streaming indicator
+- **New Chat dialog** — Gradient icon header, Agent/Provider selection before creating session
+- **Chat UX** — Auto-create session on Enter, bouncing dots typing indicator, sender name + timestamp, hover copy button
+- **Avatar dialog** — Click agent/user avatar for details (name, description, provider, model)
+- **Markdown rendering** — All panels render markdown (bold, lists, code blocks, blockquotes)
+- **Responsive mobile** — Sidebar slides in as overlay on mobile (<1024px), floating toggle button, auto-closes on select
+
 ### Performance & Accessibility (v2.7.2)
 - **Context Memoization** — `WsProvider` memoizes context value with `useMemo`; all 7 leaf components wrapped with `React.memo`
 - **Memory Safety** — `completedRuns` capped at 50 entries with oldest-first eviction
@@ -120,16 +131,15 @@ All real-time data flows through the WebSocket connection defined in [WS-SCHEMA.
 WsProvider (context, useMemo)
  └── DashboardContent
       ├── Header (Export, Reset dialog, ThemeToggle, Connection badge)
-      ├── <section aria-label="Controls">
-      │   ├── New Run (input + provider select)
-      │   ├── Stats Cards (agent count, active runs)
-      │   ├── AgentStatusPanel (React.memo)
-      │   ├── InterventionPanel (React.memo, Stop confirmation)
-      │   └── MetricsPanel (React.memo)
-      └── <section aria-label="Activity">
-          ├── InteractionMap (React.memo)
-          ├── ExecutionTimeline (React.memo)
-          └── Grid: MemoryViewer (React.memo) | LogsViewer (React.memo)
+      └── ChatPanel (full-width, flex split)
+           ├── Session Sidebar (280px)
+           │   ├── Tab Switcher (Chat | Monitor)
+           │   ├── Chat Tab — Session list (search, cards, actions)
+           │   └── Monitor Tab — AgentStatusPanel, MetricsPanel, InterventionPanel, ExecutionTimeline, InteractionMap, MemoryViewer, LogsViewer
+           └── Main Chat Area
+               ├── Session Header (agent, provider, token usage, streaming indicator)
+               ├── Message List (user + assistant, markdown rendered, copy button)
+               └── Input Bar (textarea, send button, auto-create session)
 ```
 
 ### WebSocket Events (Server → Client)
@@ -178,6 +188,8 @@ src/
 │   ├── layout.tsx           # Root layout with ThemeProvider
 │   └── page.tsx             # Main dashboard page (160 lines, refactored)
 ├── components/
+│   ├── chat-panel.tsx        # Unified chat + monitor panel (v2.7.3)
+│   ├── markdown-renderer.tsx # ReactMarkdown wrapper for agent output
 │   ├── agent-status-panel.tsx
 │   ├── execution-timeline.tsx
 │   ├── intervention-panel.tsx

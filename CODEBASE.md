@@ -1,6 +1,28 @@
-# CODEBASE.md — Aiyu MultiAgent V2.7.2
+# CODEBASE.md — Aiyu MultiAgent V2.7.3
 
 ## Version History
+
+### V2.7.3 (2026-05-08) — React Strict Mode WS Fix + Dashboard Chat Upgrade
+
+**v2.7.3** fixes a critical WebSocket bug, upgrades the dashboard to a split layout with a full-featured chat panel, adds markdown rendering, fixes dropdown overflow bugs, and filters providers based on backend configuration.
+
+- **Critical**: WebSocket disconnects immediately in React Strict Mode — deferred close pattern + stale WS guard in all handlers (`aiyu-multi-agent-dashboard/src/lib/use-websocket.ts`)
+- **High**: Markdown not rendered in Execution Timeline, Agent Status, Logs — replaced `<p>`/`<pre>` with `MarkdownRenderer` (`execution-timeline.tsx`, `agent-status-panel.tsx`, `logs-viewer.tsx`)
+- **High**: Global Enter handler conflicts with Chat textarea — global handler now only triggers on `Ctrl/Cmd+Enter` (`page.tsx`)
+- **High**: Agent Status Panel hover flickers in dark mode — added `dark:border` and `dark:hover:border` variants (`agent-status-panel.tsx`)
+- **Medium**: Dropdown menus clipped by parent overflow — removed `overflow-hidden`, raised z-index to `z-[999]` (`chat-panel.tsx`, `agent-select.tsx`, `provider-select.tsx`)
+- **Medium**: AgentSelect dropdown hidden behind ProviderSelect — removed `z-50` from wrappers (`agent-select.tsx`, `provider-select.tsx`)
+- **Medium**: ProviderSelect shows unavailable providers — filter now includes `"configured"` and `"ok"` statuses, defaults `availableProviders` to `["mock"]`, auto-switches to `mock` if selected provider unavailable, applied to both `RunPanel` and `ChatPanel` (`chat-panel.tsx`, `page.tsx`, `run-panel.tsx`, `provider-select.tsx`)
+- **Added**: `react-markdown` + `remark-gfm` dependencies missing from v2.7.2
+- **Added**: Mock provider returns markdown-formatted responses (`lib/core/llm-providers.js`)
+- **Added**: Chat auto-create session on Enter with pending message queue (`chat-panel.tsx`)
+- **Added**: Provider filtering from `/api/health` endpoint, auto-switch to `mock` if unavailable, applied to `RunPanel` + `ChatPanel` (`provider-select.tsx`, `chat-panel.tsx`, `run-panel.tsx`, `page.tsx`)
+- **Added**: Chat UX upgrade — scroll-to-bottom button, bouncing dots typing indicator, sender name + timestamp, hover copy on assistant messages, token usage in session header (`chat-panel.tsx`)
+- **Added**: Session sidebar search/filter, message count per session (`chat-panel.tsx`)
+- **Added**: Avatar detail dialog (agent/user), agent info popup in session header with resolved provider/model (`chat-panel.tsx`)
+- **Changed**: Split layout — left sidebar (420px) for dashboard, right panel (flex-1) for chat (`page.tsx`)
+- **Changed**: Chat panel rewrite — session sidebar, inline steps, handoff viz, intervention bar (`chat-panel.tsx`)
+- **Changed**: New Chat dropdown with Agent/Provider selection (`chat-panel.tsx`)
 
 ### V2.7.2 (2026-05-07) — Mock Provider Default + Core Logic Bug Audit
 

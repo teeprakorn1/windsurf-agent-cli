@@ -1,30 +1,17 @@
 "use client";
 
 import { WsProvider, useWs } from "@/lib/ws-context";
-import { AgentStatusPanel } from "@/components/agent-status-panel";
-import { ExecutionTimeline } from "@/components/execution-timeline";
-import { InterventionPanel } from "@/components/intervention-panel";
-import { InteractionMap } from "@/components/interaction-map";
-import { MemoryViewer } from "@/components/memory-viewer";
-import { MetricsPanel } from "@/components/metrics-panel";
-import { LogsViewer } from "@/components/logs-viewer";
 import { ChatPanel } from "@/components/chat-panel";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { DashboardHeader } from "@/components/dashboard-header";
-import { RunPanel } from "@/components/run-panel";
 import { ResetDialog } from "@/components/reset-dialog";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Zap } from "lucide-react";
 
-const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION || "2.7.2";
-
-type Provider = "openai" | "claude" | "local" | "mock";
+const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION || "2.7.3";
 
 function DashboardContent() {
-  const { connected, sendRun, errors, clearErrors, runs, completedRuns, agentStatuses } = useWs();
-  const [input, setInput] = useState("");
-  const [agentName, setAgentName] = useState("");
-  const [provider, setProvider] = useState<Provider>("mock");
+  const { errors, clearErrors } = useWs();
   const [toast, setToast] = useState<string | null>(null);
   const [showResetDialog, setShowResetDialog] = useState(false);
   const [connInfo, setConnInfo] = useState<Record<string, unknown> | null>(null);
@@ -43,39 +30,12 @@ function DashboardContent() {
   const fetchConnInfo = useCallback(async () => {
     try {
       const res = await fetch("/api/health");
-      if (res.ok) setConnInfo(await res.json());
+      if (res.ok) {
+        const data = await res.json();
+        setConnInfo(data);
+      }
     } catch { /* ignore */ }
   }, []);
-
-  const handleRun = useCallback(() => {
-    if (!input.trim()) return;
-    if (!connected) {
-      showToast("Backend offline — connect to API server first (port 3000)");
-      return;
-    }
-    sendRun({ agentName: agentName || undefined, input: input.trim(), provider });
-    setInput("");
-    setAgentName("");
-  }, [input, agentName, provider, sendRun, connected, showToast]);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const tag = (e.target as HTMLElement)?.tagName;
-      if (e.key === "Escape" && tag !== "SELECT" && tag !== "INPUT") {
-        setInput("");
-        setAgentName("");
-      }
-      if (e.key === "Enter" && !e.shiftKey && (e.ctrlKey || e.metaKey || tag === "TEXTAREA")) {
-        e.preventDefault();
-        handleRun();
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [handleRun]);
-
-  const activeRunCount = Object.keys(runs).filter(id => !completedRuns[id]).length;
-  const agentCount = Object.keys(agentStatuses).length;
 
   return (
     <div className="min-h-screen text-zinc-900 dark:text-zinc-100 relative" style={{ background: 'var(--bg-primary)' }}>
@@ -89,33 +49,8 @@ function DashboardContent() {
         onConnInfoRequest={fetchConnInfo}
       />
 
-      <main className="relative max-w-7xl mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5" role="main">
-        <section className="lg:col-span-4 space-y-4" aria-label="Controls">
-          <RunPanel
-            agentName={agentName}
-            setAgentName={setAgentName}
-            input={input}
-            setInput={setInput}
-            provider={provider}
-            setProvider={setProvider}
-            onRun={handleRun}
-            agentCount={agentCount}
-            activeRunCount={activeRunCount}
-          />
-          <AgentStatusPanel />
-          <InterventionPanel />
-          <MetricsPanel />
-        </section>
-
-        <section className="lg:col-span-8 space-y-4" aria-label="Activity">
-          <InteractionMap />
-          <ChatPanel />
-          <ExecutionTimeline />
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <MemoryViewer />
-            <LogsViewer />
-          </div>
-        </section>
+      <main className="relative max-w-[1600px] mx-auto p-2 sm:p-4 lg:p-6" style={{ height: "calc(100vh - 80px)" }} role="main">
+        <ChatPanel />
       </main>
 
       <ResetDialog
