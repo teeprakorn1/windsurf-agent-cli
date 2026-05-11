@@ -8,7 +8,7 @@ import { ResetDialog } from "@/components/reset-dialog";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Zap } from "lucide-react";
 
-const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION || "2.7.3";
+const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION || "2.7.4";
 
 function DashboardContent() {
   const { errors, clearErrors } = useWs();

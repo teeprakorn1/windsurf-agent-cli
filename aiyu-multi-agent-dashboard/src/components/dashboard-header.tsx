@@ -38,7 +38,53 @@ interface DashboardHeaderProps {
 }
 
 export function DashboardHeader({ version, onReset, showToast, connInfo, onConnInfoRequest }: DashboardHeaderProps) {
-  const { connected, errors, completedRuns, agentStatuses, runs, chatSessions, chatSteps, chatCompletions, handoffs, delegates } = useWs();
+  const connected = useWs(s => s.connected);
+  const errors = useWs(s => s.errors);
+  const agentStatuses = useWs(s => s.agentStatuses);
+  const activities = useWs(s => s.activities);
+  const handoffs = useWs(s => s.handoffs);
+  const delegates = useWs(s => s.delegates);
+
+  // Derive legacy-compatible data from unified activities
+  const safeActivities = useMemo(() => activities ?? {}, [activities]);
+  const runs = useMemo(() => {
+    const result: Record<string, unknown[]> = {};
+    for (const [id, a] of Object.entries(safeActivities)) {
+      if (a.mode === "run" && a.steps.length > 0) result[id] = a.steps;
+    }
+    return result;
+  }, [safeActivities]);
+  const completedRuns = useMemo(() => {
+    const result: Record<string, { status: string; output: string | null; usage: unknown; completedAt: number }> = {};
+    for (const [id, a] of Object.entries(safeActivities)) {
+      if (a.completedAt && a.completions.length > 0) {
+        const last = a.completions[a.completions.length - 1];
+        result[id] = { status: a.status, output: last.content, usage: last.usage, completedAt: last.completedAt };
+      }
+    }
+    return result;
+  }, [safeActivities]);
+  const chatSessions = useMemo(() => {
+    const result: Record<string, { sessionId: string; agentName: string; provider: string; model: string }> = {};
+    for (const [id, a] of Object.entries(safeActivities)) {
+      if (a.mode === "chat") result[id] = { sessionId: id, agentName: a.agentName, provider: a.provider, model: a.model };
+    }
+    return result;
+  }, [safeActivities]);
+  const chatSteps = useMemo(() => {
+    const result: { sessionId: string; step: number; thought: string | null; toolCalls: unknown; duration_ms: number | null; error: string | null; timestamp: number }[] = [];
+    for (const [id, a] of Object.entries(safeActivities)) {
+      if (a.mode === "chat") for (const s of a.steps) result.push({ sessionId: id, step: s.step, thought: s.thought, toolCalls: s.toolCalls, duration_ms: s.duration_ms, error: s.error, timestamp: s.timestamp });
+    }
+    return result;
+  }, [safeActivities]);
+  const chatCompletions = useMemo(() => {
+    const result: Record<string, { content: string | null; usage: unknown; completedAt: number }[]> = {};
+    for (const [id, a] of Object.entries(safeActivities)) {
+      if (a.mode === "chat" && a.completions.length > 0) result[id] = a.completions.map(c => ({ content: c.content, usage: c.usage, completedAt: c.completedAt }));
+    }
+    return result;
+  }, [safeActivities]);
   const [showAppInfo, setShowAppInfo] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [showConnInfo, setShowConnInfo] = useState(false);
@@ -134,7 +180,7 @@ export function DashboardHeader({ version, onReset, showToast, connInfo, onConnI
         } else if (format === "md") {
           const lines: string[] = [`# Aiyu MultiAgent Report`, ``, `Generated: ${new Date().toISOString()}`, ``];
           lines.push(`## Agent Statuses`, ``);
-          Object.entries(agentStatuses).forEach(([name, s]) => {
+          Object.entries(agentStatuses ?? {}).forEach(([name, s]) => {
             const st = s as unknown as Record<string, unknown>;
             lines.push(`- **${name}** — ${String(st.status ?? "unknown")} (since ${String(st.since ?? "—")})`);
           });

@@ -1,6 +1,6 @@
 # Aiyu MultiAgent Dashboard
 
-> Real-time monitoring dashboard for [Aiyu MultiAgent](https://github.com/teeprakorn1/aiyu-multi-agent) — v2.7.3
+> Real-time monitoring dashboard for [Aiyu MultiAgent](https://github.com/teeprakorn1/aiyu-multi-agent) — v2.7.4
 
 Live agent status, execution timeline, intervention panel, metrics, and logs — all streaming via WebSocket from the Aiyu API server.
 

@@ -127,7 +127,7 @@ All existing `require("./agent-runtime")` and `require("./tool-registry")` calls
 
 ---
 
-## Phase 3 — Quality & Observability (V2.8.0)
+## Phase 3 — Quality & Observability (V)
 
 > เพิ่ม quality gate + BYOK proxy + artifact format
 

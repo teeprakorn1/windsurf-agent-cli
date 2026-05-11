@@ -277,6 +277,27 @@ Emitted when a chat turn completes.
 }
 ```
 
+### `chat.token`
+
+Emitted during chat response streaming. Provides incremental token chunks for real-time display.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `sessionId` | string | Chat session ID |
+| `turnId` | string | Turn identifier |
+| `token` | string | Token chunk (typically 4 chars) |
+| `timestamp` | string | ISO 8601 timestamp |
+
+```json
+{
+  "type": "chat.token",
+  "sessionId": "chat_a1b2c3d4",
+  "turnId": "chat_a1b2c3d4:turn:1",
+  "token": "I've",
+  "timestamp": "2026-05-11T03:00:00.000Z"
+}
+```
+
 ### `intervene.ack`
 
 Acknowledgement that an intervention was queued.
@@ -313,16 +334,20 @@ Acknowledgement of a subscription request.
 
 These events are not yet implemented. They are defined here as a contract for the dashboard.
 
-### `agent.status` (server → client)
+### `agent.status` (server → client) — ✅ Implemented in v2.7.0
 
-Broadcast when an agent's status changes. Required for live status panel.
+Broadcast when an agent's status changes. Emitted for both `run` and `chat` modes (chat support added in v2.7.4).
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `agentName` | string | Agent identifier |
 | `status` | string | `idle`, `running`, `error`, `completed` |
-| `runId` | string \| null | Current run ID (when running) |
+| `runId` | string \| null | Run ID (run mode) or session ID (chat mode) |
 | `timestamp` | string | ISO 8601 timestamp |
+
+**Run mode**: broadcast on run start (`running`), completion (`completed`), and error (`error`).
+
+**Chat mode** (v2.7.4+): broadcast on session creation (`idle`), chat send start (`running`), and chat send completion (`completed`/`error`).
 
 ```json
 {

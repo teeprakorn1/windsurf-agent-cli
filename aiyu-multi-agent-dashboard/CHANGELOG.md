@@ -5,6 +5,49 @@ All notable changes to **aiyu-multi-agent-dashboard** will be documented in this
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.7.4] — 2026-05-11
+
+### Changed — UI Consistency & Compact Design (Dashboard)
+
+**LogsViewer**
+- **Custom calendar picker** — Replaced native `<input type="date">` with custom calendar component (month nav, day grid, log date highlighting, today indicator). Dates with logs show blue tint, selected date shows blue background (`logs-viewer.tsx`)
+- **Custom agent dropdown** — Replaced native `<select>` with custom dropdown matching panel design style. Shows agent name, status dot, step count. Selected state with blue ring (`logs-viewer.tsx`)
+- **Sort toggle** — Added button to toggle between newest/oldest sort order with ArrowUpDown icon (`logs-viewer.tsx`)
+- **Type filter chips** — Added filter chips for log types (step, complete, error, handoff, delegate) with icons and colors (`logs-viewer.tsx`)
+- **Compact log cards** — Smaller fonts (text-[10px]), tighter spacing, date and agent name displayed in each entry (`logs-viewer.tsx`)
+
+**ExecutionTimeline**
+- **Compact header** — Icon + title + count badge (activity count) in one row (`execution-timeline.tsx`)
+- **Status dot instead of icon box** — Replaced large icon boxes with small colored dots (blue pulse for running, green for completed, red for error) (`execution-timeline.tsx`)
+- **Inspected state highlight** — Active activity shows blue ring + blue background tint (`execution-timeline.tsx`)
+- **Smaller step entries** — Reduced font sizes (text-[9px] step number, text-[10px] message), tighter padding (`execution-timeline.tsx`)
+
+**MemoryViewer**
+- **Compact header** — Icon + title + count badge (interaction count) (`memory-viewer.tsx`)
+- **Type dot + status dot** — Shows handoff (cyan) or delegate (amber) type dot + status dot (blue/green/red/amber) (`memory-viewer.tsx`)
+- **Consistent card style** — Matches other panels with border, hover effect, chevron-down icon (`memory-viewer.tsx`)
+
+**InterventionPanel**
+- **Compact header** — Icon + title + running count indicator (blue pulse dot + count) (`intervention-panel.tsx`)
+- **Status dots** — Activity selector shows status dot (blue pulse for running, gray for idle) (`intervention-panel.tsx`)
+- **Consistent dropdown** — Custom dropdown matching panel design with selected state ring (`intervention-panel.tsx`)
+- **Compact buttons** — Smaller fonts (text-[10px]), tighter padding, consistent button styles (`intervention-panel.tsx`)
+
+**MetricsPanel**
+- Already compact from prior session (p-3, text-[10px] header, grid-cols-2 stat cards) — no changes needed
+
+### Fixed
+
+**High**
+- **[H1] Chat mode does not broadcast `agent.status` events** — `handleChatCreate` and `handleChatSend` in `ws.js` did not call `setAgentStatus()`, so `AgentStatusPanel` showed "No agents running" during chat sessions. Added `setAgentStatus()` at session creation (`"idle"`), chat send start (`"running"`), and chat send completion (`"completed"`/`"error"`). Agent status now updates in real-time for both Run and Chat modes (`lib/api/ws.js`)
+- **[H2] ExecutionTimeline empty during chat sessions** — Component only read from `runs`/`completedRuns` (Run mode events). Fixed by merging `chatSteps`/`chatCompletions` into timeline data using `useMemo` (`execution-timeline.tsx`)
+- **[H3] LogsViewer empty during chat sessions** — Same root cause. Fixed by including `chatSteps` and `chatCompletions` in log entries (`logs-viewer.tsx`)
+- **[H4] InterventionPanel shows "No active runs" during chat** — Only checked `runs`/`completedRuns`. Fixed by also detecting active chat sessions from `chatSteps`/`chatCompletions` (`intervention-panel.tsx`)
+
+**Medium**
+- **[M1] MetricsPanel not parsing duration/queue metrics** — `sumMetric` matched too broadly. Replaced with `findExact`/`findLabeled` helpers. Now shows: HTTP Requests, Avg Response, P95 Latency, Agent Runs, Commands, Queue, Error Rate, Days Active, Test Runs (`metrics-panel.tsx`)
+- **[M2] MetricsPanel missing token usage** — Added token computation from `completedRuns` + `chatCompletions` WS data. Shows Tokens, Prompt, Completion cards (`metrics-panel.tsx`)
+
 ## [2.7.3] — 2026-05-08
 
 ### Fixed

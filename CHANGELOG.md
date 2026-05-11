@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.7.4] - 2026-05-11
+
+### Fixed — Chat Mode Agent Status Broadcast (1 High)
+
+- **Chat mode does not broadcast `agent.status` events** — `handleChatCreate` and `handleChatSend` in `ws.js` did not call `setAgentStatus()`, so the `AgentStatusPanel` in the dashboard showed "No agents running" even when a chat session was active. Only the `run` mode (one-shot execution) broadcast status changes. Fixed by adding `setAgentStatus()` calls at three points: session creation (`"idle"`), chat send start (`"running"`), and chat send completion (`"completed"`/`"error"`). Now `AgentStatusPanel` updates in real-time for both Run and Chat modes (`lib/api/ws.js`)
+
+### Fixed — Dashboard Monitor Panels Show No Data in Chat Mode (2 High)
+
+- **ExecutionTimeline empty during chat sessions** — Component only read from `runs`/`completedRuns` (populated by `step`/`complete` events from Run mode). Chat mode sends `chat.step`/`chat.complete` events stored in separate state (`chatSteps`/`chatCompletions`). Fixed by merging chat data into the timeline using `useMemo` — chat steps grouped by sessionId, chat completions mapped to `completedRuns` format (`execution-timeline.tsx`)
+- **LogsViewer empty during chat sessions** — Same root cause: only read from `runs`/`completedRuns`. Fixed by including `chatSteps` and `chatCompletions` in the log entries, with `sessionId` as `runId` and `"Chat step"`/`"Chat completed"` as messages (`logs-viewer.tsx`)
+- **InterventionPanel shows "No active runs" during chat** — Only checked `runs`/`completedRuns` for active runs. Fixed by also detecting active chat sessions from `chatSteps`/`chatCompletions` and including them as intervention targets (`intervention-panel.tsx`)
+
+### Fixed — MetricsPanel Parser + Upgrade (1 Medium)
+
+- **MetricsPanel not parsing duration/queue metrics** — `sumMetric` function matched too broadly, causing `aiyu_http_request_duration_seconds_sum` to sum with quantile lines. Replaced with `findExact`/`findLabeled` helpers that match metric names precisely. Now correctly parses: HTTP Requests, Avg Response, P95 Latency, Agent Runs, Commands, Queue, Error Rate, Days Active, Test Runs (`metrics-panel.tsx`)
+- **MetricsPanel missing token usage** — Added `useMemo` computation of token usage from `completedRuns` + `chatCompletions` WS data. Shows Tokens, Prompt, Completion cards when data available (`metrics-panel.tsx`)
+
+---
+
 ## [2.7.3] - 2026-05-08
 
 ### Fixed — React Strict Mode WebSocket Bug (1 Critical)

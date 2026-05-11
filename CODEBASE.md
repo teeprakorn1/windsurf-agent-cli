@@ -1,6 +1,15 @@
-# CODEBASE.md — Aiyu MultiAgent V2.7.3
+# CODEBASE.md — Aiyu MultiAgent V2.7.4
 
 ## Version History
+
+### V2.7.4 (2026-05-11) — Chat Mode Agent Status Broadcast
+
+**v2.7.4** fixes a high-severity bug where Chat mode did not broadcast `agent.status` WebSocket events, causing the dashboard's `AgentStatusPanel` to show "No agents running" during active chat sessions. Also fixes `ExecutionTimeline` and `LogsViewer` showing no data during chat sessions.
+
+- **High**: Chat mode does not broadcast `agent.status` — `handleChatCreate` and `handleChatSend` in `ws.js` did not call `setAgentStatus()`. Added status broadcasts at session creation (`"idle"`), chat send start (`"running"`), and chat send completion (`"completed"`/`"error"`). Now both Run and Chat modes update `AgentStatusPanel` in real-time (`lib/api/ws.js`)
+- **High**: ExecutionTimeline empty during chat sessions — only read from `runs`/`completedRuns`. Fixed by merging `chatSteps`/`chatCompletions` into timeline data (`execution-timeline.tsx`)
+- **High**: LogsViewer empty during chat sessions — same root cause. Fixed by including chat data in log entries (`logs-viewer.tsx`)
+- **High**: InterventionPanel shows "No active runs" during chat — only checked `runs`/`completedRuns`. Fixed by detecting active chat sessions from `chatSteps`/`chatCompletions` (`intervention-panel.tsx`)
 
 ### V2.7.3 (2026-05-08) — React Strict Mode WS Fix + Dashboard Chat Upgrade
 

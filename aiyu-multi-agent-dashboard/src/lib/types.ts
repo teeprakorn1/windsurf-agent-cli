@@ -119,6 +119,7 @@ export type WsServerEvent =
   | ChatCreatedEvent
   | ChatStepEvent
   | ChatCompleteEvent
+  | ChatTokenEvent
   | AgentStatusEvent
   | HandoffStartedEvent
   | HandoffCompleteEvent
@@ -134,6 +135,14 @@ export interface AgentStatus {
   since: number;
 }
 
+export interface ChatTokenEvent {
+  type: "chat.token";
+  sessionId: string;
+  turnId?: string;
+  token: string;
+  timestamp?: string;
+}
+
 export interface RunStep {
   step: number;
   thought: string | null;
@@ -143,4 +152,101 @@ export interface RunStep {
   duration_ms: number | null;
   toolCalls: ToolCallSummary[] | null;
   timestamp: number;
+}
+
+// --- Unified Activity Model (v2.8) ---
+
+export interface TokenUsage {
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+}
+
+export interface ActivityStep {
+  step: number;
+  thought: string | null;
+  action: Record<string, unknown> | null;
+  result: string | null;
+  error: string | null;
+  duration_ms: number | null;
+  toolCalls: ToolCallSummary[] | null;
+  timestamp: number;
+  turnId?: string;
+}
+
+export interface ActivityCompletion {
+  content: string | null;
+  usage: TokenUsage | null;
+  traceId: string | null;
+  completedAt: number;
+  turnId?: string;
+}
+
+export interface UserMessage {
+  input: string;
+  timestamp: number;
+  turnKey: string;
+  turnId: string;
+}
+
+export type ActivityMode = "run" | "chat";
+export type ActivityStatus = "idle" | "running" | "completed" | "error" | "max_steps";
+
+export interface Activity {
+  id: string;
+  mode: ActivityMode;
+  agentName: string;
+  provider: string;
+  model: string;
+  status: ActivityStatus;
+  steps: ActivityStep[];
+  completions: ActivityCompletion[];
+  userMessages: UserMessage[];
+  streamingContent: string;
+  isStreaming: boolean;
+  createdAt: number;
+  completedAt: number | null;
+  usage: TokenUsage | null;
+}
+
+export type NotificationType = "success" | "error" | "warning" | "info";
+
+export interface Notification {
+  id: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  activityId?: string;
+  timestamp: number;
+  dismissed: boolean;
+}
+
+export interface HandoffRecord {
+  handoffId: string;
+  fromAgent: string;
+  toAgent: string;
+  status: "started" | "completed" | "error";
+  artifacts: number;
+  pendingTasks: number;
+  timestamp: number;
+}
+
+export interface DelegateRecord {
+  runId: string;
+  parentAgent: string;
+  childAgent: string;
+  depth: number;
+  status: "started" | "completed" | "max_steps" | "error";
+  timestamp: number;
+}
+
+export interface ChatMessage {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  timestamp: number;
+  steps?: { thought: string | null; toolCalls: { tool: string }[] | null; duration_ms: number | null; error: string | null }[];
+  usage?: { promptTokens: number; completionTokens: number; totalTokens: number } | null;
+  isStreaming?: boolean;
+  handoff?: { from: string; to: string } | null;
 }

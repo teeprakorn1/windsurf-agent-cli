@@ -44,7 +44,7 @@
 
 **Aiyu MultiAgent** is an open-source AI agent platform that helps developers automate software engineering tasks using large language models (LLMs). It features a **ReAct execution engine**, **MCP server integration** for Claude Code / Cursor / Windsurf, **WebSocket real-time streaming**, **agent handoff orchestration**, and a **plugin system** for extensible AI capabilities. Supports OpenAI GPT-4, Anthropic Claude, Ollama local models, and mock mode for testing.
 
-> **Latest Release: v2.7.3** — React Strict Mode WebSocket fix (deferred close pattern), dashboard UI upgrade (unified ChatPanel, sidebar tabs, compact controls, responsive mobile layout), markdown rendering across all panels, keyboard shortcut conflicts resolved, duplicate key fix, dropdown overflow fixes, and provider filtering. V2.7.2 had mock provider default + 56 bug fixes. V2.7.1 had dashboard security hardening. V2.7.0 added real-time monitoring dashboard. All changes backward compatible.
+> **Latest Release: v2.7.4** — Chat mode now broadcasts `agent.status` events so `AgentStatusPanel` updates in real-time during chat sessions (previously only Run mode broadcast status). V2.7.3 had React Strict Mode WebSocket fix, dashboard UI upgrade, markdown rendering, keyboard shortcut fixes. V2.7.2 had mock provider default + 56 bug fixes. All changes backward compatible.
 
 ---
 
@@ -80,11 +80,21 @@ V2.7 brings a **real-time monitoring dashboard** and **bug fix hardening** — a
 | 🔄 Broadcasts | `agent.status`, `handoff.started/complete`, `delegate.started/complete` | Dashboard ⬆️ |
 | 🐛 V2.7.0 Fixes | 11 bugs — path traversal, timer leak, Ollama deprioritize, etc. | Security ⬆️ |
 | 🐛 V2.7.1 Fixes | 75 bugs across 5 rounds — Dashboard integration, WS disconnect abort, mutable Map export, server crash guard, input validation, path traversal in packager, npm --ignore-scripts, agent file size limit, env secret leak, true LRU, retry jitter, recursive secret scan, symlink warning, heading truncation, watch timer cleanup, .tmp file cleanup, health-check agent reuse, dev --provider flag, dynamic compliance agent, SKIP_DIRS | Stability ⬆️ |
+| 🐛 V2.7.4 Fixes | Chat mode `agent.status` broadcast — `AgentStatusPanel` now updates during chat sessions | Dashboard ⬆️ |
 | 🐛 V2.7.2 Fixes | Mock provider default + Full System + Core Logic + Dashboard/API Bug Audit (56 bugs) — var→let leak, circuit-breaker stale cleanup, Ollama probe guard, chat timeout leak, failover loop-index, Claude model passthrough, queue settled flag, handoff regex, cache mutable fallback, halfOpenMaxAttempts 1→3, context trim pair fix + original task preservation, sliding window pair-preservation, isRetryableError word-boundary, Ollama model passthrough, WS reconnect re-subscribe, pendingInterventions cleanup, /health auth bypass, agent duration live refresh, chat-session context trim pair-preservation, chat error turnId, chat-panel auto-select session, completedRuns eviction, handoff artifact count, status complete→completed standardization, endTrace status check, plan pathTraversal sanitization, MCP timeout timer leak, metrics-panel AbortController, delegate context trim pair-preservation | Stability ⬆️ |
 | � V2.7.3 Fixes | React Strict Mode WS disconnect, markdown rendering, keyboard shortcut conflicts, duplicate React keys, dropdown overflow, provider filtering, unified ChatPanel, responsive mobile layout | UX ⬆️ |
 | � Dashboard Security | CSP headers, API proxy path whitelist, WS auth `Sec-WebSocket-Protocol`, input validation | Security ⬆️ |
 | 🧪 Test Suite | Jest + React Testing Library + Playwright E2E (29 unit + 9 E2E tests) | Quality ⬆️ |
 | 🏗️ Refactoring | `page.tsx` 479→160 lines, `DashboardHeader`/`RunPanel`/`ResetDialog` components | Maintainability ⬆️ |
+
+### V2.7.4 Chat Mode Agent Status Broadcast
+
+**v2.7.4** fixes a high-severity bug where Chat mode did not broadcast `agent.status` WebSocket events, causing the dashboard's `AgentStatusPanel` to show "No agents running" during active chat sessions.
+
+- **Chat mode `agent.status` broadcast** — `handleChatCreate` and `handleChatSend` in `ws.js` did not call `setAgentStatus()`. Added status broadcasts at session creation (`"idle"`), chat send start (`"running"`), and chat send completion (`"completed"`/`"error"`). Now both Run and Chat modes update `AgentStatusPanel` in real-time (`lib/api/ws.js`)
+- **ExecutionTimeline empty during chat** — Only read from `runs`/`completedRuns` (Run mode). Fixed by merging `chatSteps`/`chatCompletions` into timeline data (`execution-timeline.tsx`)
+- **LogsViewer empty during chat** — Same root cause. Fixed by including chat data in log entries (`logs-viewer.tsx`)
+- **InterventionPanel shows "No active runs" during chat** — Only checked `runs`/`completedRuns`. Fixed by detecting active chat sessions (`intervention-panel.tsx`)
 
 ### V2.7.3 Dashboard UI Upgrade + Responsive Design
 

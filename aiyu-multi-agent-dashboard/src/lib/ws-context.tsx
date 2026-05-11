@@ -1,30 +1,29 @@
 "use client";
 
-import { createContext, useContext, type ReactNode } from "react";
-import { useWebSocket } from "@/lib/use-websocket";
+import { useEffect, type ReactNode } from "react";
+import { useDashboardStore, startCleanupTimer, stopCleanupTimer, closeConnection, cancelClose } from "@/lib/store";
+import type { DashboardState } from "@/lib/store";
 
-type WsContextValue = ReturnType<typeof useWebSocket>;
+// Re-export the store hook as useWs for backward compatibility
+export const useWs = useDashboardStore;
 
-const WsContext = createContext<WsContextValue | null>(null);
+// Backward-compatible type alias
+export type WsContextValue = DashboardState;
 
+// Provider component that handles WS lifecycle
 export function WsProvider({ children }: { children: ReactNode }) {
-  const ws = useWebSocket();
-  return <WsContext.Provider value={ws}>{children}</WsContext.Provider>;
-}
+  const initConnection = useDashboardStore(s => s.initConnection);
 
-const noopWs: WsContextValue = {
-  connected: false, agentStatuses: {}, runs: {}, completedRuns: {}, errors: [],
-  chatSessions: {}, chatSteps: [], chatCompletions: {}, chatUserMsgs: [], addChatUserMsg: () => {}, clearChatHistory: () => {}, handoffs: [], delegates: [],
-  sendRun: () => {}, sendIntervene: () => {}, sendChatCreate: () => {},
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  sendChatSend: ((..._args: unknown[]) => {}) as WsContextValue["sendChatSend"], sendPing: () => {}, clearErrors: () => {}, deleteChatSession: () => {},
-};
+  useEffect(() => {
+    cancelClose();
+    initConnection();
+    startCleanupTimer();
 
-export function useWs() {
-  const ctx = useContext(WsContext);
-  if (!ctx) {
-    console.warn("useWs called outside <WsProvider>; returning noop");
-    return noopWs;
-  }
-  return ctx;
+    return () => {
+      stopCleanupTimer();
+      closeConnection();
+    };
+  }, [initConnection]);
+
+  return <>{children}</>;
 }
