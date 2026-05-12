@@ -26,6 +26,8 @@ program
   .option("--dry-run", "Preview without writing files")
   .option("--windsurf-only", "Create .windsurf/ only (no .agent/ directory)")
   .option("--agent-only", "Create .agent/ only (no .windsurf/ symlink)")
+  .option("--roo-only", "Generate Roo Code files only (.roomodes, .roorules, .roo/)")
+  .option("--no-roo", "Skip Roo Code file generation")
   .action(inline.cmdInit);
 
 program

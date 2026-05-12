@@ -3,6 +3,7 @@
 import { WsProvider, useWs } from "@/lib/ws-context";
 import { ChatPanel } from "@/components/chat-panel";
 import { ErrorBoundary } from "@/components/error-boundary";
+import { SectionErrorBoundary } from "@/components/section-error-boundary";
 import { DashboardHeader } from "@/components/dashboard-header";
 import { ResetDialog } from "@/components/reset-dialog";
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -50,7 +51,9 @@ function DashboardContent() {
       />
 
       <main className="relative max-w-[1600px] mx-auto p-2 sm:p-4 lg:p-6" style={{ height: "calc(100vh - 80px)" }} role="main">
-        <ChatPanel />
+        <SectionErrorBoundary title="Chat Panel">
+          <ChatPanel />
+        </SectionErrorBoundary>
       </main>
 
       <ResetDialog

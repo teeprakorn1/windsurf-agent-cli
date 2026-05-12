@@ -1,6 +1,18 @@
-# CODEBASE.md — Aiyu MultiAgent V2.7.4
+# CODEBASE.md — Aiyu MultiAgent V2.7.5
 
 ## Version History
+
+### V2.7.5 (2026-05-12) — Dashboard ChatPanel Refactoring
+
+**v2.7.5** refactors the dashboard's monolithic `chat-panel.tsx` (1026 lines) into 5 focused sub-components, reducing it to 599 lines (-42%). No behavioral changes — only code organization.
+
+- `chat-sidebar.tsx` (177 lines) — Sidebar tabs, session search/listing, monitor panels
+- `chat-history-panel.tsx` (240 lines) — History view with stats, search, groupings, expand/collapse
+- `chat-message-bubble.tsx` (139 lines) — Message bubble with markdown, steps, handoffs, copy
+- `session-header.tsx` (84 lines) — Agent info, provider select, token/streaming badges
+- `chat-input-area.tsx` (76 lines) — Textarea input, send/clear buttons, keyboard hints
+
+All sub-components use explicit prop interfaces with no Zustand store access. Build passes (`tsc --noEmit`, `next build`), 18/18 Jest tests pass.
 
 ### V2.7.4 (2026-05-11) — Chat Mode Agent Status Broadcast
 

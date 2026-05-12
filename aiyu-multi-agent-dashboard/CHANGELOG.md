@@ -5,6 +5,22 @@ All notable changes to **aiyu-multi-agent-dashboard** will be documented in this
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.7.5] — 2026-05-12
+
+### Refactored — ChatPanel Component Decomposition
+
+**ChatPanel reduced from 1026 → 599 lines (-42%)** by extracting 5 focused sub-components:
+
+- **`chat-sidebar.tsx`** (177 lines) — Sidebar tabs (Chat/Monitor), session search + listing, monitor panels (AgentStatus, Metrics, Intervention, ExecutionTimeline, InteractionMap, MemoryViewer, LogsViewer)
+- **`chat-history-panel.tsx`** (240 lines) — Chat history view with stats bar (session count, message count, token total), search filter, session grouping (Today/Yesterday/Earlier), expand/collapse per session, per-message user/assistant preview with click-to-scroll, token totals per session
+- **`chat-message-bubble.tsx`** (139 lines) — Message bubble with avatar, markdown rendering, ReAct steps (expandable), handoff/delegate cards, usage badge, copy button, date separator
+- **`session-header.tsx`** (84 lines) — Agent info button with avatar popup, AgentSelect/ProviderSelect dropdowns, session token usage badge, streaming indicator (Loader2 pulse), history/intervention/export toggle buttons
+- **`chat-input-area.tsx`** (76 lines) — Textarea with auto-resize, send/clear buttons (Send, X icons), keyboard hint (Ctrl+Enter), character count
+
+All components pass necessary props explicitly; no Zustand store access inside sub-components (single responsibility). Build passes (`tsc` + `next build`), 18/18 tests pass.
+
+---
+
 ## [2.7.4] — 2026-05-11
 
 ### Changed — UI Consistency & Compact Design (Dashboard)

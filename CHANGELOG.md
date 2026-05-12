@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.7.5] - 2026-05-12
+
+### Refactored — Dashboard ChatPanel Component Decomposition
+
+- **ChatPanel refactored from 1026 → 599 lines (-42%)** — Extracted 5 focused sub-components from the monolithic `chat-panel.tsx` for improved maintainability and testability:
+  - `chat-sidebar.tsx` (177 lines) — Sidebar tabs, session search/listing, monitor panels
+  - `chat-history-panel.tsx` (240 lines) — History view with stats, search, groupings, expand/collapse
+  - `chat-message-bubble.tsx` (139 lines) — Message bubble with markdown, steps, handoffs, copy
+  - `session-header.tsx` (84 lines) — Agent info, provider select, token/streaming badges
+  - `chat-input-area.tsx` (76 lines) — Textarea input, send/clear buttons, keyboard hints
+- **Zero behavioral changes** — All UI/UX behavior preserved; only code organization changed
+- **Type-safe props** — All sub-components use explicit prop interfaces; no store access inside children
+- **Build + tests pass** — `tsc --noEmit` clean, `next build` succeeds, 18/18 Jest tests pass
+
+---
+
 ## [2.7.4] - 2026-05-11
 
 ### Fixed — Chat Mode Agent Status Broadcast (1 High)

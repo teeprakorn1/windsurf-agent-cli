@@ -44,7 +44,7 @@
 
 **Aiyu MultiAgent** is an open-source AI agent platform that helps developers automate software engineering tasks using large language models (LLMs). It features a **ReAct execution engine**, **MCP server integration** for Claude Code / Cursor / Windsurf, **WebSocket real-time streaming**, **agent handoff orchestration**, and a **plugin system** for extensible AI capabilities. Supports OpenAI GPT-4, Anthropic Claude, Ollama local models, and mock mode for testing.
 
-> **Latest Release: v2.7.4** — Chat mode now broadcasts `agent.status` events so `AgentStatusPanel` updates in real-time during chat sessions (previously only Run mode broadcast status). V2.7.3 had React Strict Mode WebSocket fix, dashboard UI upgrade, markdown rendering, keyboard shortcut fixes. V2.7.2 had mock provider default + 56 bug fixes. All changes backward compatible.
+> **Latest Release: v2.7.5** — Dashboard `chat-panel.tsx` refactored into 5 focused sub-components (599 lines, down from 1026). No behavioral changes. V2.7.4 had Chat mode `agent.status` broadcast fix. V2.7.3 had React Strict Mode WebSocket fix, dashboard UI upgrade, markdown rendering. V2.7.2 had mock provider default + 56 bug fixes. All changes backward compatible.
 
 ---
 

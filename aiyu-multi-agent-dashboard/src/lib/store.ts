@@ -21,6 +21,13 @@ const MAX_ARRAY_SIZE = 500;
 const MAX_INPUT_LENGTH = 10000;
 const MAX_MESSAGE_LENGTH = 10000;
 const MAX_IDENTIFIER_LENGTH = 256;
+const MAX_ERRORS = 50;
+const NOTIFICATION_TTL_MS = 5 * 60 * 1000;
+const CLEANUP_INTERVAL_MS = 60_000;
+const STRICT_MODE_CLOSE_DELAY_MS = 100;
+const MAX_STEPS_LIMIT = 100;
+const SAVE_DEBOUNCE_MS = 500;
+
 const VALID_PROVIDERS = new Set(["mock", "openai", "claude", "ollama", "local", ""]);
 
 // --- Validation helpers ---
@@ -74,6 +81,17 @@ function saveChatHistory(data: {
   } catch { /* quota exceeded */ }
 }
 
+function debouncedSaveChatHistory(data: {
+  activities: Record<string, Activity>;
+  userMessages: Record<string, UserMessage[]>;
+}) {
+  if (_wsRefs.saveHistoryTimer) clearTimeout(_wsRefs.saveHistoryTimer);
+  _wsRefs.saveHistoryTimer = window.setTimeout(() => {
+    _wsRefs.saveHistoryTimer = null;
+    saveChatHistory(data);
+  }, SAVE_DEBOUNCE_MS);
+}
+
 // --- Notification helper ---
 function createNotification(type: NotificationType, title: string, message: string, activityId?: string): Notification {
   return {
@@ -94,6 +112,9 @@ export interface DashboardState {
 
   // Unified Activity model
   activities: Record<string, Activity>;
+
+  // Streaming content (separated to avoid re-rendering on every token)
+  streamingMap: Record<string, string>;
 
   // Agent status
   agentStatuses: Record<string, AgentStatus>;
@@ -125,30 +146,42 @@ export interface DashboardState {
   initConnection: () => void;
 }
 
-// --- Internal WS refs (not in store state to avoid re-renders) ---
-let wsRef: WebSocket | null = null;
-let reconnectAttemptsRef = 0;
-let reconnectTimeoutRef: number | null = null;
-let intentionalCloseRef = false;
-let closeTimerRef: number | null = null;
-let cleanupTimerRef: number | null = null;
-let historyLoadedRef = false;
-
 function getWsUrl(): string {
   if (typeof window === "undefined") return "ws://localhost:3000/ws";
-  return process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:3000/ws";
+  const baseUrl = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:3000/ws";
+  const token = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("token") : null;
+  if (token) {
+    const sep = baseUrl.includes("?") ? "&" : "?";
+    return `${baseUrl}${sep}token=${encodeURIComponent(token)}`;
+  }
+  return baseUrl;
 }
 
 function getWsProtocols(): string[] | undefined {
   const apiKey = process.env.NEXT_PUBLIC_API_KEY;
   if (!apiKey) return undefined;
+  // NOTE: Protocol-based auth is deprecated — prefer URL token param via getWsUrl()
+  console.warn("[WS] NEXT_PUBLIC_API_KEY via subprotocol is insecure; use URL token param instead");
   return [`aiyu-token.${apiKey}`];
 }
+
+// --- Internal WS refs (encapsulated in a shared object, used by store closure and module-level functions) ---
+const _wsRefs = {
+  ws: null as WebSocket | null,
+  reconnectAttempts: 0,
+  reconnectTimeout: null as number | null,
+  intentionalClose: false,
+  closeTimer: null as number | null,
+  cleanupTimer: null as number | null,
+  historyLoaded: false,
+  saveHistoryTimer: null as number | null,
+};
 
 // --- Zustand store ---
 export const useDashboardStore = create<DashboardState>((set) => ({
   connected: false,
   activities: {},
+  streamingMap: {},
   agentStatuses: {},
   notifications: [],
   handoffs: [],
@@ -161,16 +194,16 @@ export const useDashboardStore = create<DashboardState>((set) => ({
       validateInput(opts.input, "Task input", MAX_INPUT_LENGTH);
       if (opts.agentName) validateIdentifier(opts.agentName, "Agent name");
       if (opts.provider && !VALID_PROVIDERS.has(opts.provider)) throw new Error(`Invalid provider: ${opts.provider}`);
-      if (opts.maxSteps !== undefined && (typeof opts.maxSteps !== "number" || opts.maxSteps < 1 || opts.maxSteps > 100)) throw new Error("maxSteps must be between 1 and 100");
+      if (opts.maxSteps !== undefined && (typeof opts.maxSteps !== "number" || opts.maxSteps < 1 || opts.maxSteps > MAX_STEPS_LIMIT)) throw new Error(`maxSteps must be between 1 and ${MAX_STEPS_LIMIT}`);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Invalid run parameters";
-      set(s => ({ errors: [...s.errors.slice(-49), { message: msg, time: Date.now() }] }));
+      set(s => ({ errors: [...s.errors.slice(-(MAX_ERRORS - 1)), { message: msg, time: Date.now() }] }));
       return;
     }
-    if (wsRef?.readyState === WebSocket.OPEN) {
-      wsRef.send(JSON.stringify({ type: "run", ...opts }));
+    if (_wsRefs.ws?.readyState === WebSocket.OPEN) {
+      _wsRefs.ws.send(JSON.stringify({ type: "run", ...opts }));
     } else {
-      set(s => ({ errors: [...s.errors.slice(-49), { message: "Cannot send: WebSocket not connected", time: Date.now() }] }));
+      set(s => ({ errors: [...s.errors.slice(-(MAX_ERRORS - 1)), { message: "Cannot send: WebSocket not connected", time: Date.now() }] }));
     }
   },
 
@@ -181,13 +214,13 @@ export const useDashboardStore = create<DashboardState>((set) => ({
       if (opts.model) validateIdentifier(opts.model, "Model");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Invalid chat parameters";
-      set(s => ({ errors: [...s.errors.slice(-49), { message: msg, time: Date.now() }] }));
+      set(s => ({ errors: [...s.errors.slice(-(MAX_ERRORS - 1)), { message: msg, time: Date.now() }] }));
       return;
     }
-    if (wsRef?.readyState === WebSocket.OPEN) {
-      wsRef.send(JSON.stringify({ type: "chat.create", ...opts }));
+    if (_wsRefs.ws?.readyState === WebSocket.OPEN) {
+      _wsRefs.ws.send(JSON.stringify({ type: "chat.create", ...opts }));
     } else {
-      set(s => ({ errors: [...s.errors.slice(-49), { message: "Cannot create chat: WebSocket not connected", time: Date.now() }] }));
+      set(s => ({ errors: [...s.errors.slice(-(MAX_ERRORS - 1)), { message: "Cannot create chat: WebSocket not connected", time: Date.now() }] }));
     }
   },
 
@@ -198,14 +231,14 @@ export const useDashboardStore = create<DashboardState>((set) => ({
       if (opts?.turnId) validateIdentifier(opts.turnId, "Turn ID");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Invalid chat send parameters";
-      set(s => ({ errors: [...s.errors.slice(-49), { message: msg, time: Date.now() }] }));
+      set(s => ({ errors: [...s.errors.slice(-(MAX_ERRORS - 1)), { message: msg, time: Date.now() }] }));
       return;
     }
-    if (wsRef?.readyState === WebSocket.OPEN) {
+    if (_wsRefs.ws?.readyState === WebSocket.OPEN) {
       const resolvedTurnId = (opts?.turnId && opts.turnId.length > 0) ? opts.turnId : `turn_${Date.now()}_${Math.random().toString(16).slice(2)}`;
-      wsRef.send(JSON.stringify({ type: "chat.send", sessionId, input, turnId: resolvedTurnId }));
+      _wsRefs.ws.send(JSON.stringify({ type: "chat.send", sessionId, input, turnId: resolvedTurnId }));
     } else {
-      set(s => ({ errors: [...s.errors.slice(-49), { message: "Cannot send chat: WebSocket not connected", time: Date.now() }] }));
+      set(s => ({ errors: [...s.errors.slice(-(MAX_ERRORS - 1)), { message: "Cannot send chat: WebSocket not connected", time: Date.now() }] }));
     }
   },
 
@@ -215,19 +248,19 @@ export const useDashboardStore = create<DashboardState>((set) => ({
       validateInput(message, "Message", MAX_MESSAGE_LENGTH);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Invalid intervention parameters";
-      set(s => ({ errors: [...s.errors.slice(-49), { message: msg, time: Date.now() }] }));
+      set(s => ({ errors: [...s.errors.slice(-(MAX_ERRORS - 1)), { message: msg, time: Date.now() }] }));
       return;
     }
-    if (wsRef?.readyState === WebSocket.OPEN) {
-      wsRef.send(JSON.stringify({ type: "intervene", runId, message }));
+    if (_wsRefs.ws?.readyState === WebSocket.OPEN) {
+      _wsRefs.ws.send(JSON.stringify({ type: "intervene", runId, message }));
     } else {
-      set(s => ({ errors: [...s.errors.slice(-49), { message: "Cannot send intervention: WebSocket not connected", time: Date.now() }] }));
+      set(s => ({ errors: [...s.errors.slice(-(MAX_ERRORS - 1)), { message: "Cannot send intervention: WebSocket not connected", time: Date.now() }] }));
     }
   },
 
   sendPing: () => {
-    if (wsRef?.readyState === WebSocket.OPEN) {
-      wsRef.send(JSON.stringify({ type: "ping" }));
+    if (_wsRefs.ws?.readyState === WebSocket.OPEN) {
+      _wsRefs.ws.send(JSON.stringify({ type: "ping" }));
     }
   },
 
@@ -238,7 +271,7 @@ export const useDashboardStore = create<DashboardState>((set) => ({
       const updatedMsgs = [...activity.userMessages, msg];
       const updatedActivity = { ...activity, userMessages: updatedMsgs };
       const newActivities = { ...s.activities, [sessionId]: updatedActivity };
-      if (historyLoadedRef) setTimeout(() => saveChatHistory({ activities: newActivities, userMessages: Object.fromEntries(Object.entries(newActivities).map(([k, a]) => [k, a.userMessages])) }), 0);
+      if (_wsRefs.historyLoaded) debouncedSaveChatHistory({ activities: newActivities, userMessages: Object.fromEntries(Object.entries(newActivities).map(([k, a]) => [k, a.userMessages])) });
       return { activities: newActivities };
     });
   },
@@ -252,7 +285,7 @@ export const useDashboardStore = create<DashboardState>((set) => ({
     set(s => {
       const { [sessionId]: _removed, ...rest } = s.activities;
       void _removed;
-      if (historyLoadedRef) setTimeout(() => saveChatHistory({ activities: rest, userMessages: Object.fromEntries(Object.entries(rest).map(([k, a]) => [k, a.userMessages])) }), 0);
+      if (_wsRefs.historyLoaded) debouncedSaveChatHistory({ activities: rest, userMessages: Object.fromEntries(Object.entries(rest).map(([k, a]) => [k, a.userMessages])) });
       return { activities: rest };
     });
   },
@@ -269,18 +302,18 @@ export const useDashboardStore = create<DashboardState>((set) => ({
     if (typeof window === "undefined") return;
 
     // Load chat history
-    if (!historyLoadedRef) {
+    if (!_wsRefs.historyLoaded) {
       const h = loadChatHistory();
       if (h) {
         set({ activities: h.activities, historyLoaded: true });
       }
-      historyLoadedRef = true;
+      _wsRefs.historyLoaded = true;
     }
 
     // Cancel pending close timer (React Strict Mode remount)
-    if (closeTimerRef) {
-      clearTimeout(closeTimerRef);
-      closeTimerRef = null;
+    if (_wsRefs.closeTimer) {
+      clearTimeout(_wsRefs.closeTimer);
+      _wsRefs.closeTimer = null;
     }
 
     connect();
@@ -290,27 +323,27 @@ export const useDashboardStore = create<DashboardState>((set) => ({
 // --- WS Connection Logic (outside store to avoid re-render on ref changes) ---
 
 function clearReconnect() {
-  if (reconnectTimeoutRef) {
-    clearTimeout(reconnectTimeoutRef);
-    reconnectTimeoutRef = null;
+  if (_wsRefs.reconnectTimeout) {
+    clearTimeout(_wsRefs.reconnectTimeout);
+    _wsRefs.reconnectTimeout = null;
   }
 }
 
 function connect() {
   clearReconnect();
-  intentionalCloseRef = false;
+  _wsRefs.intentionalClose = false;
 
-  if (wsRef && wsRef.readyState !== WebSocket.CLOSED) return;
+  if (_wsRefs.ws && _wsRefs.ws.readyState !== WebSocket.CLOSED) return;
 
   const wsUrl = getWsUrl();
   const protocols = getWsProtocols();
   const ws = protocols ? new WebSocket(wsUrl, protocols) : new WebSocket(wsUrl);
-  wsRef = ws;
+  _wsRefs.ws = ws;
 
   ws.onopen = () => {
-    if (wsRef !== ws) return;
+    if (_wsRefs.ws !== ws) return;
     useDashboardStore.setState({ connected: true });
-    reconnectAttemptsRef = 0;
+    _wsRefs.reconnectAttempts = 0;
 
     // Re-subscribe to active runs
     const activities = useDashboardStore.getState().activities ?? {};
@@ -322,23 +355,23 @@ function connect() {
   };
 
   ws.onclose = () => {
-    if (wsRef === ws) wsRef = null;
-    if (wsRef !== null) return;
+    if (_wsRefs.ws === ws) _wsRefs.ws = null;
+    if (_wsRefs.ws !== null) return;
     useDashboardStore.setState({ connected: false });
 
-    if (intentionalCloseRef) {
-      intentionalCloseRef = false;
+    if (_wsRefs.intentionalClose) {
+      _wsRefs.intentionalClose = false;
       return;
     }
 
-    if (reconnectAttemptsRef < MAX_RECONNECT_ATTEMPTS) {
-      const delay = Math.min(INITIAL_RECONNECT_DELAY * Math.pow(2, reconnectAttemptsRef), MAX_RECONNECT_DELAY);
-      reconnectAttemptsRef++;
-      pushError(`WebSocket closed. Reconnecting in ${delay / 1000}s... (attempt ${reconnectAttemptsRef}/${MAX_RECONNECT_ATTEMPTS})`);
+    if (_wsRefs.reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+      const delay = Math.min(INITIAL_RECONNECT_DELAY * Math.pow(2, _wsRefs.reconnectAttempts), MAX_RECONNECT_DELAY);
+      _wsRefs.reconnectAttempts++;
+      pushError(`WebSocket closed. Reconnecting in ${delay / 1000}s... (attempt ${_wsRefs.reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`);
       useDashboardStore.setState(s => ({
         notifications: [...s.notifications.slice(-(MAX_NOTIFICATIONS - 1)), createNotification("warning", "Disconnected", `Reconnecting in ${delay / 1000}s...`)],
       }));
-      reconnectTimeoutRef = window.setTimeout(connect, delay);
+      _wsRefs.reconnectTimeout = window.setTimeout(connect, delay);
     } else {
       pushError("WebSocket reconnection failed after max attempts. Please refresh the page.");
       useDashboardStore.setState(s => ({
@@ -348,12 +381,12 @@ function connect() {
   };
 
   ws.onerror = () => {
-    if (wsRef !== ws) return;
+    if (_wsRefs.ws !== ws) return;
     pushError("WebSocket connection error");
   };
 
   ws.onmessage = (ev) => {
-    if (wsRef !== ws) return;
+    if (_wsRefs.ws !== ws) return;
     let event: WsServerEvent;
     try { event = JSON.parse(ev.data); } catch { return; }
 
@@ -425,8 +458,7 @@ function connect() {
               usage: e.usage ?? existing.usage,
               isStreaming: false, streamingContent: "",
             };
-            const newActivities = { ...s.activities, [e.runId]: updated };
-            evictOldActivities(newActivities);
+            const newActivities = evictOldActivities({ ...s.activities, [e.runId]: updated });
             return { activities: newActivities, notifications: [...s.notifications.slice(-(MAX_NOTIFICATIONS - 1)), notif] };
           }
 
@@ -438,8 +470,7 @@ function connect() {
             createdAt: parseServerTime(e.timestamp), completedAt: parseServerTime(e.timestamp),
             usage: e.usage,
           };
-          const newActivities = { ...s.activities, [e.runId]: activity };
-          evictOldActivities(newActivities);
+          const newActivities = evictOldActivities({ ...s.activities, [e.runId]: activity });
           return { activities: newActivities, notifications: [...s.notifications.slice(-(MAX_NOTIFICATIONS - 1)), notif] };
         });
         break;
@@ -455,7 +486,7 @@ function connect() {
             completedAt: null, usage: null,
           };
           const newActivities = { ...s.activities, [event.sessionId]: activity };
-          if (historyLoadedRef) setTimeout(() => saveChatHistory({ activities: newActivities, userMessages: Object.fromEntries(Object.entries(newActivities).map(([k, a]) => [k, a.userMessages])) }), 0);
+          if (_wsRefs.historyLoaded) debouncedSaveChatHistory({ activities: newActivities, userMessages: Object.fromEntries(Object.entries(newActivities).map(([k, a]) => [k, a.userMessages])) });
           return { activities: newActivities };
         });
         break;
@@ -490,18 +521,9 @@ function connect() {
 
       case "chat.token": {
         const e = event as ChatTokenEvent;
-        useDashboardStore.setState(s => {
-          const existing = s.activities[e.sessionId];
-          if (existing) {
-            return {
-              activities: {
-                ...s.activities,
-                [e.sessionId]: { ...existing, streamingContent: existing.streamingContent + e.token, isStreaming: true },
-              },
-            };
-          }
-          return s;
-        });
+        useDashboardStore.setState(s => ({
+          streamingMap: { ...s.streamingMap, [e.sessionId]: (s.streamingMap[e.sessionId] ?? "") + e.token },
+        }));
         break;
       }
 
@@ -524,8 +546,10 @@ function connect() {
               isStreaming: false, streamingContent: "",
             };
             const newActivities = { ...s.activities, [e.sessionId]: updated };
-            if (historyLoadedRef) setTimeout(() => saveChatHistory({ activities: newActivities, userMessages: Object.fromEntries(Object.entries(newActivities).map(([k, a]) => [k, a.userMessages])) }), 0);
-            return { activities: newActivities, notifications: [...s.notifications.slice(-(MAX_NOTIFICATIONS - 1)), notif] };
+            if (_wsRefs.historyLoaded) debouncedSaveChatHistory({ activities: newActivities, userMessages: Object.fromEntries(Object.entries(newActivities).map(([k, a]) => [k, a.userMessages])) });
+            const { [e.sessionId]: _streaming, ...restStreaming } = s.streamingMap;
+            void _streaming;
+            return { activities: newActivities, streamingMap: restStreaming, notifications: [...s.notifications.slice(-(MAX_NOTIFICATIONS - 1)), notif] };
           }
 
           const activity: Activity = {
@@ -535,8 +559,10 @@ function connect() {
             completedAt: parseServerTime(e.timestamp), usage: e.usage,
           };
           const newActivities = { ...s.activities, [e.sessionId]: activity };
-          if (historyLoadedRef) setTimeout(() => saveChatHistory({ activities: newActivities, userMessages: Object.fromEntries(Object.entries(newActivities).map(([k, a]) => [k, a.userMessages])) }), 0);
-          return { activities: newActivities, notifications: [...s.notifications.slice(-(MAX_NOTIFICATIONS - 1)), notif] };
+          if (_wsRefs.historyLoaded) debouncedSaveChatHistory({ activities: newActivities, userMessages: Object.fromEntries(Object.entries(newActivities).map(([k, a]) => [k, a.userMessages])) });
+          const { [e.sessionId]: _streaming2, ...restStreaming2 } = s.streamingMap;
+          void _streaming2;
+          return { activities: newActivities, streamingMap: restStreaming2, notifications: [...s.notifications.slice(-(MAX_NOTIFICATIONS - 1)), notif] };
         });
         break;
       }
@@ -622,21 +648,18 @@ function connect() {
 }
 
 function pushError(msg: string) {
-  useDashboardStore.setState(s => ({ errors: [...s.errors.slice(-49), { message: msg, time: Date.now() }] }));
+  useDashboardStore.setState(s => ({ errors: [...s.errors.slice(-(MAX_ERRORS - 1)), { message: msg, time: Date.now() }] }));
 }
 
-function evictOldActivities(activities: Record<string, Activity>) {
+function evictOldActivities(activities: Record<string, Activity>): Record<string, Activity> {
   const keys = Object.keys(activities);
-  if (keys.length <= MAX_ACTIVITIES) return;
+  if (keys.length <= MAX_ACTIVITIES) return activities;
   keys.sort((a, b) => (activities[a]?.completedAt ?? activities[a]?.createdAt ?? 0) - (activities[b]?.completedAt ?? activities[b]?.createdAt ?? 0));
   const cleaned: Record<string, Activity> = {};
   for (let i = keys.length - MAX_ACTIVITIES; i < keys.length; i++) {
     cleaned[keys[i]] = activities[keys[i]];
   }
-  Object.assign(activities, cleaned);
-  for (const k of Object.keys(activities)) {
-    if (!(k in cleaned)) delete (activities as Record<string, Activity>)[k];
-  }
+  return cleaned;
 }
 
 function aggregateUsage(existing: TokenUsage | null, incoming: TokenUsage | null): TokenUsage | null {
@@ -652,7 +675,7 @@ function aggregateUsage(existing: TokenUsage | null, incoming: TokenUsage | null
 
 // --- Periodic cleanup (called from component mount) ---
 export function startCleanupTimer() {
-  cleanupTimerRef = window.setInterval(() => {
+  _wsRefs.cleanupTimer = window.setInterval(() => {
     const now = Date.now();
     useDashboardStore.setState(s => {
       // Evict stale agent statuses
@@ -661,39 +684,38 @@ export function startCleanupTimer() {
         if (now - entry.since < AGENT_STATUS_TTL_MS) cleanedStatuses[name] = entry;
       }
       // Evict old notifications
-      const activeNotifs = s.notifications.filter(n => !n.dismissed && now - n.timestamp < 300_000);
+      const activeNotifs = s.notifications.filter(n => !n.dismissed && now - n.timestamp < NOTIFICATION_TTL_MS);
       // Evict old completed activities
-      const activities = { ...s.activities };
-      evictOldActivities(activities);
+      const activities = evictOldActivities({ ...s.activities });
       return {
         agentStatuses: Object.keys(cleanedStatuses).length === Object.keys(s.agentStatuses).length ? s.agentStatuses : cleanedStatuses,
         notifications: activeNotifs.length === s.notifications.length ? s.notifications : activeNotifs,
         activities,
       };
     });
-  }, 60_000);
+  }, CLEANUP_INTERVAL_MS);
 }
 
 export function stopCleanupTimer() {
-  if (cleanupTimerRef) {
-    clearInterval(cleanupTimerRef);
-    cleanupTimerRef = null;
+  if (_wsRefs.cleanupTimer) {
+    clearInterval(_wsRefs.cleanupTimer);
+    _wsRefs.cleanupTimer = null;
   }
 }
 
 export function closeConnection() {
   // Defer close for React Strict Mode
-  closeTimerRef = window.setTimeout(() => {
-    intentionalCloseRef = true;
-    wsRef?.close();
-    wsRef = null;
-    closeTimerRef = null;
-  }, 100);
+  _wsRefs.closeTimer = window.setTimeout(() => {
+    _wsRefs.intentionalClose = true;
+    _wsRefs.ws?.close();
+    _wsRefs.ws = null;
+    _wsRefs.closeTimer = null;
+  }, STRICT_MODE_CLOSE_DELAY_MS);
 }
 
 export function cancelClose() {
-  if (closeTimerRef) {
-    clearTimeout(closeTimerRef);
-    closeTimerRef = null;
+  if (_wsRefs.closeTimer) {
+    clearTimeout(_wsRefs.closeTimer);
+    _wsRefs.closeTimer = null;
   }
 }

@@ -2,13 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { ChevronDown, Search, Bot, X } from "lucide-react";
-
-interface AgentInfo {
-  name: string;
-  description: string;
-  provider: string;
-  model: string;
-}
+import { fetchAgentsList, type AgentInfo } from "@/lib/agents-cache";
 
 interface AgentSelectProps {
   value: string;
@@ -25,19 +19,12 @@ export function AgentSelect({ value, onChange }: AgentSelectProps) {
   const listRef = useRef<HTMLUListElement>(null);
 
   useEffect(() => {
-    const fetchAgents = async () => {
-      try {
-        const res = await fetch("/api/agents/list");
-        if (res.ok) {
-          const data = await res.json();
-          setAgents(Array.isArray(data) ? data : []);
-        } else if (res.status === 401 || res.status === 403) {
-          setAgents([]);
-        }
-      } catch { /* non-critical */ }
+    const loadAgents = async () => {
+      const data = await fetchAgentsList();
+      setAgents(data);
     };
-    fetchAgents();
-    const interval = setInterval(fetchAgents, 60000);
+    loadAgents();
+    const interval = setInterval(loadAgents, 60000);
     return () => clearInterval(interval);
   }, []);
 

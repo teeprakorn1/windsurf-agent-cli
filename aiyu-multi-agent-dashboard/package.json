@@ -1,6 +1,6 @@
 {
   "name": "aiyu-multi-agent-dashboard",
-  "version": "2.7.4",
+  "version": "2.7.5",
   "description": "Real-time monitoring dashboard for Aiyu MultiAgent — agent status, execution timeline, intervention panel",
   "private": true,
   "scripts": {

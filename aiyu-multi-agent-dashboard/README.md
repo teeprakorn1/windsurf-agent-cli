@@ -1,6 +1,6 @@
 # Aiyu MultiAgent Dashboard
 
-> Real-time monitoring dashboard for [Aiyu MultiAgent](https://github.com/teeprakorn1/aiyu-multi-agent) — v2.7.4
+> Real-time monitoring dashboard for [Aiyu MultiAgent](https://github.com/teeprakorn1/aiyu-multi-agent) — v2.7.5
 
 Live agent status, execution timeline, intervention panel, metrics, and logs — all streaming via WebSocket from the Aiyu API server.
 
@@ -139,6 +139,7 @@ WsProvider (context, useMemo)
            └── Main Chat Area
                ├── Session Header (agent, provider, token usage, streaming indicator)
                ├── Message List (user + assistant, markdown rendered, copy button)
+               ├── Chat History Panel (session groups, search, expand/collapse, token totals)
                └── Input Bar (textarea, send button, auto-create session)
 ```
 
@@ -188,7 +189,12 @@ src/
 │   ├── layout.tsx           # Root layout with ThemeProvider
 │   └── page.tsx             # Main dashboard page (160 lines, refactored)
 ├── components/
-│   ├── chat-panel.tsx        # Unified chat + monitor panel (v2.7.3)
+│   ├── chat-panel.tsx        # Unified chat + monitor panel (v2.7.5, refactored: 599 lines)
+│   ├── chat-sidebar.tsx      # Session sidebar with Chat/Monitor tabs
+│   ├── session-header.tsx      # Agent info, provider select, token/streaming badges
+│   ├── chat-message-bubble.tsx # Message bubble with avatar, markdown, steps, copy
+│   ├── chat-history-panel.tsx  # Chat history with groups, search, expand/collapse
+│   ├── chat-input-area.tsx     # Textarea input with send button and keyboard hints
 │   ├── markdown-renderer.tsx # ReactMarkdown wrapper for agent output
 │   ├── agent-status-panel.tsx
 │   ├── execution-timeline.tsx

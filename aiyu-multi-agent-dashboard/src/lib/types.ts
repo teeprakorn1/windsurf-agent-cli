@@ -250,3 +250,31 @@ export interface ChatMessage {
   isStreaming?: boolean;
   handoff?: { from: string; to: string } | null;
 }
+
+// --- Inspector types (discriminated union for single inspected item) ---
+
+export interface InteractionInspectData {
+  key: string;
+  type: string;
+  detail: string;
+  status: string;
+  time: number;
+  raw: Record<string, unknown>;
+}
+
+export interface LogInspectData {
+  id: string;
+  time: number;
+  displayTime: string;
+  type: string;
+  runId?: string;
+  message: string;
+  raw: Record<string, unknown>;
+}
+
+export type InspectedItem =
+  | { type: "agent"; name: string }
+  | { type: "activity"; id: string }
+  | { type: "interaction"; data: InteractionInspectData }
+  | { type: "log"; data: LogInspectData }
+  | null;
