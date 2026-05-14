@@ -477,6 +477,21 @@ Every agent gets access to a set of **sandboxed, namespaced tools** for safe fil
 
 > **Legacy aliases:** `Read`, `Write`, `Edit`, `Grep`, `Glob`, `Bash` auto-map to namespaced versions for backward compatibility.
 
+### 🌐 Web Search Providers (`web.search`)
+
+`web.search` supports multiple providers configured via `.agent/config.yaml`:
+
+```yaml
+webSearch:
+  provider: youcom # searxng | serper | tavily | youcom
+  # Optional for You.com Search API (100 free searches/day without key)
+  apiKey: ${YDC_API_KEY}
+  # Optional for searxng
+  baseUrl: http://localhost:8080
+```
+
+You.com provider uses `GET https://api.you.com/v1/agents/search` and maps web/news results into the standard `{ title, url, snippet }` output shape.
+
 <details>
 <summary><b>⚙️ Runtime Correctness Guarantees</b></summary>
 
