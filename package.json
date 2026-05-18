@@ -1,7 +1,7 @@
 {
   "name": "aiyu-multi-agent",
-  "version": "2.7.5",
-  "description": "Production-grade AI Agent Platform — 84 Agents, 46 Skills, 78 Workflows, 14 Tools, Smart Init, Plugin System, Agent Testing, Publishing, Security Headers, Metrics Auth",
+  "version": "2.7.6",
+  "description": "Production-grade AI Agent Platform — 84 Agents, 46 Skills, 78 Workflows, 14 Tools, 5 LLM Providers (OpenAI/Claude/Groq/Ollama/Mock), Smart Init, Frontmatter Task Runner, Plugin System, Agent Testing, Publishing",
   "bin": {
     "aiyu-multi-agent": "./bin/cli.js"
   },
@@ -53,7 +53,7 @@
   "contributors": [
     "FrameHandsomez <https://github.com/FrameHandsomez>"
   ],
-  "license": "MIT",
+  "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/teeprakorn1/aiyu-multi-agent.git"
@@ -68,6 +68,7 @@
     "lib/",
     "templates/",
     "LICENSE",
+    "NOTICE",
     "README.md",
     "CODEBASE.md",
     ".windsurfrules"

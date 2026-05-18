@@ -17,7 +17,7 @@
 <p>
   <a href="https://www.npmjs.com/package/aiyu-multi-agent"><img src="https://img.shields.io/npm/v/aiyu-multi-agent?style=for-the-badge&color=0ea5e9&logo=npm&logoColor=white" alt="NPM Version"></a>
   <a href="https://www.npmjs.com/package/aiyu-multi-agent"><img src="https://img.shields.io/npm/dt/aiyu-multi-agent?style=for-the-badge&color=8b5cf6&logo=npm&logoColor=white" alt="NPM Downloads"></a>
-  <a href="https://github.com/teeprakorn1/aiyu-multi-agent/blob/main/LICENSE"><img src="https://img.shields.io/github/license/teeprakorn1/aiyu-multi-agent?style=for-the-badge&color=10b981&logo=opensourceinitiative&logoColor=white" alt="MIT License"></a>
+  <a href="https://github.com/teeprakorn1/aiyu-multi-agent/blob/main/LICENSE"><img src="https://img.shields.io/github/license/teeprakorn1/aiyu-multi-agent?style=for-the-badge&color=10b981&logo=opensourceinitiative&logoColor=white" alt="Apache 2.0 License"></a>
 </p>
 
 <p>
@@ -34,7 +34,7 @@
     <td align="center"><b>46</b><br>📚 Skills</td>
     <td align="center"><b>78</b><br>⚡ Workflows</td>
     <td align="center"><b>10</b><br>🛡️ Rules</td>
-    <td align="center"><b>4</b><br>🧠 LLM Providers</td>
+    <td align="center"><b>5</b><br>🧠 LLM Providers</td>
   </tr>
 </table>
 
@@ -345,12 +345,16 @@ aiyu-multi-agent run "Create REST API"       # Run agent with input
 aiyu-multi-agent run "..." --agent backend   # Specify agent
 aiyu-multi-agent run "..." --provider openai # OpenAI (needs OPENAI_API_KEY)
 aiyu-multi-agent run "..." --provider claude # Claude (needs ANTHROPIC_API_KEY)
+aiyu-multi-agent run "..." --provider groq   # Groq (needs GROQ_API_KEY, free tier)
 aiyu-multi-agent run "..." --provider local  # Ollama (local LLM)
 aiyu-multi-agent run "..." --provider mock   # Mock (testing)
 aiyu-multi-agent run "..." --json            # JSON output (CI/CD)
 aiyu-multi-agent run "..." --max-steps 20    # Override max ReAct steps
 aiyu-multi-agent run "..." --verbose         # Streaming step-by-step
 aiyu-multi-agent run "..." --no-cache        # Skip cache
+
+aiyu-multi-agent run-from-file tasks/login.md   # Run agent from markdown with frontmatter
+# Frontmatter: agent, provider, model, maxSteps, outputFormat (all optional, --flags override)
 
 aiyu-multi-agent dev                         # Dev REPL (mock provider)
 aiyu-multi-agent dev --provider openai       # Dev REPL with real LLM
@@ -452,10 +456,11 @@ Aiyu MultiAgent supports multiple large language model providers with **automati
 |:---:|:---:|:---|:---|
 | **OpenAI** | `OPENAI_API_KEY` | `gpt-4`, `gpt-4o`, `gpt-3.5-turbo` | General-purpose coding, reasoning, creative tasks |
 | **Claude** | `ANTHROPIC_API_KEY` | `claude-3-5-sonnet`, `claude-3-5-haiku` | Long context, detailed analysis, safety-critical code |
+| **Groq** | `GROQ_API_KEY` (+ optional `GROQ_MODEL`) | `llama-3.3-70b-versatile`, `mixtral-8x7b-32768`, `gemma2-9b-it` | Fast inference, free tier (14,400 req/day at console.groq.com) |
 | **Ollama** | `OLLAMA_HOST` | `llama3`, `mistral`, `codellama` | Local/offline execution, privacy-sensitive projects |
 | **Mock** | `AIYU_ENABLE_MOCK=1` | Canned responses | Testing, CI/CD pipelines, development without API keys |
 
-**🔄 Failover Chain:** `openai → claude → ollama → mock`
+**🔄 Failover Chain:** `openai → claude → groq → ollama → mock`
 
 When the circuit breaker detects failures (timeouts, 5xx errors, rate limits), it automatically promotes the next provider. No manual intervention required.
 
@@ -800,7 +805,7 @@ git push origin feature/my-awesome-feature
 
 <br>
 
-**[MIT License](LICENSE)** © 2026 Aiyu MultiAgent Contributors
+**[Apache License 2.0](LICENSE)** © 2026 Aiyu MultiAgent Contributors
 
 <p>
   <a href="https://github.com/teeprakorn1"><b>@teeprakorn1</b></a> ·
