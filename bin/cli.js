@@ -145,7 +145,7 @@ program
   .command("run <input>")
   .description("Execute agent with input (the core execution engine)")
   .option("-a, --agent <name>", "Agent to run (default: first found)")
-  .option("-p, --provider <provider>", "LLM provider: openai, claude, local, mock")
+  .option("-p, --provider <provider>", "LLM provider: openai, claude, groq, local, mock")
   .option("-m, --model <model>", "LLM model name")
   .option("--max-steps <n>", "Max ReAct loop steps", "10")
   .option("--json", "Output as JSON")
@@ -160,10 +160,30 @@ program
   });
 
 program
+  .command("run-from-file <path>")
+  .description("Execute agent from markdown file with frontmatter (agent, provider, maxSteps)")
+  .option("-a, --agent <name>", "Override agent (default: from frontmatter)")
+  .option("-p, --provider <provider>", "Override provider (default: from frontmatter)")
+  .option("-m, --model <model>", "Override model")
+  .option("--max-steps <n>", "Override max ReAct loop steps")
+  .option("--json", "Output as JSON")
+  .option("--verbose", "Show step-by-step thinking and tool results")
+  .option("--dry-run", "Preview execution without running")
+  .option("--no-cache", "Skip cache, always re-run")
+  .action(async (file, options) => {
+    const cmd = require("../lib/commands/run-from-file");
+    const result = await cmd.runFromFile(file, options);
+    if (result) {
+      const usage = require("../lib/core/usage");
+      usage.trackCommand(process.cwd(), "run-from-file");
+    }
+  });
+
+program
   .command("chat")
   .description("Interactive chat session with an agent")
   .option("-a, --agent <name>", "Agent to chat with (default: first found)")
-  .option("-p, --provider <provider>", "LLM provider: openai, claude, local, mock")
+  .option("-p, --provider <provider>", "LLM provider: openai, claude, groq, local, mock")
   .option("-m, --model <model>", "LLM model name")
   .action(async (options) => {
     const chatCmd = require("../lib/commands/chat");

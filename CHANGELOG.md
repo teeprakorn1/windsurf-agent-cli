@@ -7,6 +7,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.7.6] - 2026-05-18
+
+### Changed — License: MIT → Apache 2.0
+
+- `LICENSE` — Replaced MIT with Apache License 2.0 (patent grant + contribution clause)
+- `NOTICE` — NEW: attribution file (required by Apache 2.0)
+- `package.json` — `"license": "Apache-2.0"`, added `NOTICE` to `files[]`
+- `README.md` — Updated badge + footer
+
+### Added — Groq LLM Provider + Frontmatter Task Runner (Sprint 1 of agents-bot integration)
+
+Two features ported from FrameHandsomez's `agents-bot` POC (with his consent).
+
+**Groq Provider** — 5th LLM provider, OpenAI-compatible API (`api.groq.com`):
+- `callGroq(messages, options)` in `lib/core/llm-providers.js` — mirrors `callOpenAI` pattern (keep-alive agent, 1MB response cap, retry/backoff)
+- Default model `llama-3.3-70b-versatile` (configurable via `GROQ_MODEL` env)
+- Free tier 14,400 requests/day at `console.groq.com`
+- Per-provider circuit breaker `llm:groq` auto-registered via `failover.ensureLlmBreaker()`
+- `resolveProvider()` priority: OpenAI > Claude > **Groq** > Ollama > Mock
+- `buildFailoverChain()` includes Groq when `GROQ_API_KEY` is set
+- `health-check.js` reports Groq status (`configured` / `not_configured`)
+- `init.js` adds Groq as a provider choice + auto-detect from env
+- CLI help text in `run` / `chat` lists `groq` alongside other providers
+
+**Frontmatter Task Runner** — Markdown-driven agent invocation:
+- New CLI: `aiyu-multi-agent run-from-file <path>` (`lib/commands/run-from-file.js`)
+- New HTTP endpoint: `POST /agents/run-from-note` (auth via `sensitiveRouteAuth`, enqueues via request queue, returns 202)
+- Frontmatter fields: `agent`, `provider`, `model`, `maxSteps`, `outputFormat`, `priority` (reserved)
+- Body text after frontmatter becomes the agent input
+- Safety: `pathTraversal()` guard, 1MB file cap, `isValidAgentName()` validation, `maxSteps` range 1-50
+- CLI flags override frontmatter values (`--agent`, `--provider`, `--model`, `--max-steps`)
+
+**Tests:** 9 new unit tests in `lib/test/unit/core.test.js`
+- `callGroq throws when GROQ_API_KEY missing`
+- `callLLM rejects unknown provider` / `lists groq in error message`
+- `failover.resolveProvider returns groq when only GROQ_API_KEY set`
+- `failover.buildFailoverChain includes/excludes groq based on env`
+- `parseNoteFile` — extracts frontmatter and body / handles missing fm / handles empty fm
+
+Total tests: 41 unit + 25 production + 12 integration = **78 passing, 0 failures**.
+
+---
+
 ## [2.7.5] - 2026-05-12
 
 ### Refactored — Dashboard ChatPanel Component Decomposition

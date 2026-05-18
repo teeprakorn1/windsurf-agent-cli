@@ -1,6 +1,24 @@
-# CODEBASE.md — Aiyu MultiAgent V2.7.5
+# CODEBASE.md — Aiyu MultiAgent V2.7.6
 
 ## Version History
+
+### V2.7.6 (2026-05-18) — Groq Provider + Frontmatter Task Runner
+
+**v2.7.6** ports two features from FrameHandsomez's `agents-bot` POC (Sprint 1 of agents-bot integration):
+
+**Groq Provider (5th LLM provider):**
+- `lib/core/llm-providers.js` — `callGroq()` mirrors `callOpenAI` (keep-alive, 1MB cap, retry/backoff). OpenAI-compatible API at `api.groq.com/openai/v1/chat/completions`. Default model `llama-3.3-70b-versatile`, configurable via `GROQ_MODEL`. Free tier 14,400 req/day at console.groq.com
+- `lib/core/failover.js` — Failover chain: `openai → claude → groq → ollama → mock`. `resolveProvider()` priority puts Groq after Claude. `buildFailoverChain()` filters out Groq when `GROQ_API_KEY` unset
+- `lib/core/health-check.js` — Reports Groq as `configured`/`not_configured`. `hasAnyProvider` includes Groq
+- `lib/commands/init.js` — Adds Groq to provider choice list + auto-detect from env
+
+**Frontmatter Task Runner:**
+- `lib/commands/run-from-file.js` (NEW) — `parseNoteFile()` parses YAML frontmatter + body. `runFromFile()` validates path traversal, file size (1MB cap), agent name, maxSteps (1-50). CLI flags override frontmatter values
+- `bin/cli.js` — Registers `run-from-file <path>` command
+- `lib/api/server.js` — `POST /agents/run-from-note` endpoint (auth via `sensitiveRouteAuth`, enqueues to request queue, 202 response). Reuses `parseNoteFile` from CLI module
+- Frontmatter fields: `agent`, `provider`, `model`, `maxSteps`, `outputFormat`, `priority` (reserved)
+
+**Tests:** 12 new unit tests (41 total in core.test.js, 78 total across all suites, 0 failures)
 
 ### V2.7.5 (2026-05-12) — Dashboard ChatPanel Refactoring
 
