@@ -1,0 +1,37 @@
+---
+description: "Aiyu MultiAgent project overview, structure, and CLI commands. Always loaded."
+alwaysApply: true
+---
+# Aiyu MultiAgent V2 — AI Agent Platform
+# Auto-read by Windsurf IDE
+
+## 🎯 Overview
+Production-grade AI Agent Platform with Smart Init, Plugin System, Agent Testing, and Publishing.
+
+## 📁 Structure
+- `.windsurf/agents/` — 80 specialized AI agents
+- `.windsurf/skills/` — 46 domain-specific skills
+- `.windsurf/workflows/` — 78 slash-command workflows
+- `.windsurf/scripts/` — 4 validation scripts
+- `.windsurf/rules/` — 10 rules (GEMINI.md + 9 domain rules)
+- `.windsurf/tests/` — Agent test files (*.test.md)
+- `lib/core/` — config, plugin, guardrails, runtime, logger
+- `lib/commands/` — init, add, remove, test, publish
+- `lib/test/` — runner, assertions, simulator, reporter
+- `lib/publish/` — packager, validator, registry
+- `templates/` — agent + skill scaffolds
+
+## 🚀 CLI Commands
+- `aiyu-multi-agent init` — Interactive agent generator
+- `aiyu-multi-agent add skill <name>` — Install skill from npm
+- `aiyu-multi-agent remove skill <name>` — Uninstall skill
+- `aiyu-multi-agent test` — Run agent test suite
+- `aiyu-multi-agent publish` — Publish agent to npm
+- `aiyu-multi-agent status` — Project statistics
+- `aiyu-multi-agent checklist` — Quality verification
+
+## 🔗 References
+- Full rules: @.windsurf/rules/GEMINI.md
+- Architecture: @.windsurf/rules/architecture.md
+- V2 Architecture: @docs/ARCHITECTURE-V2.md
+- Cursor IDE equivalent: @.cursor/ (auto-generated from .windsurf/ — see docs/CURSOR-IDE.md)

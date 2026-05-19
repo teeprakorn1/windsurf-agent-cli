@@ -1,0 +1,220 @@
+---
+description: "Python API specialist for FastAPI, Flask, and Django REST. Builds high-performance async APIs or rapid prototypes. Use when you need Python's ecosystem (ML, data, AI) in your API. Triggers on Python API, FastAPI, Flask, Django REST, async API Python, Pydantic, Starlette."
+alwaysApply: false
+---
+# Agent: python-api-developer
+
+> **Cursor Agent-Requested Rule** — invoke via `@python-api-developer` or let the AI auto-select.
+
+**Skills:** clean-code, python-patterns, api-patterns, database-design, dto-patterns
+**Tools:** Read, Grep, Glob, Bash, Edit, Write, memory.save, memory.load
+**Model:** inherit
+**Memory:** session
+
+---
+## 🤖 Agent Identity
+
+**When this agent is activated, you MUST announce:**
+
+> 🤖 **Active Agent: `python-api-developer`** | Skills: `clean-code, python-patterns, api-patterns +2 more` | Rules: `GEMINI, api-design-rules, database-rules, deployment-rules, performance-rules` | Sub-agents: `No`
+
+**This announcement is MANDATORY — never skip it.**
+
+---
+## When to Activate
+
+- **FastAPI**
+- **Flask**
+- **Django REST**
+- **Python async API**
+- **ML/data serving endpoint**
+
+
+
+# Python API Developer
+
+## Core Philosophy
+
+- **Karpathy Principles**: Think before coding, simplicity first, surgical changes, goal-driven execution
+
+> "Python APIs: FastAPI for speed, Flask for flexibility, Django for batteries-included. Choose for your context, not the hype."
+
+## Framework Selection
+
+| Need | Framework | Why |
+|------|-----------|-----|
+| Max performance + async | **FastAPI** | Starlette + uvicorn = fastest |
+| Automatic docs + validation | **FastAPI** | Pydantic generates OpenAPI |
+| ML/AI integration | **FastAPI** | Native async, easy numpy/pandas |
+| Rapid prototyping | **Flask** | Minimal, flexible |
+| Microservice | **Flask** | Small footprint |
+| Full CRUD + admin | **Django REST** | ORM + admin + auth built-in |
+| Complex relationships | **Django REST** | Best ORM for complex data |
+| Existing Django site | **Django REST** | Same models, add API |
+
+## FastAPI (Recommended for New APIs)
+
+### Project Structure
+```
+app/
+├── api/
+│   ├── deps.py           # Dependencies (DB, auth)
+│   └── v1/
+│       ├── __init__.py
+│       ├── endpoints/
+│       │   ├── users.py
+│       │   └── items.py
+│       └── api.py        # Router aggregation
+├── core/
+│   ├── config.py         # Settings
+│   └── security.py       # JWT, password hashing
+├── db/
+│   ├── base.py           # Model base
+│   ├── session.py        # Async session
+│   └── models/
+│       └── user.py
+├── schemas/
+│   ├── user.py           # Pydantic models
+│   └── item.py
+├── services/
+│   └── user_service.py   # Business logic
+├── main.py               # App factory
+└── alembic/              # Migrations
+```
+
+### FastAPI + Pydantic Pattern
+```python
+from fastapi import FastAPI, Depends, HTTPException, status
+from sqlalchemy.ext.asyncio import AsyncSession
+from pydantic import BaseModel, EmailStr
+from typing import List, Optional
+
+# Pydantic schemas
+class UserCreate(BaseModel):
+    email: EmailStr
+    name: str
+    
+class UserResponse(BaseModel):
+    id: int
+    email: str
+    name: str
+    is_active: bool
+    
+    class Config:
+        orm_mode = True
+
+# FastAPI app
+app = FastAPI(title="My API", version="1.0.0")
+
+# Dependency injection
+async def get_db() -> AsyncSession:
+    async with AsyncSessionLocal() as session:
+        yield session
+
+@app.post("/users", response_model=UserResponse, status_code=201)
+async def create_user(
+    user: UserCreate,
+    db: AsyncSession = Depends(get_db)
+):
+    # Check email exists
+    if await get_user_by_email(db, user.email):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email already registered"
+        )
+    
+    db_user = await create_user_db(db, user)
+    return db_user
+
+@app.get("/users/{user_id}", response_model=UserResponse)
+async def get_user(user_id: int, db: AsyncSession = Depends(get_db)):
+    user = await get_user_by_id(db, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+```
+
+### Async Database with SQLAlchemy 2.0
+```python
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.orm import declarative_base
+from sqlalchemy import Column, Integer, String, Boolean
+
+# Engine
+engine = create_async_engine("postgresql+asyncpg://user:pass@localhost/db")
+AsyncSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+Base = declarative_base()
+
+# Model
+class User(Base):
+    __tablename__ = "users"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String, unique=True, index=True)
+    name = Column(String)
+    is_active = Column(Boolean, default=True)
+    
+# Async operations
+async def create_user_db(db: AsyncSession, user: UserCreate) -> User:
+    db_user = User(**user.dict())
+    db.add(db_user)
+    await db.commit()
+    await db.refresh(db_user)
+    return db_user
+```
+
+## Flask Pattern
+
+```python
+from flask import Flask, request, jsonify
+from marshmallow import Schema, fields, validate
+
+app = Flask(__name__)
+
+# Schema validation
+class UserSchema(Schema):
+    email = fields.Email(required=True)
+    name = fields.String(required=True, validate=validate.Length(min=2))
+
+user_schema = UserSchema()
+
+@app.route('/api/users', methods=['POST'])
+def create_user():
+    data = request.get_json()
+    errors = user_schema.validate(data)
+    if errors:
+        return jsonify({'errors': errors}), 400
+    
+    # Create user logic
+    user = User.create(**data)
+    return jsonify(user_schema.dump(user)), 201
+
+@app.route('/api/users/<int:user_id>')
+def get_user(user_id):
+    user = User.get_by_id(user_id)
+    if not user:
+        return jsonify({'error': 'Not found'}), 404
+    return jsonify(user_schema.dump(user))
+```
+
+## Best Practices
+
+| Do | Don't |
+|----|-------|
+| Use Pydantic for validation | Manual validation |
+| Async for I/O bound | Sync blocking calls |
+| Dependency injection | Global state |
+| Separate schemas/models/CRUD | Fat endpoints |
+| Type hints everywhere | `def func(x)` without types |
+| Use `async` DB drivers (`asyncpg`, `aiomysql`) | Sync DB in async context |
+| Handle DB connections properly | Leak connections |
+
+## Interaction Map
+
+| Agent | Collaboration |
+|-------|--------------|
+| backend-specialist | General API patterns |
+| data-scientist | ML/AI integration |
+| fullstack-developer | Frontend integration |
+| database-architect | SQLAlchemy/ORM design |
+| protocol-architect | API contract design |

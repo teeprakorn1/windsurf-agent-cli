@@ -1,0 +1,227 @@
+---
+description: "Standards for clear, helpful, and maintainable documentation."
+globs:
+  - "**/*.md"
+  - "**/README*"
+  - "**/CHANGELOG*"
+alwaysApply: false
+---
+# Documentation Rules — Aiyu Agent Kit
+
+> Standards for clear, helpful, and maintainable documentation.
+
+---
+
+## 🔴 CRITICAL: Documentation Essentials
+
+### README.md Requirements
+
+Every project must have a README with:
+
+```markdown
+# Project Name
+
+> One-line description of what this project does
+
+## Features
+
+- Feature 1: Brief description
+- Feature 2: Brief description
+
+## Installation
+
+```bash
+npm install
+# or
+pip install -r requirements.txt
+```
+
+## Usage
+
+```bash
+npm start
+# or
+python main.py
+```
+
+## Configuration
+
+Environment variables needed:
+- `API_KEY` — Your API key
+- `DATABASE_URL` — Connection string
+
+## License
+
+[MIT](LICENSE)
+```
+
+### Code Comments
+
+```python
+# ✅ GOOD — Explain WHY, not WHAT
+# Retry 3 times because external API is occasionally flaky
+MAX_RETRIES = 3
+
+# ✅ GOOD — Document complex logic
+# Using sliding window approach to maintain O(n) complexity
+# instead of naive O(n²) nested loop approach
+def find_substring(s: str, pattern: str) -> int:
+    ...
+
+# ❌ BAD — Obvious comments
+x = x + 1  # Increment x by 1
+```
+
+---
+
+## 🟡 HIGH: API Documentation
+
+### Function/Method Documentation
+
+```python
+def create_user(
+    email: str,
+    password: str,
+    role: str = "user"
+) -> User:
+    """
+    Create a new user account.
+    
+    Args:
+        email: User's email address (must be unique)
+        password: Plain text password (will be hashed)
+        role: User role, defaults to "user"
+        
+    Returns:
+        User object with generated ID
+        
+    Raises:
+        ValidationError: If email format is invalid
+        DuplicateError: If email already exists
+        
+    Example:
+        >>> user = create_user("alice@example.com", "secure123")
+        >>> user.email
+        'alice@example.com'
+    """
+    ...
+```
+
+### API Endpoint Documentation
+
+```markdown
+## POST /api/users
+
+Create a new user.
+
+### Request
+
+```json
+{
+  "email": "user@example.com",
+  "password": "securepassword",
+  "role": "user"
+}
+```
+
+### Response
+
+**201 Created**
+```json
+{
+  "id": "usr_123",
+  "email": "user@example.com",
+  "role": "user",
+  "created_at": "2024-01-15T10:30:00Z"
+}
+```
+
+**400 Bad Request**
+```json
+{
+  "error": "Invalid email format",
+  "field": "email"
+}
+```
+```
+
+---
+
+## 🟢 MEDIUM: Documentation Maintenance
+
+### Keep Docs Updated
+
+- Update docs when code changes
+- Version documentation with releases
+- Remove outdated information
+- Mark experimental features clearly
+
+### Documentation Structure
+
+```
+docs/
+├── README.md           # Quick start guide
+├── architecture.md     # System design
+├── api-reference.md    # API documentation
+├── guides/
+│   ├── installation.md
+│   ├── configuration.md
+│   └── deployment.md
+└── examples/
+    ├── basic-usage.md
+    └── advanced-features.md
+```
+
+### Writing Style
+
+- **Be concise:** Get to the point quickly
+- **Be specific:** Include exact commands, paths, versions
+- **Use examples:** Show, don't just tell
+- **Consider audience:** Beginner vs expert docs
+
+---
+
+## Documentation Checklist
+
+- [ ] README exists with essential sections
+- [ ] Installation steps are tested and work
+- [ ] Configuration options are documented
+- [ ] API has complete documentation
+- [ ] Code has helpful comments
+- [ ] Examples are provided
+- [ ] Error messages are explained
+- [ ] Changelog is maintained
+
+---
+
+## Good Documentation Example
+
+```markdown
+## Troubleshooting
+
+### "Connection refused" error
+
+**Cause:** Database is not running
+
+**Solution:**
+```bash
+# Start PostgreSQL
+sudo systemctl start postgresql
+
+# Or with Docker
+docker-compose up -d db
+```
+
+### Slow query performance
+
+**Cause:** Missing database index
+
+**Solution:**
+```sql
+CREATE INDEX idx_users_email ON users(email);
+```
+```
+
+---
+
+> 📝 **Remember:** Documentation is a feature. Undocumented code doesn't exist.

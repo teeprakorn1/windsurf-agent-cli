@@ -1,0 +1,128 @@
+---
+description: "Mandatory security practices for all code and configuration changes."
+globs:
+  - "**/auth/**/*"
+  - "**/*.env*"
+  - "**/security/**/*"
+  - "**/middleware/**/*"
+alwaysApply: false
+---
+# Security Rules — Aiyu Agent Kit
+
+> Mandatory security practices for all code and configuration changes.
+
+---
+
+## 🔴 CRITICAL: Security First
+
+### Hardcoded Secrets Prevention
+
+**NEVER commit:**
+- API keys, tokens, passwords in source code
+- `.env` files with real credentials
+- Private keys, certificates
+- Database connection strings with credentials
+
+**ALWAYS use:**
+- Environment variables
+- Secret management (Vault, AWS Secrets Manager, etc.)
+- `.env.example` for documentation
+
+### Input Validation
+
+```python
+# ✅ GOOD — Validate and sanitize all inputs
+user_input = sanitize_input(raw_input)
+if not validate_format(user_input, expected_pattern):
+    raise ValidationError("Invalid input format")
+
+# ❌ BAD — Direct use of untrusted input
+query = f"SELECT * FROM users WHERE id = {user_input}"
+```
+
+### Output Encoding
+
+- HTML: Escape with `htmlspecialchars` or framework equivalents
+- SQL: Use parameterized queries exclusively
+- JSON: Use proper serialization, never string concatenation
+- Shell: Never pass user input to shell commands
+
+---
+
+## 🟡 HIGH: Secure Defaults
+
+### Authentication & Authorization
+
+- Passwords: Minimum 12 chars, bcrypt/Argon2 only
+- Sessions: Secure, HttpOnly, SameSite cookies
+- JWT: Short expiry, refresh token rotation
+- MFA: Require for admin/sensitive operations
+
+### Error Handling
+
+```python
+# ✅ GOOD — Generic errors to users, detailed to logs
+try:
+    process_data()
+except Exception as e:
+    log.error(f"Processing failed: {e}")  # Detailed log
+    return {"error": "Processing failed"}  # Generic user message
+
+# ❌ BAD — Information leakage
+try:
+    process_data()
+except Exception as e:
+    return {"error": f"Database connection failed: {e}"}
+```
+
+### Dependencies
+
+- Run `npm audit` / `pip audit` / `cargo audit` regularly
+- Pin versions in lock files
+- Review new dependencies for security
+- Subscribe to security advisories
+
+---
+
+## 🟢 MEDIUM: Security Hardening
+
+### Headers & Configuration
+
+```
+Content-Security-Policy: default-src 'self'
+X-Content-Type-Options: nosniff
+X-Frame-Options: DENY
+Strict-Transport-Security: max-age=31536000; includeSubDomains
+```
+
+### Logging & Monitoring
+
+- Log security events (auth success/failure, access denied)
+- Never log sensitive data (passwords, tokens, PII)
+- Alert on suspicious patterns
+- Regular security log reviews
+
+### Data Protection
+
+- Encrypt data at rest (AES-256)
+- Use TLS 1.2+ for data in transit
+- Classify data sensitivity
+- Implement data retention policies
+
+---
+
+## Security Checklist
+
+Before completing any task:
+
+- [ ] No hardcoded secrets in code
+- [ ] All inputs validated and sanitized
+- [ ] Proper error handling (no info leakage)
+- [ ] Dependencies scanned for vulnerabilities
+- [ ] Security headers configured
+- [ ] Authentication/authorization appropriate
+- [ ] Sensitive data encrypted
+
+---
+
+> 🔒 **Remember:** Security is not a feature, it's a foundation.

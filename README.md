@@ -44,7 +44,7 @@
 
 **Aiyu MultiAgent** is an open-source AI agent platform that helps developers automate software engineering tasks using large language models (LLMs). It features a **ReAct execution engine**, **MCP server integration** for Claude Code / Cursor / Windsurf, **WebSocket real-time streaming**, **agent handoff orchestration**, and a **plugin system** for extensible AI capabilities. Supports OpenAI GPT-4, Anthropic Claude, Ollama local models, and mock mode for testing.
 
-> **Latest Release: v2.7.5** — Dashboard `chat-panel.tsx` refactored into 5 focused sub-components (599 lines, down from 1026). No behavioral changes. V2.7.4 had Chat mode `agent.status` broadcast fix. V2.7.3 had React Strict Mode WebSocket fix, dashboard UI upgrade, markdown rendering. V2.7.2 had mock provider default + 56 bug fixes. All changes backward compatible.
+> **Latest Release: v2.7.7** — **Cursor IDE Full Support**: new `--cursor-only` / `--cursor` flags generate `.cursor/rules/*.mdc` (84 agents + 45 skills + 9 domain rules) and `.cursor/commands/*.md` (78 slash commands) from `.windsurf/`. Coexists with Windsurf — see [`docs/CURSOR-IDE.md`](docs/CURSOR-IDE.md). V2.7.6 added Groq provider + Frontmatter Task Runner. V2.7.5 refactored dashboard `chat-panel.tsx`. V2.7.4 fixed Chat mode `agent.status` broadcast. All changes backward compatible.
 
 ---
 
@@ -70,10 +70,30 @@
 
 ## ✨ What's New in V2.7
 
-V2.7 brings a **real-time monitoring dashboard** and **bug fix hardening** — adding a Next.js 14 dashboard for live agent monitoring, formal WS event schema, and fixing 21 bugs across two releases.
+V2.7 brings a **real-time monitoring dashboard**, **bug fix hardening**, **Groq + Frontmatter Task Runner** (v2.7.6), and **Cursor IDE Full Support** (v2.7.7) — adding a Next.js 14 dashboard for live agent monitoring, formal WS event schema, 5th LLM provider, and native Cursor `.cursor/rules/*.mdc` + slash commands generation.
+
+### V2.7.7 Cursor IDE Full Support (Latest)
+
+First-class Cursor IDE integration via a new generator (`lib/commands/cursor-generator.js`) that converts `.windsurf/` artifacts → `.cursor/` natively. **Coexists** with Windsurf, no breaking changes.
+
+- **`init --cursor-only`** — Generate `.cursor/` only (from existing `.windsurf/` or package fallback)
+- **`init --cursor`** — Generate alongside Windsurf/.agent during regular init
+- **`init --cursor-only --force`** — Re-sync after `.windsurf/` updates
+- **84 agent rules** → `.cursor/rules/agents/*.mdc` (Agent-Requested, invoke via `@<agent>`)
+- **45 skill rules** → `.cursor/rules/skills/*.mdc` (Agent-Requested, AI auto-applies)
+- **9 domain rules** → `.cursor/rules/domain/*.mdc` (Auto-Attached via heuristic globs per domain — JS/TS/Py for code-quality, `**/api/**` for api-design, `**/auth/**` + `**/*.env*` for security, etc.)
+- **2 always-on rules** → `.cursor/rules/00-project-overview.mdc` + `01-gemini-protocol.mdc`
+- **78 slash commands** → `.cursor/commands/*.md` (`/create`, `/debug`, `/deploy`, etc.)
+- **MCP config** → `.cursor/mcp.json` (preserves `context7` + `shadcn`)
+- **Smart description extraction** — prefers frontmatter, falls back to blockquote tagline, skips code fences/tables/lists, synthesizes from `keywords:` as last resort
+- **23 unit tests** in `lib/test/unit/cursor-generator.test.js` — 101 total tests passing
+
+Full guide: [`docs/CURSOR-IDE.md`](docs/CURSOR-IDE.md)
 
 | Area | Change | Impact |
 |------|--------|--------|
+| 🎯 V2.7.7 Cursor IDE | `.cursor/rules/*.mdc` + `.cursor/commands/*.md` generator — 84 agents, 45 skills, 78 commands | IDE Support ⬆️ |
+| ⚡ V2.7.6 Groq + Frontmatter | 5th LLM provider (`callGroq`) + `run-from-file <path>` task runner | Flexibility ⬆️ |
 | 📊 Dashboard | Next.js 14 real-time monitoring (`aiyu-multi-agent-dashboard/`) | Observability ⬆️ |
 | 🌙 P3 Polish | Dark mode, export trace, keyboard shortcuts, WS auto-reconnect, mobile | UX ⬆️ |
 | 📡 WS Schema | `docs/WS-SCHEMA.md` — formal contract (6 client→server, 10 server→client) | Reliability ⬆️ |
@@ -274,9 +294,15 @@ npx aiyu-multi-agent init
 
 # Or use interactive mode for full guided setup
 npx aiyu-multi-agent init --interactive
+
+# Cursor IDE users — generate native .cursor/ rules + slash commands
+npx aiyu-multi-agent init --cursor-only
+
+# Multi-IDE projects — generate both .windsurf/ and .cursor/
+npx aiyu-multi-agent init --cursor
 ```
 
-Once initialized, type any **slash command** in the Windsurf chat panel or terminal to activate specialized AI agents:
+Once initialized, type any **slash command** in the Windsurf chat panel, Cursor chat, or terminal to activate specialized AI agents:
 
 ```
 /create Build a task management app with Next.js
@@ -382,6 +408,25 @@ aiyu-multi-agent serve                       # Start HTTP API server
 | `/handoff` | POST | Chain agents with context bundles |
 | `/agents/intervene` | POST | Inject mid-run feedback |
 | `/ws` | WebSocket | Real-time agent step streaming |
+
+### 🎯 Cursor IDE Support
+
+First-class Cursor IDE integration via auto-generated `.cursor/rules/*.mdc` and `.cursor/commands/*.md`:
+
+```bash
+npx aiyu-multi-agent init --cursor-only      # .cursor/ only
+npx aiyu-multi-agent init --cursor           # .windsurf/ + .cursor/ coexist
+npx aiyu-multi-agent init --cursor-only --force  # Re-sync after .windsurf/ changes
+```
+
+This generates:
+- **84 agent rules** (Agent-Requested) — invoke via `@orchestrator`, `@backend-specialist`, etc.
+- **45 skill rules** (Agent-Requested) — AI auto-applies based on context
+- **9 domain rules** (Auto-Attached) — globs target relevant file types
+- **78 slash commands** — `/create`, `/debug`, `/deploy`, etc.
+- **MCP config** — `.cursor/mcp.json` with `context7` + `shadcn`
+
+Full guide: [`docs/CURSOR-IDE.md`](docs/CURSOR-IDE.md)
 
 ### 🔌 MCP Server
 
@@ -565,7 +610,8 @@ aiyu-multi-agent/
 │   └── publish/                 # Packager + validator + registry
 ├── templates/                  # Agent + skill scaffolds
 ├── docs/                       # Architecture, runtime spec, roadmap, usage
-├── .windsurf/                  # 84 Agents, 46 Skills, 78 Workflows, 10 Rules
+├── .windsurf/                  # 84 Agents, 46 Skills, 78 Workflows, 10 Rules (Windsurf IDE)
+├── .cursor/                    # 84 agents + 45 skills + 9 domain rules + 78 commands (Cursor IDE, auto-generated)
 └── aiyu-multi-agent-dashboard/ # Real-time monitoring dashboard (Next.js 14)
 ```
 </details>

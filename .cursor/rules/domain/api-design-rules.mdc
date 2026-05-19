@@ -1,0 +1,186 @@
+---
+description: "APIs are contracts. Design them to last, document them to be useful."
+globs:
+  - "**/api/**/*"
+  - "**/routes/**/*"
+  - "**/controllers/**/*"
+  - "**/*.{controller,route,api}.{js,ts}"
+alwaysApply: false
+---
+# API Design Rules — Aiyu Agent Kit
+
+> APIs are contracts. Design them to last, document them to be useful.
+
+---
+
+## 🔴 CRITICAL: API Fundamentals
+
+### RESTful Resource Naming
+
+```
+✅ GOOD                          ❌ BAD
+GET    /api/users                GET    /api/getUsers
+POST   /api/users                POST   /api/createUser
+GET    /api/users/:id            GET    /api/user?id=123
+PUT    /api/users/:id            POST   /api/updateUser
+DELETE /api/users/:id            POST   /api/deleteUser
+GET    /api/users/:id/orders     GET    /api/getUserOrders?uid=123
+```
+
+**Rules:**
+- Nouns, not verbs — HTTP method provides the verb
+- Plural for collections — `/users` not `/user`
+- Nested resources for relationships — `/users/:id/orders`
+- Kebab-case for multi-word — `/user-profiles` not `/userProfiles`
+
+### HTTP Methods
+
+| Method | Purpose | Idempotent | Safe |
+|--------|---------|------------|------|
+| GET | Read resource | Yes | Yes |
+| POST | Create resource | No | No |
+| PUT | Replace resource | Yes | No |
+| PATCH | Partial update | No | No |
+| DELETE | Remove resource | Yes | No |
+
+### Status Codes
+
+| Code | Meaning | Use Case |
+|------|---------|----------|
+| 200 | OK | Successful GET, PUT, PATCH |
+| 201 | Created | Successful POST |
+| 204 | No Content | Successful DELETE |
+| 400 | Bad Request | Invalid input |
+| 401 | Unauthorized | Missing/invalid auth |
+| 403 | Forbidden | Insufficient permissions |
+| 404 | Not Found | Resource doesn't exist |
+| 409 | Conflict | Duplicate resource |
+| 422 | Unprocessable Entity | Validation failure |
+| 429 | Too Many Requests | Rate limit exceeded |
+| 500 | Internal Error | Server failure |
+
+---
+
+## 🟡 HIGH: Request/Response Design
+
+### Consistent Response Format
+
+```json
+// Success
+{
+  "data": {
+    "id": "usr_123",
+    "email": "user@example.com",
+    "name": "John Doe"
+  },
+  "meta": {
+    "request_id": "req_abc123"
+  }
+}
+
+// Collection
+{
+  "data": [...],
+  "meta": {
+    "total": 150,
+    "page": 1,
+    "per_page": 20,
+    "total_pages": 8
+  }
+}
+
+// Error
+{
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Invalid email format",
+    "details": [
+      {"field": "email", "message": "Must be a valid email address"}
+    ]
+  },
+  "meta": {
+    "request_id": "req_abc123"
+  }
+}
+```
+
+### Pagination
+
+```
+GET /api/users?page=2&per_page=20&sort=created_at&order=desc
+
+Response headers:
+Link: <https://api.example.com/users?page=3>; rel="next"
+Link: <https://api.example.com/users?page=1>; rel="prev"
+X-Total-Count: 150
+```
+
+### Filtering & Search
+
+```
+GET /api/users?status=active&role=admin
+GET /api/users?search=john&fields=name,email
+GET /api/orders?created_after=2024-01-01&amount_min=100
+```
+
+---
+
+## 🟢 MEDIUM: API Quality
+
+### Rate Limiting
+
+```http
+HTTP/1.1 429 Too Many Requests
+X-RateLimit-Limit: 100
+X-RateLimit-Remaining: 0
+X-RateLimit-Reset: 1640995200
+Retry-After: 60
+```
+
+### Versioning Header
+
+```http
+GET /api/users
+Accept: application/vnd.api.v2+json
+```
+
+### CORS Configuration
+
+```
+Access-Control-Allow-Origin: https://app.example.com
+Access-Control-Allow-Methods: GET, POST, PUT, DELETE
+Access-Control-Allow-Headers: Content-Type, Authorization
+Access-Control-Max-Age: 86400
+```
+
+### Caching Headers
+
+```http
+// Cacheable response
+Cache-Control: public, max-age=300, s-maxage=600
+ETag: "abc123"
+Last-Modified: Wed, 21 Oct 2025 07:28:00 GMT
+
+// Conditional request
+If-None-Match: "abc123"
+→ 304 Not Modified (no body)
+```
+
+---
+
+## API Design Checklist
+
+- [ ] Resources use plural nouns
+- [ ] HTTP methods used correctly
+- [ ] Status codes are appropriate
+- [ ] Response format is consistent
+- [ ] Pagination implemented for collections
+- [ ] Error responses include details
+- [ ] Rate limiting configured
+- [ ] CORS headers set properly
+- [ ] API documented with examples
+- [ ] Versioning strategy defined
+
+---
+
+> 🔗 **Remember:** A good API is like a good conversation — clear, consistent, and respectful.

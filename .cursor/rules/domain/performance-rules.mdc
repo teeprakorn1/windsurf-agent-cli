@@ -1,0 +1,159 @@
+---
+description: "Guidelines for building high-performance, efficient systems."
+globs:
+  - "**/*.{js,ts,jsx,tsx}"
+alwaysApply: false
+---
+# Performance Rules — Aiyu Agent Kit
+
+> Guidelines for building high-performance, efficient systems.
+
+---
+
+## 🔴 CRITICAL: Performance Foundations
+
+### Measure First
+
+**Never optimize without profiling:**
+
+```bash
+# Python
+python -m cProfile -o output.prof script.py
+
+# Node.js
+node --prof app.js
+
+# Go
+go test -bench=.
+```
+
+### Algorithm Complexity
+
+| Complexity | Max Input Size | Use Case |
+|------------|----------------|----------|
+| O(1) | Unlimited | Hash lookups, array access |
+| O(log n) | 10^9 | Binary search, tree ops |
+| O(n) | 10^7 | Linear scans |
+| O(n log n) | 10^6 | Sorting, efficient algorithms |
+| O(n²) | 10^4 | Small data only |
+| O(2^n) | < 30 | Avoid for production |
+
+### Database Performance
+
+```sql
+-- ✅ GOOD — Index on query columns
+SELECT * FROM users WHERE email = 'user@example.com';
+-- Index: CREATE INDEX idx_users_email ON users(email);
+
+-- ❌ BAD — Full table scan on large tables
+SELECT * FROM logs WHERE created_at > '2024-01-01';
+-- No index on created_at = slow on millions of rows
+```
+
+---
+
+## 🟡 HIGH: Efficient Patterns
+
+### Caching Strategy
+
+```
+Cache Hierarchy:
+┌─────────────────┐  Fastest
+│  L1/L2 CPU      │
+├─────────────────┤
+│  In-Memory      │  Redis, Memcached
+├─────────────────┤
+│  CDN/Edge       │  Cloudflare, S3
+├─────────────────┤
+│  Database       │  Query cache
+├─────────────────┤
+│  Origin Server  │  Slowest
+└─────────────────┘
+```
+
+**Cache invalidation patterns:**
+- TTL-based: Simple, may serve stale data
+- Write-through: Always fresh, higher latency
+- Write-behind: Async, risk of data loss
+
+### N+1 Query Prevention
+
+```python
+# ❌ BAD — N+1 queries
+for user in users:
+    orders = db.query(f"SELECT * FROM orders WHERE user_id = {user.id}")
+
+# ✅ GOOD — Single query with JOIN
+orders = db.query("""
+    SELECT u.*, o.* 
+    FROM users u 
+    JOIN orders o ON u.id = o.user_id
+""")
+```
+
+### Async vs Sync
+
+| Use Case | Approach |
+|----------|----------|
+| I/O bound (API, DB) | Async/await, coroutines |
+| CPU bound (compute) | Multiprocessing, thread pools |
+| Mixed workload | Hybrid with proper isolation |
+
+---
+
+## 🟢 MEDIUM: Optimization Techniques
+
+### Memory Management
+
+- **Object pooling:** Reuse expensive objects
+- **Lazy loading:** Load data only when needed
+- **Streaming:** Process large data in chunks
+- **Garbage collection:** Understand GC patterns
+
+### Network Optimization
+
+- **Compression:** gzip/brotli for text
+- **Minification:** JS/CSS for production
+- **HTTP/2:** Multiplexing, server push
+- **Connection pooling:** Reuse connections
+
+### Frontend Performance
+
+```javascript
+// ✅ GOOD — Code splitting
+const HeavyComponent = React.lazy(() => import('./Heavy'));
+
+// ✅ GOOD — Debounce expensive operations
+const debouncedSearch = debounce(handleSearch, 300);
+
+// ❌ BAD — Render blocking
+<script src="heavy-library.js"></script>
+```
+
+---
+
+## Performance Budgets
+
+| Metric | Target | Maximum |
+|--------|--------|---------|
+| First Contentful Paint | < 1.0s | 1.8s |
+| Time to Interactive | < 3.0s | 7.0s |
+| API Response (p95) | < 200ms | 500ms |
+| Database Query | < 10ms | 100ms |
+| Memory Usage | < 512MB | 1GB |
+
+---
+
+## Performance Checklist
+
+- [ ] Profiled before optimizing
+- [ ] Database queries optimized (indexes, N+1 fixed)
+- [ ] Caching strategy implemented
+- [ ] Async patterns used for I/O
+- [ ] Assets compressed and minified
+- [ ] Memory usage acceptable
+- [ ] Load tested with realistic traffic
+
+---
+
+> ⚡ **Remember:** Premature optimization is the root of all evil. Measure, then optimize.

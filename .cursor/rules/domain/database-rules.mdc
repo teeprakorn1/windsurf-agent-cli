@@ -1,0 +1,195 @@
+---
+description: "Data is the foundation. Design schemas that scale, query efficiently, and migrate safely."
+globs:
+  - "**/migrations/**/*"
+  - "**/*.sql"
+  - "**/schema.{js,ts,prisma}"
+  - "**/models/**/*"
+alwaysApply: false
+---
+# Database Rules — Aiyu Agent Kit
+
+> Data is the foundation. Design schemas that scale, query efficiently, and migrate safely.
+
+---
+
+## 🔴 CRITICAL: Schema Design
+
+### Naming Conventions
+
+| Element | Convention | Example |
+|---------|-----------|---------|
+| Tables | snake_case, plural | `user_accounts`, `order_items` |
+| Columns | snake_case | `created_at`, `user_id` |
+| Primary keys | `id` or `table_name_id` | `id`, `user_id` |
+| Foreign keys | `referenced_table_id` | `user_id` → references `users.id` |
+| Indexes | `idx_table_columns` | `idx_users_email` |
+| Junction tables | `table1_table2` | `users_roles` |
+
+### Column Types
+
+```sql
+-- ✅ GOOD — Appropriate types
+CREATE TABLE users (
+    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email       VARCHAR(255) NOT NULL,
+    name        VARCHAR(100) NOT NULL,
+    role        VARCHAR(20) NOT NULL DEFAULT 'user',
+    is_active   BOOLEAN NOT NULL DEFAULT true,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ❌ BAD — Wrong types, no constraints
+CREATE TABLE users (
+    id          INT,          -- UUID better for distributed
+    email       TEXT,         -- Too broad, no length limit
+    name        TEXT,         -- No length constraint
+    role        TEXT,         -- Should be ENUM or constrained
+    is_active   INT,          -- Boolean, not INT
+    created_at  VARCHAR(20)   -- Timestamp, not string
+);
+```
+
+### Indexing Strategy
+
+```sql
+-- Index columns used in WHERE, JOIN, ORDER BY
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_orders_user_id ON orders(user_id);
+CREATE INDEX idx_orders_created_at ON orders(created_at DESC);
+
+-- Composite index for multi-column queries
+CREATE INDEX idx_orders_user_status ON orders(user_id, status);
+
+-- Partial index for filtered queries
+CREATE INDEX idx_users_active ON users(email) WHERE is_active = true;
+
+-- Unique constraint for business rules
+CREATE UNIQUE INDEX idx_users_email_unique ON users(email);
+```
+
+**Index Rules:**
+- Index all foreign keys
+- Index columns in WHERE clauses
+- Order composite indexes by selectivity (most selective first)
+- Don't over-index: each index slows writes
+
+---
+
+## 🟡 HIGH: Query Performance
+
+### Query Best Practices
+
+```sql
+-- ✅ GOOD — Specific columns, indexed WHERE
+SELECT id, email, name FROM users WHERE email = 'user@example.com';
+
+-- ❌ BAD — SELECT *, non-indexed column
+SELECT * FROM users WHERE LOWER(email) = 'user@example.com';
+-- Function on column prevents index usage
+```
+
+### N+1 Prevention
+
+```sql
+-- ❌ BAD — N+1: Query per user
+SELECT * FROM users;
+-- Then for each user:
+SELECT * FROM orders WHERE user_id = ?;
+
+-- ✅ GOOD — JOIN or subquery
+SELECT u.*, o.*
+FROM users u
+LEFT JOIN orders o ON u.id = o.user_id
+WHERE u.is_active = true;
+
+-- ✅ GOOD — Batch loading
+SELECT * FROM orders WHERE user_id IN (1, 2, 3, 4, 5);
+```
+
+### Pagination
+
+```sql
+-- ✅ GOOD — Keyset pagination (fast, consistent)
+SELECT * FROM orders
+WHERE created_at < '2024-01-15'
+ORDER BY created_at DESC
+LIMIT 20;
+
+-- ❌ BAD — OFFSET pagination (slow on large datasets)
+SELECT * FROM orders
+ORDER BY created_at DESC
+LIMIT 20 OFFSET 100000;
+```
+
+---
+
+## 🟢 MEDIUM: Migration Safety
+
+### Zero-Downtime Schema Changes
+
+```
+Phase 1: Expand — Add new column/table (backward compatible)
+Phase 2: Migrate — Backfill data, update application
+Phase 3: Contract — Remove old column/table
+```
+
+```sql
+-- Phase 1: Add new column (nullable, no default)
+ALTER TABLE users ADD COLUMN full_name VARCHAR(200);
+
+-- Phase 2: Backfill data
+UPDATE users SET full_name = first_name || ' ' || last_name
+WHERE full_name IS NULL;
+
+-- Phase 3: Make required, drop old columns
+ALTER TABLE users ALTER COLUMN full_name SET NOT NULL;
+ALTER TABLE users DROP COLUMN first_name;
+ALTER TABLE users DROP COLUMN last_name;
+```
+
+### Migration Rules
+
+- **Never** ALTER columns in ways that break existing code
+- **Never** DELETE columns in the same migration as adding replacements
+- **Always** make new columns nullable first
+- **Always** test migrations on production-like data volumes
+- **Always** have a rollback migration ready
+
+---
+
+## Data Integrity
+
+### Constraints
+
+```sql
+-- Check constraints for business rules
+ALTER TABLE orders ADD CONSTRAINT chk_order_amount
+    CHECK (amount > 0);
+
+ALTER TABLE users ADD CONSTRAINT chk_user_role
+    CHECK (role IN ('user', 'admin', 'moderator'));
+
+-- Foreign key with cascade rules
+ALTER TABLE orders ADD CONSTRAINT fk_orders_user
+    FOREIGN KEY (user_id) REFERENCES users(id)
+    ON DELETE RESTRICT;  -- Prevent accidental user deletion
+```
+
+---
+
+## Database Checklist
+
+- [ ] Tables use consistent naming conventions
+- [ ] All foreign keys have indexes
+- [ ] Column types are appropriate
+- [ ] Constraints enforce business rules
+- [ ] Migrations are reversible
+- [ ] Queries avoid N+1 patterns
+- [ ] Pagination uses keyset approach
+- [ ] No SELECT * in production queries
+
+---
+
+> 🗄️ **Remember:** Schema changes are permanent. Design for today, plan for tomorrow.

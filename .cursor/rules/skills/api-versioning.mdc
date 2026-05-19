@@ -1,0 +1,243 @@
+---
+description: "API versioning strategies and best practices for managing API evolution"
+alwaysApply: false
+---
+# Skill: api-versioning
+
+> **Cursor Agent-Requested Rule** — applied when AI determines relevance.
+
+---
+# API Versioning - Managing API Evolution
+
+> Change is inevitable. Breaking changes are optional.
+
+---
+
+## Versioning Strategies
+
+### URL Versioning
+
+```
+GET /api/v1/users
+GET /api/v2/users
+```
+
+**Pros:** Simple, cache-friendly, explicit
+**Cons:** URL pollution, resource duplication
+
+### Header Versioning
+
+```bash
+GET /api/users
+Accept: application/vnd.api+json;version=2
+# or
+API-Version: 2
+```
+
+**Pros:** Clean URLs, flexible
+**Cons:** Less discoverable, caching complexity
+
+### Content Negotiation
+
+```bash
+GET /api/users
+Accept: application/vnd.company.v2+json
+```
+
+**Pros:** HTTP standard compliant
+**Cons:** Complex Accept headers, harder to test
+
+**Recommendation:** URL versioning for public APIs, headers for internal APIs.
+
+---
+
+## Semantic Versioning for APIs
+
+```
+MAJOR.MINOR.PATCH
+
+MAJOR — Breaking changes
+MINOR — New features (backward compatible)
+PATCH — Bug fixes (backward compatible)
+```
+
+### Breaking vs Non-Breaking Changes
+
+| Breaking | Non-Breaking |
+|----------|--------------|
+| Remove endpoint | Add endpoint |
+| Remove field | Add optional field |
+| Change field type | Add field validation |
+| Change auth | Improve performance |
+| Rename field | Deprecate field (keep working) |
+
+---
+
+## Deprecation Strategy
+
+### Deprecation Timeline
+
+```
+Day 0:     Announce deprecation in documentation
+Day 30:    Add deprecation warnings in responses
+Day 90:    Send emails to registered developers
+Day 180:   Return Sunset header with date
+Day 365:   Remove deprecated version
+```
+
+### Deprecation Headers
+
+```http
+HTTP/1.1 200 OK
+Deprecation: true
+Sunset: Wed, 11 Jun 2025 23:59:59 GMT
+Link: </api/v2/users>; rel="successor-version"
+
+{
+  "data": {...},
+  "meta": {
+    "deprecation_notice": "This endpoint will be removed on 2025-06-11. Please migrate to /api/v2/users"
+  }
+}
+```
+
+---
+
+## Version Implementation
+
+### Route Structure
+
+```
+src/
+├── api/
+│   ├── v1/
+│   │   ├── routes/
+│   │   ├── controllers/
+│   │   └── models/
+│   └── v2/
+│       ├── routes/
+│       ├── controllers/
+│       └── models/
+```
+
+### Middleware Pattern
+
+```javascript
+// Express.js example
+app.use('/api/v1', v1Router);
+app.use('/api/v2', v2Router);
+
+// Version validation middleware
+const validateVersion = (req, res, next) => {
+  const version = req.params.version;
+  if (!['v1', 'v2'].includes(version)) {
+    return res.status(404).json({
+      error: 'API version not supported',
+      supported_versions: ['v1', 'v2'],
+      latest: 'v2'
+    });
+  }
+  next();
+};
+```
+
+---
+
+## Migration Guides
+
+### Documentation Template
+
+```markdown
+## Migrating from v1 to v2
+
+### Breaking Changes
+
+1. **Authentication**
+   - v1: `Authorization: Token <token>`
+   - v2: `Authorization: Bearer <token>`
+
+2. **User Endpoint**
+   - v1: `GET /api/v1/user/:id`
+   - v2: `GET /api/v2/users/:id` (plural)
+   
+3. **Response Format**
+   - v1: `{ "name": "John", "email": "john@example.com" }`
+   - v2: `{ "data": { "name": "John", "email": "john@example.com" } }`
+
+### New Features in v2
+
+- Pagination support
+- Webhook notifications
+- Batch operations
+
+### Migration Steps
+
+1. Update base URL from `/api/v1` to `/api/v2`
+2. Update authentication header format
+3. Handle new response envelope structure
+4. Test all integrations in staging
+```
+
+---
+
+## Best Practices
+
+### API Stability
+
+| Stability | Description |
+|-----------|-------------|
+| **Stable** | No breaking changes, fully supported |
+| **Beta** | May change, not for production |
+| **Deprecated** | Will be removed, migrate soon |
+| **Experimental** | Try it out, may disappear |
+
+### Version Lifecycle
+
+```
+Beta → Stable → Deprecated → Removed
+  │       │           │          │
+  │       │           │          └─ No longer accessible
+  │       │           └─ Warnings, migration guide
+  │       └─ Full support, SLA guarantees
+  └─ Feedback collection, changes expected
+```
+
+---
+
+## Communication
+
+### Developer Communication
+
+- **Changelog**: Detailed version history
+- **Status Page**: Current API status
+- **Emails**: Proactive deprecation notices
+- **SDK Updates**: Language-specific libraries
+
+### API Status Page
+
+```
+API Status: ✅ All Systems Operational
+
+v2:  Stable — Supported until 2027
+v1:  Deprecated — Sunset: 2025-06-11
+
+Uptime (30 days): 99.99%
+Response Time (p95): 45ms
+```
+
+---
+
+## Verification Checklist
+
+- [ ] Version strategy documented and consistent
+- [ ] Breaking changes trigger major version bump
+- [ ] Deprecation notices include migration path
+- [ ] Multiple versions supported simultaneously
+- [ ] Documentation updated for each version
+- [ ] Changelog maintained
+- [ ] Sunset dates communicated clearly
+- [ ] Monitoring for version usage
+
+---
+
+> 🔢 **Remember:** A stable API is a promise. Don't break promises lightly.

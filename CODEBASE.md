@@ -1,6 +1,35 @@
-# CODEBASE.md — Aiyu MultiAgent V2.7.6
+# CODEBASE.md — Aiyu MultiAgent V2.7.7
 
 ## Version History
+
+### V2.7.7 (2026-05-19) — Cursor IDE Full Support
+
+**v2.7.7** adds first-class Cursor IDE support via a new generator that converts `.windsurf/` artifacts into Cursor-native `.cursor/rules/*.mdc` rules and `.cursor/commands/*.md` slash commands. Coexists with `.windsurf/` — no breaking changes.
+
+**New Module:**
+- `lib/commands/cursor-generator.js` (NEW) — `generate(projectRoot, opts)` orchestrator + converters: `convertAgent`, `convertSkill`, `convertWorkflow`, `convertDomainRule`, `convertAlwaysRule`, `convertMcpConfig`, `convertProjectOverview`. Helper `extractDescription()` walks markdown body skipping code fences/tables/lists, prefers blockquote taglines, synthesizes from `keywords` as fallback. `buildCursorFrontmatter()` emits valid YAML with proper escaping. `DOMAIN_GLOB_MAP` provides heuristic globs per domain rule (code-quality → `**/*.{js,ts,py,go,rs,...}`, api-design → `**/api/**`, security → `**/auth/**` + `**/*.env*`, etc.)
+
+**CLI Integration:**
+- `bin/cli.js` — Added `--cursor-only`, `--cursor`, `--force` flags to `init` command
+- `lib/commands/init.js` — `runCursorOnly(projectDir, opts)` short-circuit for `--cursor-only`; `--cursor` flag triggers generation alongside Windsurf/.agent during regular init. Source resolution: prefer existing `.agent/`/.windsurf/, fallback to package `.windsurf/`
+- `lib/commands/init-inline.js` — Wired new flags through `cmdInit`
+
+**Mapping Strategy:**
+| Source | Destination | Cursor Rule Type |
+|---|---|---|
+| `.windsurfrules` | `.cursor/rules/00-project-overview.mdc` | `alwaysApply: true` |
+| `.windsurf/rules/GEMINI.md` | `.cursor/rules/01-gemini-protocol.mdc` | `alwaysApply: true` |
+| `.windsurf/rules/<domain>.md` | `.cursor/rules/domain/<name>.mdc` | Auto-Attached (globs) |
+| `.windsurf/agents/<name>.md` | `.cursor/rules/agents/<name>.mdc` | Agent-Requested |
+| `.windsurf/skills/<name>/SKILL.md` | `.cursor/rules/skills/<name>.mdc` | Agent-Requested |
+| `.windsurf/workflows/<name>.md` | `.cursor/commands/<name>.md` | Slash command |
+| `.windsurf/mcp_config.json` | `.cursor/mcp.json` | Direct copy |
+
+**Tests:**
+- `lib/test/unit/cursor-generator.test.js` (NEW) — 23 unit tests: frontmatter parsing, description extraction (code fence/table/list/blockquote handling), all converters, idempotency (`force` flag), and full `generate()` integration with minimal `.windsurf/` source
+- 101 total tests passing (41 core + 25 production + 23 cursor + 12 integration)
+
+**Generated in Repo:** 140 `.mdc` files (84 agents + 45 skills + 9 domain + 2 root), 78 commands, 1 mcp.json — all with valid YAML.
 
 ### V2.7.6 (2026-05-18) — Groq Provider + Frontmatter Task Runner
 

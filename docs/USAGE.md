@@ -464,6 +464,9 @@ All data stored locally in `.agent/usage.json`. **No external telemetry.**
 ```bash
 aiyu-multi-agent init            # Interactive setup
 aiyu-multi-agent init --dry-run  # Preview without writing
+aiyu-multi-agent init --cursor-only      # Generate .cursor/ only (Cursor IDE)
+aiyu-multi-agent init --cursor           # Generate .windsurf/ + .cursor/ together
+aiyu-multi-agent init --cursor-only --force  # Re-sync .cursor/ after .windsurf/ changes
 ```
 
 Interactive prompts:
@@ -472,11 +475,60 @@ Interactive prompts:
 3. **Memory** — None, File, or Vector
 4. **Guardrails** — Enable/disable security layer
 
+**Init flags:**
+
+| Flag | Description |
+|------|-------------|
+| `--dry-run` | Preview without writing files |
+| `--cursor-only` | Generate `.cursor/` only (Cursor IDE rules + commands) |
+| `--cursor` | Also generate `.cursor/` alongside `.windsurf/` / `.agent/` |
+| `--roo-only` | Generate Roo Code files only |
+| `--no-roo` | Skip Roo Code file generation |
+| `--force` | Overwrite existing config directories |
+
 Creates:
 - `.agent/` — Universal config directory
 - `.windsurf/` — Symlink for Windsurf IDE compatibility
+- `.cursor/` — Cursor IDE rules and slash commands (with `--cursor` or `--cursor-only`)
 - Agent definition with your selections
 - Config files and test directory
+
+---
+
+## 🎯 Cursor IDE Support (V2.7.7)
+
+First-class Cursor IDE integration via auto-generated `.cursor/rules/*.mdc` and `.cursor/commands/*.md`.
+
+```bash
+# Generate Cursor config from existing .windsurf/
+aiyu-multi-agent init --cursor-only
+
+# Generate both Windsurf and Cursor configs
+aiyu-multi-agent init --cursor
+
+# Force re-sync after .windsurf/ changes
+aiyu-multi-agent init --cursor-only --force
+```
+
+**Generated structure:**
+
+| Directory | Contents | Count |
+|-----------|----------|-------|
+| `.cursor/rules/agents/` | Agent rules (Agent-Requested `.mdc`) | 84 |
+| `.cursor/rules/skills/` | Skill rules (Agent-Requested `.mdc`) | 45 |
+| `.cursor/rules/domain/` | Domain rules (Auto-Attached `.mdc`) | 9 |
+| `.cursor/commands/` | Slash commands (`.md`) | 78 |
+| `.cursor/mcp.json` | MCP server config | 1 |
+| `.cursor/rules/00-project-overview.mdc` | Always-applied overview | 1 |
+
+**Rule types:**
+- **Agent-Requested** — AI decides when to apply based on context (`@orchestrator`, `@backend-specialist`)
+- **Auto-Attached** — Automatically applied when matching file globs (e.g., `*.ts`, `**/api/**`)
+- **Always** — Applied in every conversation (project overview, GEMINI protocol)
+
+Coexists with Windsurf — both `.windsurf/` and `.cursor/` can live in the same project.
+
+Full guide: [`docs/CURSOR-IDE.md`](CURSOR-IDE.md)
 
 ---
 
@@ -638,6 +690,14 @@ aiyu-multi-agent publish --dry-run
 aiyu-multi-agent publish --dry-run                 # Validate first
 aiyu-multi-agent publish --access public           # Publish to npm
 # Others can now: npx your-agent-name
+```
+
+### Cursor IDE Setup
+
+```bash
+aiyu-multi-agent init --cursor-only                # Generate .cursor/ from .windsurf/
+aiyu-multi-agent init --cursor                     # Generate both Windsurf + Cursor
+aiyu-multi-agent init --cursor-only --force        # Re-sync after changes
 ```
 
 ### Debugging

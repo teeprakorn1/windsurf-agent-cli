@@ -30,3 +30,4 @@ Production-grade AI Agent Platform with Smart Init, Plugin System, Agent Testing
 - Full rules: @.windsurf/rules/GEMINI.md
 - Architecture: @.windsurf/rules/architecture.md
 - V2 Architecture: @docs/ARCHITECTURE-V2.md
+- Cursor IDE equivalent: @.cursor/ (auto-generated from .windsurf/ — see docs/CURSOR-IDE.md)

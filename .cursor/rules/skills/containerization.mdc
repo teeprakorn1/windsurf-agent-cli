@@ -1,0 +1,195 @@
+---
+description: "Docker and Kubernetes best practices for building, shipping, and running containerized applications"
+alwaysApply: false
+---
+# Skill: containerization
+
+> **Cursor Agent-Requested Rule** — applied when AI determines relevance.
+
+---
+# Containerization - Docker & Kubernetes
+
+> Build once, run anywhere. Container best practices for production workloads.
+
+---
+
+## Docker Best Practices
+
+### Dockerfile Principles
+
+```dockerfile
+# ✅ GOOD — Multi-stage build, minimal final image
+FROM node:18-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --only=production
+COPY . .
+RUN npm run build
+
+FROM node:18-alpine
+RUN apk add --no-cache dumb-init
+WORKDIR /app
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
+EXPOSE 3000
+USER node
+CMD ["dumb-init", "node", "dist/main.js"]
+
+# ❌ BAD — Single stage, large image, running as root
+FROM node:18
+COPY . .
+RUN npm install
+CMD ["node", "server.js"]
+```
+
+### Image Optimization
+
+| Technique | Benefit |
+|-----------|---------|
+| **Multi-stage builds** | Smaller final image, no build tools in production |
+| **Alpine/slim base** | Reduce image size by 50-90% |
+| **Layer caching** | Order Dockerfile by change frequency |
+| **.dockerignore** | Exclude node_modules, .git, logs |
+| **Non-root user** | Security: RUN adduser -D appuser |
+
+---
+
+## Kubernetes Patterns
+
+### Pod Design
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: web-app
+spec:
+  containers:
+  - name: app
+    image: myapp:v1.2.3
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "250m"
+      limits:
+        memory: "512Mi"
+        cpu: "500m"
+    livenessProbe:
+      httpGet:
+        path: /health
+        port: 8080
+      initialDelaySeconds: 30
+      periodSeconds: 10
+    readinessProbe:
+      httpGet:
+        path: /ready
+        port: 8080
+      initialDelaySeconds: 5
+      periodSeconds: 5
+```
+
+### Deployment Strategy
+
+| Strategy | Use Case | Downtime |
+|----------|----------|----------|
+| **Rolling Update** | Default, gradual replacement | Zero |
+| **Recreate** | Complete replacement, simple | Yes |
+| **Blue-Green** | Instant switch, easy rollback | Zero |
+| **Canary** | Test with subset of traffic | Zero |
+
+---
+
+## Security Guidelines
+
+### Container Security
+
+- **Never run as root**: `USER 1000` in Dockerfile
+- **Read-only filesystem**: `readOnlyRootFilesystem: true`
+- **Drop capabilities**: Remove unnecessary Linux capabilities
+- **Scan images**: Trivy, Clair for CVE detection
+- **Sign images**: Docker Content Trust, cosign
+
+### Secrets Management
+
+```yaml
+# ✅ GOOD — Use secrets, not env vars for sensitive data
+apiVersion: v1
+kind: Secret
+metadata:
+  name: db-credentials
+type: Opaque
+stringData:
+  password: <password>
+---
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - name: app
+    volumeMounts:
+    - name: secrets
+      mountPath: "/etc/secrets"
+  volumes:
+  - name: secrets
+    secret:
+      secretName: db-credentials
+```
+
+---
+
+## Resource Management
+
+### Resource Quotas
+
+```yaml
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: compute-quota
+spec:
+  hard:
+    requests.cpu: "10"
+    requests.memory: 20Gi
+    limits.cpu: "20"
+    limits.memory: 40Gi
+    pods: "50"
+```
+
+### Horizontal Pod Autoscaling
+
+```yaml
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: app-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: web-app
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+```
+
+---
+
+## Verification Checklist
+
+- [ ] Dockerfile uses multi-stage build
+- [ ] Image runs as non-root user
+- [ ] Resource requests/limits defined
+- [ ] Health checks (liveness/readiness) configured
+- [ ] Secrets properly mounted, not in env vars
+- [ ] .dockerignore excludes unnecessary files
+- [ ] Image scanned for vulnerabilities
+
+---
+
+> 🐳 **Remember:** Containers are ephemeral. Design for failure, scale horizontally.

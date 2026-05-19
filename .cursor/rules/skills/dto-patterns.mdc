@@ -1,0 +1,156 @@
+---
+description: "Data Transfer Object design patterns, mapping strategies, and validation. Use when designing API request/response shapes, mapping between layers, or implementing object transformation pipelines."
+alwaysApply: false
+---
+# Skill: dto-patterns
+
+> **Cursor Agent-Requested Rule** — applied when AI determines relevance.
+
+---
+# DTO Patterns
+
+> Patterns for transferring data between layers, services, and boundaries.
+
+## When to Use This Skill
+
+- Designing API request/response bodies
+- Mapping between domain entities and external representations
+- Implementing validation at system boundaries
+- Building transformation pipelines between services
+
+## Core Principles
+
+1. **DTO at boundaries only** — Never expose domain entities directly
+2. **Validate on entry** — DTOs are the first line of defense
+3. **Map explicitly** — No magic auto-mapping; be intentional
+4. **Version your contracts** — DTOs are your API contract
+
+## DTO Types
+
+| Type | Purpose | Example |
+|------|---------|---------|
+| **Request DTO** | Incoming data validation | `CreateUserRequest` |
+| **Response DTO** | Outgoing data shaping | `UserResponse` |
+| **Command DTO** | Intent + data | `PlaceOrderCommand` |
+| **Event DTO** | Notification payload | `OrderCreatedEvent` |
+| **Projection DTO** | Read-optimized query result | `UserListProjection` |
+
+## Pattern: Request/Response Pair
+
+```typescript
+// Request — what the client sends
+interface CreateUserRequest {
+  email: string;       // validated: email format
+  name: string;        // validated: 2-100 chars
+  role?: UserRole;     // optional, default: 'member'
+}
+
+// Response — what the client receives
+interface UserResponse {
+  id: string;          // server-generated
+  email: string;       // same
+  name: string;        // same
+  role: UserRole;      // same
+  createdAt: string;   // server-generated
+  // NEVER include: passwordHash, internalId, metadata
+}
+```
+
+## Pattern: Mapping Strategies
+
+### Manual Mapping (Recommended for clarity)
+```typescript
+function toResponse(user: UserEntity): UserResponse {
+  return {
+    id: user.id,
+    email: user.email,
+    name: user.displayName,
+    role: user.role,
+    createdAt: user.createdAt.toISOString(),
+  };
+}
+```
+
+### MapStruct / AutoMapper (For large codebases)
+```java
+@Mapper
+public interface UserMapper {
+  UserResponse toResponse(UserEntity entity);
+  UserEntity toEntity(CreateUserRequest request);
+}
+```
+
+### Projection (Read-optimized)
+```sql
+-- Instead of SELECT * + map in code
+SELECT id, email, display_name as name, role, created_at
+FROM users WHERE active = true
+```
+
+## Pattern: Validation at Boundary
+
+```typescript
+// ✅ GOOD — Validate DTO, trust domain
+const schema = z.object({
+  email: z.string().email(),
+  name: z.string().min(2).max(100),
+  role: z.enum(['admin', 'member']).optional(),
+});
+
+function createUser(req: Request) {
+  const dto = schema.parse(req.body);  // Validate FIRST
+  const entity = toEntity(dto);         // Then map
+  repository.save(entity);              // Then persist
+}
+```
+
+## Pattern: Versioning
+
+```typescript
+// V1
+interface UserResponseV1 {
+  id: string;
+  name: string;
+}
+
+// V2 — additive change (backward compatible)
+interface UserResponseV2 {
+  id: string;
+  name: string;
+  email: string;    // new field
+  avatar?: string;  // optional new field
+}
+
+// V3 — breaking change (new endpoint or content negotiation)
+interface UserResponseV3 {
+  id: string;
+  profile: {        // nested structure change
+    name: string;
+    email: string;
+    avatar: string;
+  };
+}
+```
+
+## Anti-Patterns
+
+| Anti-Pattern | Why Bad | Fix |
+|-------------|---------|-----|
+| Expose entity directly | Leaks internals, couples API to DB | Always use DTO |
+| God DTO (50+ fields) | Unclear contract, over-fetching | Split by use case |
+| No validation on DTO | Garbage in, garbage out | Validate at boundary |
+| Auto-map everything | Silent bugs on field rename | Explicit mapping |
+| DTO in domain logic | Domain depends on external shape | Map at boundary, domain uses entities |
+| Same DTO for read/write | Different constraints | Separate Request/Response |
+| Nested DTOs too deep | Complex payloads, hard to version | Flatten or use projections |
+
+## Framework Quick Reference
+
+| Framework | DTO Tool | Validation |
+|-----------|---------|------------|
+| TypeScript | Zod / io-ts | Schema validation |
+| Python | Pydantic / Marshmallow | Schema + serialization |
+| Java | MapStruct + Jakarta Validation | Compile-time mapping |
+| C# | AutoMapper + DataAnnotations | Convention mapping |
+| Go | go-playground/validator | Struct tags |
+| Rust | Serde + Validator | Derive macros |

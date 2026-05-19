@@ -1,0 +1,183 @@
+---
+description: "If it's not tested, it's broken. Test with purpose, not just coverage."
+globs:
+  - "**/*.test.*"
+  - "**/*.spec.*"
+  - "**/tests/**/*"
+  - "**/__tests__/**/*"
+alwaysApply: false
+---
+# Testing Rules — Aiyu Agent Kit
+
+> If it's not tested, it's broken. Test with purpose, not just coverage.
+
+---
+
+## 🔴 CRITICAL: Testing Fundamentals
+
+### Test Pyramid
+
+```
+        /\
+       /  \        E2E Tests (few, slow, expensive)
+      /────\       — Critical user journeys only
+     /      \      
+    / Integ  \     Integration Tests (some, moderate)
+   /──────────\    — Service interactions, DB queries
+  /            \   
+ /  Unit Tests  \  Unit Tests (many, fast, cheap)
+/________________\ — Business logic, edge cases
+```
+
+**Distribution target:** 70% Unit / 20% Integration / 10% E2E
+
+### AAA Pattern (Arrange-Act-Assert)
+
+```python
+def test_user_creation():
+    # Arrange
+    user_data = {"email": "test@example.com", "name": "Test User"}
+    
+    # Act
+    result = create_user(user_data)
+    
+    # Assert
+    assert result.is_success
+    assert result.user.email == "test@example.com"
+```
+
+### Naming Convention
+
+```python
+# test_<unit>_<scenario>_<expected_result>
+def test_create_user_with_valid_data_returns_success():
+    ...
+
+def test_create_user_with_duplicate_email_raises_error():
+    ...
+
+def test_create_user_with_empty_name_returns_validation_error():
+    ...
+```
+
+---
+
+## 🟡 HIGH: Test Quality
+
+### What to Test
+
+| Category | Examples | Priority |
+|----------|----------|----------|
+| **Happy path** | Valid inputs, normal flow | Must |
+| **Edge cases** | Empty, null, boundary values | Must |
+| **Error handling** | Invalid input, service down | Must |
+| **Concurrency** | Race conditions, deadlocks | Should |
+| **Performance** | Response time, throughput | Nice to have |
+
+### What NOT to Test
+
+- Framework/library internals
+- Trivial getters/setters
+- Third-party API behavior (mock it)
+
+### Mocking Best Practices
+
+```python
+# ✅ GOOD — Mock external dependencies, test your logic
+@patch('services.email.send_email')
+def test_welcome_email_sent_on_registration(mock_send):
+    register_user(user_data)
+    mock_send.assert_called_once_with(
+        to=user_data["email"],
+        template="welcome"
+    )
+
+# ❌ BAD — Mocking the system under test
+@patch('services.user.validate_email')
+def test_registration(mock_validate):
+    mock_validate.return_value = True  # Testing mock, not logic
+    register_user(user_data)
+```
+
+### Test Isolation
+
+```python
+# ✅ GOOD — Each test is independent
+@pytest.fixture(autouse=True)
+def clean_database(db):
+    db.execute("TRUNCATE TABLE users")
+    yield
+    db.execute("TRUNCATE TABLE users")
+
+# ❌ BAD — Tests depend on execution order
+def test_create_user():
+    global user_id
+    user_id = create_user(data).id  # Depends on previous test
+```
+
+---
+
+## 🟢 MEDIUM: Advanced Testing
+
+### Parameterized Tests
+
+```python
+@pytest.mark.parametrize("input,expected", [
+    ("user@example.com", True),
+    ("invalid-email", False),
+    ("", False),
+    (None, False),
+    ("user@.com", False),
+])
+def test_email_validation(input, expected):
+    assert validate_email(input) == expected
+```
+
+### Snapshot/Golden Tests
+
+```python
+def test_api_response_format(snapshot):
+    response = client.get("/api/users/1")
+    snapshot.assert_match(response.json())
+```
+
+### Contract Testing
+
+```python
+# Consumer contract
+def test_user_api_contract():
+    response = client.get("/api/users/1")
+    assert "id" in response.json()
+    assert "email" in response.json()
+    assert "created_at" in response.json()
+```
+
+---
+
+## Coverage Standards
+
+| Area | Minimum | Target |
+|------|---------|--------|
+| Business logic | 80% | 95% |
+| API endpoints | 70% | 90% |
+| Utility functions | 90% | 100% |
+| Data models | 60% | 80% |
+
+**Coverage ≠ Quality.** 100% coverage with no assertions is worthless.
+
+---
+
+## Testing Checklist
+
+- [ ] Every function has at least one test
+- [ ] Happy path and error paths tested
+- [ ] Edge cases covered (null, empty, boundary)
+- [ ] Tests are independent and repeatable
+- [ ] Mocks used for external dependencies only
+- [ ] Test names describe scenario and expected result
+- [ ] No test interdependencies
+- [ ] Tests run in < 10 minutes total
+
+---
+
+> 🧪 **Remember:** Tests are documentation that runs. Write tests that explain behavior.

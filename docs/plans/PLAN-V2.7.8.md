@@ -1,4 +1,4 @@
-# Plan V2.7.7 — Multi-CLI PATH Scanner + Question-Form + Quality Gate + Artifact Parser
+# Plan v2.7.8 — Multi-CLI PATH Scanner + Question-Form + Quality Gate + Artifact Parser
 
 > Port 4 pending features from ROADMAP-V2.6.md Phase 1-3 into aiyu-multi-agent, starting with CLI Scanner infrastructure.
 
@@ -13,7 +13,7 @@
 | 3 | Anti-Slop Quality Gate | `feat/quality-gate` | 4-5h | ⏳ Pending |
 | 4 | Artifact Output Format | `feat/artifact-parser` | 6h | ⏳ Pending |
 
-**Version:** v2.7.7 (minor — new features, no breaking changes)
+**Version:** v2.7.8 (minor — new features, no breaking changes)
 **Pre-requisite:** Sprint 1 (v2.7.6) committed
 
 ---
@@ -224,10 +224,10 @@ feat/quality-gate ─────────> review ──> merge
                                           │
 feat/artifact-parser ──────> review ──> merge
                                           │
-                                    v2.7.7 tag + npm publish
+                                    v2.7.8 tag + npm publish
 ```
 
-All 4 features merge into single version bump (v2.7.7).
+All 4 features merge into single version bump (v2.7.8).
 
 ---
 
@@ -235,7 +235,7 @@ All 4 features merge into single version bump (v2.7.7).
 
 - [ ] `npm run lint` passes
 - [ ] `npm test` passes (all existing + ~18 new tests)
-- [ ] CHANGELOG.md updated (v2.7.7 entry)
+- [ ] CHANGELOG.md updated (v2.7.8 entry)
 - [ ] CODEBASE.md updated
 - [ ] README.md sections added
 - [ ] package.json version = 2.7.7

@@ -7,6 +7,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.7.7] - 2026-05-19
+
+### Added — Cursor IDE Full Support
+
+First-class support for Cursor IDE alongside Windsurf — coexist in the same repo, no breakup of `.windsurf/`.
+
+**New Generator Module:**
+- `lib/commands/cursor-generator.js` (NEW, ~330 LOC) — converts `.windsurf/` artifacts to Cursor-native formats:
+  - 84 agents → `.cursor/rules/agents/*.mdc` (Agent-Requested rules with extracted descriptions, preserved skill/tool/model metadata)
+  - 45 skills → `.cursor/rules/skills/*.mdc` (Agent-Requested rules from `SKILL.md`)
+  - 9 domain rules → `.cursor/rules/domain/*.mdc` (Auto-Attached via heuristic globs per domain)
+  - `GEMINI.md` → `.cursor/rules/01-gemini-protocol.mdc` (`alwaysApply: true`)
+  - `.windsurfrules` → `.cursor/rules/00-project-overview.mdc` (`alwaysApply: true`)
+  - 78 workflows → `.cursor/commands/*.md` (Cursor slash commands)
+  - `mcp_config.json` → `.cursor/mcp.json` (direct copy — same `mcpServers` schema)
+- Smart description extraction: prefers frontmatter, falls back to blockquote tagline, skips code fences/tables/lists, synthesizes from `keywords` if needed
+- Domain glob mapping (`DOMAIN_GLOB_MAP`): code-quality → JS/TS/Py/Go/Rs files, api-design → `**/api/**`, security → `**/auth/**` + `**/*.env*`, etc.
+
+**New CLI Flags (`init` command):**
+- `--cursor-only` — Generate `.cursor/` only from existing `.windsurf/` (or package fallback)
+- `--cursor` — Also generate `.cursor/` alongside `.windsurf/` / `.agent/` during regular init
+- `--force` — Overwrite existing target directory
+
+**Usage:**
+```bash
+npx aiyu-multi-agent init --cursor-only          # Cursor IDE only
+npx aiyu-multi-agent init --cursor               # Both Windsurf + Cursor
+npx aiyu-multi-agent init --cursor-only --force  # Re-generate after .windsurf/ updates
+```
+
+**Test Coverage:**
+- `lib/test/unit/cursor-generator.test.js` (NEW) — 23 unit tests covering frontmatter parsing, description extraction edge cases (code fences, tables, lists, blockquotes), all 4 converters, idempotency guards, and full `generate()` integration
+- All tests pass: 41 core + 25 production + 23 cursor + 12 integration = **101 total, 0 failures**
+
+**Generated in This Repo:**
+- 140 `.mdc` rule files (all with valid YAML frontmatter)
+- 78 `.md` slash commands
+- `.cursor/mcp.json` with `context7` + `shadcn` MCP servers preserved
+
+**Documentation:**
+- `docs/CURSOR-IDE.md` (NEW) — User guide for Cursor IDE integration
+- `README.md` — Added "Cursor IDE Support" section
+
+**Coexistence Strategy:** `.windsurf/` and `.cursor/` are both committed. Re-run `init --cursor-only` after updating `.windsurf/` to sync.
+
+---
+
 ## [2.7.6] - 2026-05-18
 
 ### Changed — License: MIT → Apache 2.0

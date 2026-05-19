@@ -26,8 +26,11 @@ program
   .option("--dry-run", "Preview without writing files")
   .option("--windsurf-only", "Create .windsurf/ only (no .agent/ directory)")
   .option("--agent-only", "Create .agent/ only (no .windsurf/ symlink)")
+  .option("--cursor-only", "Generate .cursor/ only (Cursor IDE rules + commands)")
+  .option("--cursor", "Also generate .cursor/ alongside .windsurf/ / .agent/")
   .option("--roo-only", "Generate Roo Code files only (.roomodes, .roorules, .roo/)")
   .option("--no-roo", "Skip Roo Code file generation")
+  .option("--force", "Overwrite existing config directories (use with caution)")
   .action(inline.cmdInit);
 
 program
