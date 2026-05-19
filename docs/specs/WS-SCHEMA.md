@@ -17,7 +17,7 @@
 
 ---
 
-## Client → Server Messages
+## Client → server messages
 
 ### `ping`
 
@@ -35,7 +35,7 @@ Start a one-shot agent execution. Server streams `step` events, then `complete`.
 |-------|------|----------|---------|-------------|
 | `agentName` | string | no | default agent | Agent to run. Validated against agent names. |
 | `input` | string | **yes** | — | Task description. Max 100,000 chars. |
-| `provider` | string | no | config default | `openai`, `claude`, `local`, `mock` |
+| `provider` | string | no | config default | `openai`, `claude`, `groq`, `local`, `mock`, `cli:<name>` |
 | `model` | string | no | agent default | Model override |
 | `maxSteps` | number | no | config default | Max ReAct loop steps |
 
@@ -118,7 +118,7 @@ Subscribe to events for a specific run. Currently implicit — the initiating cl
 
 ---
 
-## Server → Client Messages
+## Server → client messages
 
 ### `pong`
 
@@ -330,7 +330,7 @@ Acknowledgement of a subscription request.
 
 ---
 
-## Planned Events (v2.7.0)
+## Planned events
 
 These events are not yet implemented. They are defined here as a contract for the dashboard.
 
@@ -466,7 +466,7 @@ Broadcast when a delegated agent completes.
 
 ---
 
-## HTTP API Endpoints (complementary)
+## HTTP API endpoints (complementary)
 
 The WebSocket is for real-time streaming. For request/response operations, use the HTTP API:
 

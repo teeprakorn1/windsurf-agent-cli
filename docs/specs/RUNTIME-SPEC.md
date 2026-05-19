@@ -5,15 +5,15 @@
 
 ---
 
-## Agent Runtime Spec (in agent .md frontmatter)
+## Agent runtime spec (in agent .md frontmatter)
 
 ```yaml
 ---
 name: my-agent
 description: "What this agent does"
-tools: Read, Write, Edit, Grep, Glob, Bash
+tools: fs.read, fs.write, fs.edit, search.grep, fs.glob, shell.exec
 model: gpt-4                    # LLM model
-provider: openai                # openai | claude | local | multi
+provider: openai                # openai | claude | groq | local | mock | cli:<name>
 memory: none                    # none | file | vector
 guardrails: true                # Enable security layer
 loop: react                     # react | step | custom
@@ -26,7 +26,7 @@ skills: clean-code, architecture
 
 ---
 
-## Runtime Loop Types
+## Runtime loop types
 
 ### `react` (Default — ReAct Pattern)
 
@@ -53,7 +53,7 @@ User-defined loop logic via skill scripts.
 
 ---
 
-## Tool Call Format
+## Tool call format
 
 ### In LLM Response (Text)
 
@@ -78,7 +78,7 @@ TOOL_CALL: Bash({"command": "npm test"})
 
 ---
 
-## Built-in Tools
+## Built-in tools
 
 | Tool (Legacy) | Tool (Namespaced) | Args | Description |
 |---------------|-------------------|------|-------------|
@@ -94,7 +94,7 @@ TOOL_CALL: Bash({"command": "npm test"})
 
 ---
 
-## V2.6 Module Map
+## Module map
 
 > The monolithic `agent-runtime.js` and `tool-registry.js` have been decomposed into focused modules. Both original files remain as thin re-exports for backward compatibility.
 
@@ -113,13 +113,13 @@ TOOL_CALL: Bash({"command": "npm test"})
 | `command-parser.js` | Shell arg parsing + ReDoS-safe regex |
 | `types.d.ts` | TypeScript declarations for 12 core modules |
 
-### Allowed Bash Commands
+### Allowed shell commands
 
 `ls`, `cat`, `echo`, `pwd`, `mkdir`, `git`, `node`, `npm`, `npx`, `python3`
 
 ---
 
-## Skill Plugin Spec
+## Skill plugin spec
 
 ### config.json
 
@@ -155,7 +155,7 @@ Allow? (y/N)
 
 ---
 
-## Provider Configuration
+## Provider configuration
 
 ### OpenAI
 
@@ -178,7 +178,22 @@ ollama serve
 aiyu-multi-agent run "..." --provider local --model llama3
 ```
 
-### Mock (Testing)
+### Groq
+
+```bash
+export GROQ_API_KEY=gsk_...
+aiyu-multi-agent run "..." --provider groq --model llama-3.3-70b-versatile
+```
+
+### CLI engines
+
+```bash
+aiyu-multi-agent engines                    # List detected CLI engines
+aiyu-multi-agent run "..." --provider cli:claude
+aiyu-multi-agent run "..." --provider cli:codex
+```
+
+### Mock (testing)
 
 ```bash
 aiyu-multi-agent run "..." --provider mock
@@ -186,7 +201,7 @@ aiyu-multi-agent run "..." --provider mock
 
 ---
 
-## Output Format
+## Output format
 
 ### Pretty (default)
 

@@ -1,12 +1,12 @@
 ---
 name: custom-agent
 description: "Custom agent — build your own from scratch"
-tools: Read, Grep, Glob, Bash, Edit, Write
+tools: fs.read, search.grep, fs.glob, shell.exec, fs.edit, fs.write
 model: inherit
 skills: clean-code
 ---
 
-## 🤖 Agent Identity
+## Agent identity
 > 🤖 **Active Agent: `custom-agent`** | Skills: `clean-code`
 
 # Custom Agent

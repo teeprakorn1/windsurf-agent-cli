@@ -2,7 +2,7 @@
 name: "{{SKILL_NAME}}"
 description: "{{SKILL_DESCRIPTION}}"
 version: "1.0.0"
-allowed-tools: Read, Write, Edit
+allowed-tools: fs.read, fs.write, fs.edit
 priority: HIGH
 ---
 
@@ -16,6 +16,6 @@ priority: HIGH
 - Document all tool functions
 - Write tests for critical paths
 
-## Tool Functions
+## Tool functions
 
 <!-- Add your tool function definitions here -->

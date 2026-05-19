@@ -6,7 +6,7 @@
 
 ---
 
-## ✅ V2.4 Completed (Previously)
+## V2.4 completed
 
 - [x] `aiyu-multi-agent serve` → HTTP API with `/health`, `/metrics`, `/traces`
 - [x] `kill` → graceful shutdown within 10s (no hang)
@@ -19,9 +19,9 @@
 
 ---
 
-## ✅ V2.5 Completed — Claude Design-Inspired Features
+## V2.5 completed — Claude Design-inspired features
 
-### V2.5.0 — New Features
+### V2.5.0 — new features
 
 | # | Feature | Files | Status |
 |---|---------|-------|--------|
@@ -31,7 +31,7 @@
 | 4 | **`fetch.url` Tool** — Agents fetch external HTTP(S) URLs | `lib/core/tool-registry.js` | ✅ Done |
 | 5 | **Agent System Auto-Apply** — Auto-detects project context from package.json/rules | `lib/core/agent-system.js`, `lib/core/agent-runtime.js` | ✅ Done |
 
-### Bug Fixes (31 bugs)
+### Bug fixes (31 bugs)
 
 | Severity | Count | Key Fixes |
 |----------|-------|-----------|
@@ -42,9 +42,9 @@
 
 ---
 
-## ✅ V2.5.1 Completed — System Audit Bug Fixes
+## V2.5.1 completed — system audit bug fixes
 
-### Bug Fixes (25 bugs + 4 pre-existing test fixes)
+### Bug fixes (25 bugs + 4 pre-existing test fixes)
 
 | Severity | Count | Key Fixes |
 |----------|-------|----------|
@@ -53,7 +53,7 @@
 | P2 Medium | 12 | **Cache deep clone on every hit**, **Handoff bundles lost on restart**, **truncateResult double parse**, **usage buffer not flushed on exit**, **tracing p95 index overflow**, **CORS origin unrestricted**, **fs.glob brace alternation regex metachar**, **LLM retry off-by-one** (4→3 attempts), **Queue _finishJob event order**, **Handoff extractDecisions operator precedence**, **crypto require duplicated in function body**, **Ollama health check ignores https** |
 | Pre-existing | 4 | **Test async/await missing** (checkReadiness, getFullHealthReport), **Trace ID length wrong** (16→32, 8→16 per OTel spec), **Queue status "ready" not in test allowlist** |
 
-### Detailed Changes
+### Detailed changes
 
 | # | Bug | File | Fix |
 |---|-----|------|-----|
@@ -85,7 +85,7 @@
 
 ---
 
-## 🔮 Future (V3.0)
+## Future (V3.0)
 
 - TypeScript migration (`.d.ts` first, full TS for new modules)
 - Plugin sandboxing (V8 vm module instead of forked processes)

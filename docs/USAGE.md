@@ -4,7 +4,7 @@
 
 ---
 
-## 🚀 Quick Start
+## Quick start
 
 ```bash
 # Install globally
@@ -22,34 +22,42 @@ aiyu-multi-agent chat
 
 ---
 
-## 📋 All Commands
+## All commands
 
 | Command | Description |
 |---------|-------------|
 | `aiyu-multi-agent init` | Interactive agent generator |
+| `aiyu-multi-agent update` | Update config to latest version |
+| `aiyu-multi-agent version` | Show version + check updates |
+| `aiyu-multi-agent status` | Show project statistics |
+| `aiyu-multi-agent list` | List all slash commands |
+| `aiyu-multi-agent info <agent>` | Show agent details: skills, tools, rules |
+| `aiyu-multi-agent checklist [url]` | Run master checklist |
+| `aiyu-multi-agent uninstall` | Remove config directories |
 | `aiyu-multi-agent run <input>` | Execute agent with input |
+| `aiyu-multi-agent run-from-file <path>` | Execute agent from markdown with frontmatter |
 | `aiyu-multi-agent chat` | Interactive chat session |
+| `aiyu-multi-agent dev` | REPL dev mode with verbose logging |
+| `aiyu-multi-agent engines` | List CLI engines detected in PATH |
+| `aiyu-multi-agent health` | System health check |
+| `aiyu-multi-agent traces` | View recent distributed traces |
+| `aiyu-multi-agent inspect` | Observability — stats, tool usage, latency, errors |
+| `aiyu-multi-agent usage` | Show usage statistics and deployment history |
 | `aiyu-multi-agent serve` | Start HTTP API + WebSocket server |
 | `aiyu-multi-agent mcp` | Start MCP server (stdio) |
-| `aiyu-multi-agent dev` | REPL dev mode with verbose logging |
 | `aiyu-multi-agent add skill <name>` | Install skill from npm |
 | `aiyu-multi-agent remove skill <name>` | Uninstall skill |
 | `aiyu-multi-agent test` | Run agent test suite |
 | `aiyu-multi-agent test --compliance` | Spec compliance (15 checks) |
-| `aiyu-multi-agent test --unit` | Unit tests (54 tests) |
+| `aiyu-multi-agent test --unit` | Unit tests (41 tests) |
+| `aiyu-multi-agent test --production` | Production module tests (25 tests) |
+| `aiyu-multi-agent test --integration` | Integration tests (12 tests) |
 | `aiyu-multi-agent publish` | Publish agent to npm |
-| `aiyu-multi-agent status` | Show project statistics |
-| `aiyu-multi-agent inspect` | Observability — stats, tool usage, latency, errors |
-| `aiyu-multi-agent version` | Show version + check updates |
-| `aiyu-multi-agent update` | Update config to latest |
-| `aiyu-multi-agent list` | List all slash commands |
-| `aiyu-multi-agent info <agent>` | Show agent details |
-| `aiyu-multi-agent checklist` | Run master checklist |
-| `aiyu-multi-agent uninstall` | Remove config directories |
+| `aiyu-multi-agent generate <type>` | Generate MCP server / config (experimental) |
 
 ---
 
-## 🌐 WebSocket API (V2.5)
+## WebSocket API
 
 Real-time agent execution with step-by-step streaming — inspired by Claude Design's live canvas.
 
@@ -85,7 +93,7 @@ ws.send(JSON.stringify({ type: "intervene", runId: "run_xxx", message: "Use dark
 
 ---
 
-## 🔄 Agent Handoff (V2.5)
+## Agent handoff
 
 Chain agents together — Agent A completes, produces a handoff bundle, Agent B receives enriched context.
 
@@ -118,7 +126,7 @@ curl http://localhost:3000/handoff/bundle_xxx
 
 ---
 
-## ✋ Inline Intervention (V2.5)
+## Inline intervention
 
 Inject feedback mid-run to redirect an agent without restarting.
 
@@ -181,6 +189,14 @@ aiyu-multi-agent run "Hello world" --provider mock
 | `--model <m>` | `-m` | LLM model name | `gpt-4` |
 | `--max-steps <n>` | | Max ReAct loop steps | `10` |
 | `--json` | | Output as JSON | `false` |
+| `--verbose` | | Show step-by-step thinking | `false` |
+| `--dry-run` | | Preview without running | `false` |
+| `--no-cache` | | Skip cache, always re-run | `false` |
+| `--output-format <fmt>` | | Output format: text, json, artifact | `text` |
+| `--no-form` | | Skip question-form guardrail on first turn | `false` |
+| `--no-quality-gate` | | Skip anti-slop quality gate | `false` |
+| `--strict-quality-gate` | | Fail on quality violations | `false` |
+| `--write-artifacts <dir>` | | Write parsed artifacts to directory | — |
 
 ### `aiyu-multi-agent chat`
 
@@ -212,10 +228,87 @@ aiyu-multi-agent chat --provider openai --model gpt-4o
 | `--agent <name>` | `-a` | Agent to chat with | First found |
 | `--provider <p>` | `-p` | LLM provider | `mock` |
 | `--model <m>` | `-m` | LLM model name | `gpt-4` |
+| `--output-format <fmt>` | | Output format: text, json, artifact | `text` |
+| `--no-form` | | Skip question-form guardrail on first turn | `false` |
+| `--no-quality-gate` | | Skip anti-slop quality gate | `false` |
+| `--strict-quality-gate` | | Fail on quality violations | `false` |
+
+### `aiyu-multi-agent run-from-file <path>`
+
+Execute an agent from a markdown file with frontmatter. Useful for repeatable tasks and CI/CD pipelines.
+
+```bash
+# Run from markdown file
+aiyu-multi-agent run-from-file task.md
+
+# Override provider
+aiyu-multi-agent run-from-file task.md --provider openai
+
+# JSON output
+aiyu-multi-agent run-from-file task.md --json
+```
+
+**Frontmatter format:**
+
+```markdown
+---
+agent: backend-specialist
+provider: openai
+model: gpt-4o
+maxSteps: 15
+---
+
+Create a REST API with Express and PostgreSQL for a todo app.
+Include authentication with JWT tokens.
+```
+
+**Options:**
+
+| Flag | Short | Description | Default |
+|------|-------|-------------|---------|
+| `--agent <name>` | `-a` | Override agent (default: from frontmatter) | Frontmatter |
+| `--provider <p>` | `-p` | Override provider | Frontmatter |
+| `--model <m>` | `-m` | Override model | Frontmatter |
+| `--max-steps <n>` | | Override max ReAct loop steps | Frontmatter |
+| `--json` | | Output as JSON | `false` |
+| `--verbose` | | Show step-by-step thinking | `false` |
+| `--dry-run` | | Preview without running | `false` |
+| `--no-cache` | | Skip cache, always re-run | `false` |
+| `--output-format <fmt>` | | Output format: text, json, artifact | `text` |
+| `--no-form` | | Skip question-form guardrail | `false` |
+| `--no-quality-gate` | | Skip anti-slop quality gate | `false` |
+| `--strict-quality-gate` | | Fail on quality violations | `false` |
+| `--write-artifacts <dir>` | | Write parsed artifacts to directory | — |
+
+### `aiyu-multi-agent dev`
+
+REPL dev mode with verbose logging. Shows every tool call, LLM response, and internal state.
+
+```bash
+aiyu-multi-agent dev
+```
+
+### `aiyu-multi-agent update`
+
+Update config to latest version. Preserves user-modified files.
+
+```bash
+aiyu-multi-agent update
+aiyu-multi-agent update --dry-run    # Preview without writing
+```
+
+### `aiyu-multi-agent inspect`
+
+Observability dashboard — agent stats, tool usage, latency, errors.
+
+```bash
+aiyu-multi-agent inspect
+aiyu-multi-agent inspect --agent backend-specialist
+```
 
 ---
 
-## 🤖 LLM Providers
+## LLM providers
 
 ### OpenAI
 
@@ -249,6 +342,17 @@ aiyu-multi-agent run "..." --provider local --model mistral
 aiyu-multi-agent run "..." --provider local --model codellama
 ```
 
+### Groq
+
+```bash
+export GROQ_API_KEY=gsk_...
+aiyu-multi-agent run "..." --provider groq
+aiyu-multi-agent run "..." --provider groq --model llama-3.3-70b-versatile
+aiyu-multi-agent run "..." --provider groq --model mixtral-8x7b-32768
+```
+
+OpenAI-compatible API at `api.groq.com`. Free tier: 14,400 req/day at console.groq.com. Default model: `llama-3.3-70b-versatile`, configurable via `GROQ_MODEL`.
+
 ### Mock (Testing / Default)
 
 ```bash
@@ -257,9 +361,25 @@ aiyu-multi-agent run "..." --provider mock
 
 Returns canned responses. Mock is the default provider when no API keys are configured. No env var required. Perfect for testing and demos.
 
+### CLI engines
+
+Use AI CLIs installed in `$PATH` as LLM providers. Auto-detected by the `engines` command.
+
+```bash
+# List detected CLI engines
+aiyu-multi-agent engines
+aiyu-multi-agent engines --json
+
+# Use a CLI engine as provider
+aiyu-multi-agent run "..." --provider cli:claude
+aiyu-multi-agent run "..." --provider cli:codex
+```
+
+Spawn safety: `shell: false`, 120s timeout, 1MB output cap, limited env passthrough.
+
 ---
 
-## 🛠️ Built-in Tools
+## Built-in tools
 
 All tools use **namespace.name** format. Legacy names are auto-aliased.
 
@@ -296,7 +416,7 @@ registerTool("db.query", async (args) => {
 
 ---
 
-## 🔌 Plugin System
+## Plugin system
 
 ### Install a Skill
 
@@ -358,7 +478,7 @@ aiyu-multi-agent add skill aiyu-multi-agent-skill-clean-code
 
 ---
 
-## 🧪 Agent Testing
+## Agent testing
 
 ### Write a Test
 
@@ -406,7 +526,7 @@ aiyu-multi-agent test --watch
 
 ---
 
-## 📦 Publishing
+## Publishing
 
 ### Publish Your Agent
 
@@ -428,7 +548,29 @@ aiyu-multi-agent publish --author "Your Name"
 
 # npm access level
 aiyu-multi-agent publish --access public
+
+# Block publish if leaked secrets detected
+aiyu-multi-agent publish --strict
+
+# npm dist-tag
+aiyu-multi-agent publish --tag next
+
+# Set license
+aiyu-multi-agent publish --license MIT
 ```
+
+**Publish options:**
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `--dry-run` | Validate and package without publishing | `false` |
+| `--strict` | Block publish if leaked secrets detected | `false` |
+| `--name <name>` | Override package name | From `package.json` |
+| `--version <version>` | Override version | From `package.json` |
+| `--author <author>` | Set author | From `package.json` |
+| `--license <license>` | Set license | `MIT` |
+| `--access <level>` | npm access level (public/restricted) | `public` |
+| `--tag <tag>` | npm dist-tag | `latest` |
 
 ### Install a Published Agent
 
@@ -440,7 +582,7 @@ This installs the agent config into the current project.
 
 ---
 
-## 📊 Usage Statistics
+## Usage statistics
 
 ```bash
 aiyu-multi-agent usage
@@ -459,13 +601,17 @@ All data stored locally in `.agent/usage.json`. **No external telemetry.**
 
 ---
 
-## 🏗️ Smart Init
+## Smart init
 
 ```bash
 aiyu-multi-agent init            # Interactive setup
 aiyu-multi-agent init --dry-run  # Preview without writing
-aiyu-multi-agent init --cursor-only      # Generate .cursor/ only (Cursor IDE)
-aiyu-multi-agent init --cursor           # Generate .windsurf/ + .cursor/ together
+aiyu-multi-agent init --windsurf-only   # Create .windsurf/ only (no .agent/)
+aiyu-multi-agent init --agent-only     # Create .agent/ only (no .windsurf/ symlink)
+aiyu-multi-agent init --cursor-only   # Generate .cursor/ only (Cursor IDE)
+aiyu-multi-agent init --cursor        # Generate .windsurf/ + .cursor/ together
+aiyu-multi-agent init --roo-only      # Generate Roo Code files only (.roomodes, .roorules, .roo/)
+aiyu-multi-agent init --no-roo        # Skip Roo Code file generation
 aiyu-multi-agent init --cursor-only --force  # Re-sync .cursor/ after .windsurf/ changes
 ```
 
@@ -480,9 +626,11 @@ Interactive prompts:
 | Flag | Description |
 |------|-------------|
 | `--dry-run` | Preview without writing files |
+| `--windsurf-only` | Create `.windsurf/` only (no `.agent/` directory) |
+| `--agent-only` | Create `.agent/` only (no `.windsurf/` symlink) |
 | `--cursor-only` | Generate `.cursor/` only (Cursor IDE rules + commands) |
 | `--cursor` | Also generate `.cursor/` alongside `.windsurf/` / `.agent/` |
-| `--roo-only` | Generate Roo Code files only |
+| `--roo-only` | Generate Roo Code files only (`.roomodes`, `.roorules`, `.roo/`) |
 | `--no-roo` | Skip Roo Code file generation |
 | `--force` | Overwrite existing config directories |
 
@@ -490,12 +638,15 @@ Creates:
 - `.agent/` — Universal config directory
 - `.windsurf/` — Symlink for Windsurf IDE compatibility
 - `.cursor/` — Cursor IDE rules and slash commands (with `--cursor` or `--cursor-only`)
+- `.roomodes` — Roo Code custom modes (84 agents)
+- `.roorules` — Roo Code rules
+- `.roo/` — Roo Code system prompts
 - Agent definition with your selections
 - Config files and test directory
 
 ---
 
-## 🎯 Cursor IDE Support (V2.7.7)
+## Cursor IDE support
 
 First-class Cursor IDE integration via auto-generated `.cursor/rules/*.mdc` and `.cursor/commands/*.md`.
 
@@ -532,7 +683,31 @@ Full guide: [`docs/CURSOR-IDE.md`](CURSOR-IDE.md)
 
 ---
 
-## 🔒 Security
+## Roo Code support
+
+First-class Roo Code (VS Code extension) integration via auto-generated `.roomodes`, `.roorules`, and `.roo/`.
+
+```bash
+# Generate Roo Code files from existing .agent/
+aiyu-multi-agent init --roo-only
+
+# Skip Roo generation during regular init
+aiyu-multi-agent init --no-roo
+
+# Re-generate after .agent/ updates
+aiyu-multi-agent init --roo-only --force
+```
+
+**Generated files:**
+- `.roomodes` — 84 custom modes (one per agent) for Roo Code mode selector
+- `.roorules` — Project rules mirroring `.windsurfrules`
+- `.roo/` — System prompts per agent
+
+Source: `lib/core/roo-generator.js`
+
+---
+
+## Security
 
 ### Guardrails (Always Active)
 
@@ -550,7 +725,7 @@ Full guide: [`docs/CURSOR-IDE.md`](CURSOR-IDE.md)
 
 ---
 
-## 🎯 Runtime Correctness
+## Runtime correctness
 
 ### Parser Fallback Chain
 
@@ -630,7 +805,7 @@ Agent names are validated to prevent path traversal attacks. Characters not allo
 
 ---
 
-## 📁 Config Directory Structure
+## Config directory structure
 
 ```
 .agent/                          # Universal config (primary)
@@ -648,12 +823,14 @@ Agent names are validated to prevent path traversal attacks. Characters not allo
 
 ---
 
-## ⚙️ Environment Variables
+## Environment variables
 
 | Variable | Purpose | Required For |
 |----------|---------|-------------|
 | `OPENAI_API_KEY` | OpenAI API access | `--provider openai` |
 | `ANTHROPIC_API_KEY` | Anthropic API access | `--provider claude` |
+| `GROQ_API_KEY` | Groq API access | `--provider groq` |
+| `GROQ_MODEL` | Override default Groq model | `--provider groq` (optional) |
 | `AIYU_ENABLE_MOCK` | (Legacy, no longer required) | `--provider mock` |
 | `AIYU_API_KEY` | API server auth key | `serve` command |
 | `AIYU_CORS_ORIGIN` | CORS origin for API server | `serve` command |
@@ -664,7 +841,7 @@ Agent names are validated to prevent path traversal attacks. Characters not allo
 
 ---
 
-## 🔄 Common Workflows
+## Common workflows
 
 ### Development
 
@@ -705,6 +882,11 @@ aiyu-multi-agent init --cursor-only --force        # Re-sync after changes
 ```bash
 aiyu-multi-agent status                            # Check project state
 aiyu-multi-agent usage                             # See command history
+aiyu-multi-agent health                            # System health check
+aiyu-multi-agent traces                            # View recent traces
+aiyu-multi-agent traces --id <traceId>             # Specific trace details
+aiyu-multi-agent traces --metrics                  # Trace metrics summary
 aiyu-multi-agent run "Debug auth" --max-steps 3     # Limit loop
 aiyu-multi-agent run "Test output" --json          # Structured output
+aiyu-multi-agent run "Generate API" --output-format artifact --write-artifacts ./out
 ```

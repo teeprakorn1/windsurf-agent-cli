@@ -4,7 +4,7 @@
 
 ---
 
-## Phase 1: Critical Architecture (P0)
+## Phase 1: critical architecture (P0)
 
 ### 1.1 ChatPanel Decomposition — Inspector Panels
 - **File:** `src/components/chat-panel.tsx`
@@ -51,7 +51,7 @@
 
 ---
 
-## Phase 2: High — Performance (P1)
+## Phase 2: high — performance (P1)
 
 ### 2.1 Fix `evictOldActivities` — Return Instead of Mutate
 - **File:** `src/lib/store.ts`
@@ -124,7 +124,7 @@
 
 ---
 
-## Phase 3: Medium — State Management (P2)
+## Phase 3: medium — state management (P2)
 
 ### 3.1 ErrorBoundary ระดับ Section
 - **File:** `src/components/chat-panel.tsx`
@@ -153,7 +153,7 @@
 
 ---
 
-## Phase 4: Low — Code Quality (P3)
+## Phase 4: low — code quality (P3)
 
 ### 4.1 Extract Magic Numbers → Constants
 - **File:** `src/lib/store.ts`
@@ -191,7 +191,7 @@
 
 ---
 
-## Execution Order
+## Execution order
 
 ```
 Phase 1 (P0 — Critical)
@@ -219,7 +219,7 @@ Phase 4 (P3 — Low)
   └── 4.4 Cache /api/agents/list
 ```
 
-## Quality Gates
+## Quality gates
 
 | Gate | Requirement |
 |------|-------------|
@@ -229,7 +229,7 @@ Phase 4 (P3 — Low)
 | **HMR** | Dev server hot-reload ไม่ทำให้ WS connection พัง |
 | **Auth** | WS auth ยังทำงานได้ทั้งแบบเก่า (subprotocol) และใหม่ (query param) |
 
-## Risk Register
+## Risk register
 
 | Risk | Likelihood | Impact | Mitigation |
 |------|-----------|--------|-----------|
@@ -238,7 +238,7 @@ Phase 4 (P3 — Low)
 | WS auth migration ทำให้ client เก่าไม่ต่อได้ | Medium | Critical | รองรับทั้งเก่า+ใหม่ ช่วง transition |
 | evictOldActivities return ใหม่ทำให้ state ไม่ sync | Low | Medium | Unit test ครอบคลุมทุกกรณี |
 
-## Version Bump
+## Version bump
 
 - Dashboard `package.json` → `2.7.5`
 - Dashboard `next.config.js` → `2.7.5`

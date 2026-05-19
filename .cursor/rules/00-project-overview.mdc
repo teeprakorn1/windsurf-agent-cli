@@ -6,7 +6,7 @@ alwaysApply: true
 # Auto-read by Windsurf IDE
 
 ## 🎯 Overview
-Production-grade AI Agent Platform with Smart Init, Plugin System, Agent Testing, and Publishing.
+AI Agent Platform with Smart Init, Plugin System, Agent Testing, and Publishing.
 
 ## 📁 Structure
 - `.windsurf/agents/` — 80 specialized AI agents

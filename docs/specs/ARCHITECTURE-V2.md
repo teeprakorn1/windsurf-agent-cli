@@ -13,23 +13,39 @@
 
 ---
 
-## New CLI Commands
+## CLI commands
 
 ```
 aiyu-multi-agent init                    # Interactive agent generator
-aiyu-multi-agent add skill <name>        # Install plugin/skill from npm
-aiyu-multi-agent remove skill <name>     # Uninstall plugin/skill
+aiyu-multi-agent update                  # Update config to latest
+aiyu-multi-agent version                 # Show version + check updates
+aiyu-multi-agent status                  # Project statistics
+aiyu-multi-agent list                    # List all slash commands
+aiyu-multi-agent info <agent>            # Agent details
+aiyu-multi-agent checklist [url]         # Quality verification
+aiyu-multi-agent uninstall               # Remove config directories
+aiyu-multi-agent run <input>             # Execute agent with input
+aiyu-multi-agent run-from-file <path>    # Run from markdown with frontmatter
+aiyu-multi-agent chat                    # Interactive chat session
+aiyu-multi-agent dev                     # Dev REPL with verbose logging
+aiyu-multi-agent engines                 # List CLI engines in PATH
+aiyu-multi-agent health                  # System health check
+aiyu-multi-agent traces                  # View distributed traces
+aiyu-multi-agent inspect                 # Observability dashboard
+aiyu-multi-agent usage                   # Usage statistics
+aiyu-multi-agent serve                   # Start HTTP API + WebSocket server
+aiyu-multi-agent mcp                     # Start MCP server (stdio)
+aiyu-multi-agent add skill <name>        # Install skill from npm
+aiyu-multi-agent remove skill <name>     # Uninstall skill
 aiyu-multi-agent test                    # Run agent test suite
 aiyu-multi-agent test --watch            # Watch mode
 aiyu-multi-agent publish                 # Publish agent to npm
-aiyu-multi-agent inspect                 # Observability (token, latency, errors)
-aiyu-multi-agent dev                     # Dev mode (live reload, debug)
 aiyu-multi-agent generate mcp <type>     # MCP server generator
 ```
 
 ---
 
-## Architecture Overview
+## Architecture overview
 
 ```
 ┌──────────────────────────────────────────────────────┐
@@ -112,7 +128,7 @@ aiyu-multi-agent generate mcp <type>     # MCP server generator
 
 ---
 
-## Directory Structure (After V2)
+## Directory structure
 
 ```
 aiyu-multi-agent/
@@ -191,9 +207,9 @@ aiyu-multi-agent/
 
 ---
 
-## Implementation Phases
+## Implementation phases
 
-### Phase 1: Foundation (Smart Init + Config Hybrid)
+### Phase 1: foundation
 **Goal**: Replace dumb `init` with interactive agent generator
 
 1. Create `lib/commands/init.js` — interactive prompts (use case, provider, memory)
@@ -204,7 +220,7 @@ aiyu-multi-agent/
 
 **Deliverable**: `aiyu-multi-agent init` → interactive → generates tailored agent config
 
-### Phase 2: Plugin System
+### Phase 2: plugin system
 **Goal**: `aiyu-multi-agent add skill X` installs from npm
 
 1. Create `lib/core/plugin.js` — install/remove/validate skill packages
@@ -216,7 +232,7 @@ aiyu-multi-agent/
 
 **Deliverable**: `aiyu-multi-agent add skill postgres` → installs + configures
 
-### Phase 3: Agent Testing
+### Phase 3: agent testing
 **Goal**: `aiyu-multi-agent test` runs prompt/output assertions
 
 1. Create `lib/test/runner.js` — discovers + runs test files
@@ -228,7 +244,7 @@ aiyu-multi-agent/
 
 **Deliverable**: `aiyu-multi-agent test` → runs assertions against agent behavior
 
-### Phase 4: Publish/Install Agent
+### Phase 4: publish/install agent
 **Goal**: `aiyu-multi-agent publish` → others can `npx your-agent`
 
 1. Create `lib/publish/packager.js` — bundle agent as standalone npm package
@@ -241,7 +257,7 @@ aiyu-multi-agent/
 
 ---
 
-## Guardrails (Built-in Security)
+## Guardrails
 
 ```js
 // lib/core/guardrails.js
@@ -255,7 +271,7 @@ module.exports = {
 
 ---
 
-## Runtime Detection (Node + Bun)
+## Runtime detection
 
 ```js
 // lib/core/runtime.js
@@ -271,7 +287,7 @@ module.exports = {
 
 ---
 
-## Config Hybrid (.agent/ + .windsurf/)
+## Config hybrid
 
 ```js
 // lib/core/config.js

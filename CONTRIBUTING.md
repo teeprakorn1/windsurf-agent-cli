@@ -4,7 +4,7 @@ Thank you for your interest in contributing! This guide covers everything you ne
 
 ---
 
-## Quick Start
+## Quick start
 
 ```bash
 # 1. Fork & clone
@@ -24,7 +24,7 @@ git checkout -b feat/your-feature
 
 ---
 
-## Development Workflow
+## Development workflow
 
 ### 1. Fork → Branch → PR
 
@@ -76,7 +76,7 @@ Before submitting, verify:
 
 ---
 
-## Code Style
+## Code style
 
 ### JavaScript (Node.js)
 
@@ -134,9 +134,11 @@ lib/
 ### Running Tests
 
 ```bash
-# Unit tests (29 core + 25 production = 54 tests)
+# Unit tests (41 core + 25 production + 34 cursor + 26 v2.7.9 = 126 tests)
 node lib/test/unit/core.test.js
 node lib/test/unit/production.test.js
+node lib/test/unit/cursor-generator.test.js
+node lib/test/unit/v2-7-9.test.js
 
 # Integration tests (12 tests)
 node lib/test/integration/flow.test.js
@@ -174,25 +176,29 @@ Add to `lib/test/compliance.js` following the existing pattern.
 
 ---
 
-## Project Architecture
+## Project architecture
 
 Read `CODEBASE.md` and `docs/ARCHITECTURE-V2.md` for full details.
 
 **Key modules:**
 - `lib/core/guardrails.js` — Security layer (pathTraversal, safeWrite, rateLimit, sandboxExec)
 - `lib/core/tool-definitions.js` — Tool definitions, schemas, validation, truncation
-- `lib/core/llm-providers.js` — OpenAI, Claude, Ollama, Mock providers
+- `lib/core/llm-providers.js` — OpenAI, Claude, Groq, Ollama, Mock, CLI engine providers
 - `lib/core/react-loop.js` — ReAct loop with timeout + context trimming
 - `lib/core/chat-session.js` — Interactive chat with timeout
 - `lib/core/failover.js` — Per-provider circuit breaker + failover chain
-- `lib/core/agent-runtime.js` — Re-export (V2.6 decomposed into 8 modules)
+- `lib/core/agent-runtime.js` — Re-export (decomposed into 8 modules)
+- `lib/core/cli-scanner.js` — Scans $PATH for AI CLI engines
+- `lib/core/question-form.js` — Turn-1 question-form guardrail
+- `lib/core/quality-gate.js` — Anti-slop output quality gate
+- `lib/core/artifact-parser.js` — Parses <artifact> tags from output
 - `lib/api/server.js` — HTTP API (Express) with /health, /metrics, /traces, /jobs
 - `lib/api/ws.js` — WebSocket real-time streaming + heartbeat
 - `lib/api/jobs.js` — Async job model with request-queue integration
 
 ---
 
-## Reporting Issues
+## Reporting issues
 
 - **Bugs:** Use the [Bug Report template](.github/ISSUE_TEMPLATE/bug_report.md)
 - **Features:** Use the [Feature Request template](.github/ISSUE_TEMPLATE/feature_request.md)

@@ -1,7 +1,7 @@
 {
   "name": "aiyu-multi-agent",
-  "version": "2.7.8",
-  "description": "Production-grade AI Agent Platform — 84 Agents, 46 Skills, 78 Workflows, 14 Tools, 5 LLM Providers (OpenAI/Claude/Groq/Ollama/Mock), Smart Init, Frontmatter Task Runner, Plugin System, Agent Testing, Publishing",
+  "version": "2.7.9",
+  "description": "AI Agent Platform — 84 Agents, 46 Skills, 78 Workflows, 14 Tools, 5 LLM Providers (OpenAI/Claude/Groq/Ollama/Mock), Smart Init, Frontmatter Task Runner, Plugin System, Agent Testing, Publishing",
   "bin": {
     "aiyu-multi-agent": "./bin/cli.js"
   },
@@ -10,8 +10,8 @@
     "checklist:url": "python3 .windsurf/scripts/checklist.py . --url http://localhost:3000",
     "security": "python3 .windsurf/skills/vulnerability-scanner/scripts/security_scan.py .",
     "lint": "node --check lib/core/*.js lib/api/*.js lib/commands/*.js lib/mcp/*.js lib/publish/*.js bin/cli.js bin/server.js",
-    "test": "node lib/test/unit/core.test.js && node lib/test/unit/production.test.js && node lib/test/unit/cursor-generator.test.js && node lib/test/integration/flow.test.js",
-    "test:unit": "node lib/test/unit/core.test.js && node lib/test/unit/production.test.js && node lib/test/unit/cursor-generator.test.js",
+    "test": "node lib/test/unit/core.test.js && node lib/test/unit/production.test.js && node lib/test/unit/cursor-generator.test.js && node lib/test/unit/v2-7-9.test.js && node lib/test/integration/flow.test.js",
+    "test:unit": "node lib/test/unit/core.test.js && node lib/test/unit/production.test.js && node lib/test/unit/cursor-generator.test.js && node lib/test/unit/v2-7-9.test.js",
     "test:integration": "node lib/test/integration/flow.test.js",
     "ux": "python3 .windsurf/skills/frontend-design/scripts/ux_audit.py .",
     "seo": "python3 .windsurf/skills/seo-fundamentals/scripts/seo_checker.py .",

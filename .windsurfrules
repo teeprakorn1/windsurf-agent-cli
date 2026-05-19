@@ -1,32 +1,50 @@
-# Aiyu MultiAgent V2 — AI Agent Platform
+# Aiyu MultiAgent V2.7.9 — AI Agent Platform
 # Auto-read by Windsurf IDE
 
-## 🎯 Overview
-Production-grade AI Agent Platform with Smart Init, Plugin System, Agent Testing, and Publishing.
+## Overview
+AI Agent Platform with Smart Init, Plugin System, Agent Testing, and Publishing.
 
-## 📁 Structure
-- `.windsurf/agents/` — 80 specialized AI agents
+## Structure
+- `.windsurf/agents/` — 84 specialized AI agents
 - `.windsurf/skills/` — 46 domain-specific skills
 - `.windsurf/workflows/` — 78 slash-command workflows
-- `.windsurf/scripts/` — 4 validation scripts
+- `.windsurf/scripts/` — 12 validation scripts
 - `.windsurf/rules/` — 10 rules (GEMINI.md + 9 domain rules)
 - `.windsurf/tests/` — Agent test files (*.test.md)
-- `lib/core/` — config, plugin, guardrails, runtime, logger
-- `lib/commands/` — init, add, remove, test, publish
-- `lib/test/` — runner, assertions, simulator, reporter
+- `lib/core/` — config, plugin, guardrails, runtime, logger, cli-scanner, question-form, quality-gate, artifact-parser, roo-generator
+- `lib/core/cli-adapters/` — generic-adapter, claude-adapter, codex-adapter
+- `lib/commands/` — init, add, remove, test, publish, run, run-from-file, chat, dev, inspect, cursor-generator
+- `lib/test/` — runner, assertions, simulator, reporter, unit/, integration/
 - `lib/publish/` — packager, validator, registry
 - `templates/` — agent + skill scaffolds
 
-## 🚀 CLI Commands
+## CLI commands
 - `aiyu-multi-agent init` — Interactive agent generator
+- `aiyu-multi-agent update` — Update config to latest
+- `aiyu-multi-agent version` — Show version + check updates
+- `aiyu-multi-agent status` — Project statistics
+- `aiyu-multi-agent list` — List all slash commands
+- `aiyu-multi-agent info <agent>` — Agent details
+- `aiyu-multi-agent checklist [url]` — Quality verification
+- `aiyu-multi-agent uninstall` — Remove config directories
+- `aiyu-multi-agent run <input>` — Execute agent with input
+- `aiyu-multi-agent run-from-file <path>` — Run from markdown with frontmatter
+- `aiyu-multi-agent chat` — Interactive chat session
+- `aiyu-multi-agent dev` — Dev REPL with verbose logging
+- `aiyu-multi-agent engines` — List CLI engines in PATH
+- `aiyu-multi-agent health` — System health check
+- `aiyu-multi-agent traces` — View distributed traces
+- `aiyu-multi-agent inspect` — Observability dashboard
+- `aiyu-multi-agent usage` — Usage statistics
+- `aiyu-multi-agent serve` — Start HTTP API + WebSocket server
+- `aiyu-multi-agent mcp` — Start MCP server (stdio)
 - `aiyu-multi-agent add skill <name>` — Install skill from npm
 - `aiyu-multi-agent remove skill <name>` — Uninstall skill
 - `aiyu-multi-agent test` — Run agent test suite
 - `aiyu-multi-agent publish` — Publish agent to npm
-- `aiyu-multi-agent status` — Project statistics
-- `aiyu-multi-agent checklist` — Quality verification
+- `aiyu-multi-agent generate <type>` — Generate MCP server / config
 
-## 🔗 References
+## References
 - Full rules: @.windsurf/rules/GEMINI.md
 - Architecture: @.windsurf/rules/architecture.md
 - V2 Architecture: @docs/ARCHITECTURE-V2.md

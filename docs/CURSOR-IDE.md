@@ -4,7 +4,7 @@ Aiyu MultiAgent has first-class support for [Cursor IDE](https://cursor.sh/). Th
 
 ---
 
-## Quick Start
+## Quick start
 
 ```bash
 # Generate .cursor/ only (recommended for Cursor-only users)
@@ -21,7 +21,7 @@ After running, open the project in Cursor IDE. Rules and slash commands are auto
 
 ---
 
-## What Gets Generated
+## What gets generated
 
 ```
 .cursor/
@@ -52,7 +52,7 @@ After running, open the project in Cursor IDE. Rules and slash commands are auto
 
 ---
 
-## Cursor Rule Types Used
+## Cursor rule types used
 
 | Type | Frontmatter | When Applied |
 |------|------------|--------------|
@@ -65,7 +65,7 @@ After running, open the project in Cursor IDE. Rules and slash commands are auto
 
 ## Usage in Cursor
 
-### Invoke an Agent
+### Invoke an agent
 
 In Cursor chat, mention an agent rule by typing `@` and the agent name:
 
@@ -75,7 +75,7 @@ In Cursor chat, mention an agent rule by typing `@` and the agent name:
 @security-auditor review this code for OWASP issues
 ```
 
-### Run a Slash Command
+### Run a slash command
 
 Type `/` in Cursor chat to see available commands:
 
@@ -85,7 +85,7 @@ Type `/` in Cursor chat to see available commands:
 /deploy production release v2.7.7
 ```
 
-### Auto-Applied Rules
+### Auto-applied rules
 
 When you open a file like `src/api/users.ts`, the `api-design-rules` rule auto-attaches to your context. When working in `.test.ts` files, `testing-rules` activates.
 
@@ -103,7 +103,7 @@ This means you should typically edit files in `.windsurf/` and regenerate `.curs
 
 ---
 
-## MCP Server Configuration
+## MCP server configuration
 
 The generator copies `.windsurf/mcp_config.json` → `.cursor/mcp.json` with the same `mcpServers` schema. Cursor IDE reads this directly.
 
@@ -115,11 +115,11 @@ To add more servers, edit `.windsurf/mcp_config.json` and regenerate.
 
 ---
 
-## Output Contract (v2.7.8)
+## Output contract
 
 Every generated `.cursor/commands/*.md` includes a **⚠️ CURSOR OUTPUT CONTRACT** section at the top. This enforces agent identification in Cursor — even when `alwaysApply` rules (GEMINI.md) aren't loaded.
 
-### 3 Command Types
+### 3 command types
 
 | Type | Count | Template |
 |------|-------|----------|
@@ -131,7 +131,7 @@ Commands are classified by `ORCHESTRATION_COMMANDS` / `AGENT_COMMANDS` sets in `
 
 ---
 
-## Description Extraction
+## Description extraction
 
 The generator infers each rule's `description` field intelligently:
 

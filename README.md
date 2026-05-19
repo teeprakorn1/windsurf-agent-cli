@@ -34,7 +34,7 @@
     <td align="center"><b>46</b><br>📚 Skills</td>
     <td align="center"><b>78</b><br>⚡ Workflows</td>
     <td align="center"><b>10</b><br>🛡️ Rules</td>
-    <td align="center"><b>5</b><br>🧠 LLM Providers</td>
+    <td align="center"><b>6</b><br>🧠 LLM Providers</td>
   </tr>
 </table>
 
@@ -44,35 +44,47 @@
 
 **Aiyu MultiAgent** is an open-source AI agent platform that helps developers automate software engineering tasks using large language models (LLMs). It features a **ReAct execution engine**, **MCP server integration** for Claude Code / Cursor / Windsurf, **WebSocket real-time streaming**, **agent handoff orchestration**, and a **plugin system** for extensible AI capabilities. Supports OpenAI GPT-4, Anthropic Claude, Ollama local models, and mock mode for testing.
 
-> **Latest Release: v2.7.7** — **Cursor IDE Full Support**: new `--cursor-only` / `--cursor` flags generate `.cursor/rules/*.mdc` (84 agents + 45 skills + 9 domain rules) and `.cursor/commands/*.md` (78 slash commands) from `.windsurf/`. Coexists with Windsurf — see [`docs/CURSOR-IDE.md`](docs/CURSOR-IDE.md). V2.7.6 added Groq provider + Frontmatter Task Runner. V2.7.5 refactored dashboard `chat-panel.tsx`. V2.7.4 fixed Chat mode `agent.status` broadcast. All changes backward compatible.
+> **Latest Release: v2.7.9** — **Multi-CLI PATH Scanner**, **Question-Form Guardrail**, **Anti-Slop Quality Gate**, **Artifact Output Format**. Detects AI CLIs in `$PATH` as failover providers, injects 5-question discovery on first build/design turn, checks output for banned phrases/debug logs/secrets, and parses `<artifact>` tags into safe file writes. All changes backward compatible.
 
 ---
 
-## 📑 Table of Contents
+## Table of contents
 
-- [What's New in V2.7](#-whats-new-in-v27)
-- [What's New in V2.6](#-whats-new-in-v26)
-- [What's New in V2.5](#-whats-new-in-v25)
-- [Quick Start](#-quick-start)
-- [Why Aiyu MultiAgent?](#-why-aiyu-multiagent)
-- [CLI Reference](#-cli-reference)
-- [LLM Providers](#-llm-providers)
-- [Built-in Tools](#-built-in-tools)
-- [Project Structure](#-project-structure)
-- [How to Use](#-how-to-use)
-- [Security & Guardrails](#-security--guardrails)
-- [Agent Testing](#-agent-testing)
-- [Plugin System](#-plugin-system)
-- [Contributing](#-contributing)
+- [What's new in V2.7](#whats-new-in-v27)
+- [What's new in V2.6](#whats-new-in-v26)
+- [What's new in V2.5](#whats-new-in-v25)
+- [Quick start](#quick-start)
+- [Why Aiyu MultiAgent?](#why-aiyu-multiagent)
+- [CLI reference](#cli-reference)
+- [LLM providers](#llm-providers)
+- [Built-in tools](#built-in-tools)
+- [Project structure](#project-structure)
+- [How to use](#how-to-use)
+- [Security and guardrails](#security-and-guardrails)
+- [Testing your agents](#testing-your-agents)
+- [Plugin system](#plugin-system)
+- [Customize and extend](#customize-and-extend)
+- [Contributing](#contributing)
 - [License](#license)
 
 ---
 
-## ✨ What's New in V2.7
+## What's new in V2.7
 
-V2.7 brings a **real-time monitoring dashboard**, **bug fix hardening**, **Groq + Frontmatter Task Runner** (v2.7.6), and **Cursor IDE Full Support** (v2.7.7) — adding a Next.js 14 dashboard for live agent monitoring, formal WS event schema, 5th LLM provider, and native Cursor `.cursor/rules/*.mdc` + slash commands generation.
+V2.7 brings a **real-time monitoring dashboard**, **Groq + Frontmatter Task Runner** (v2.7.6), **Cursor IDE Full Support** (v2.7.7), and **Multi-CLI Scanner + Quality Gate + Artifacts** (v2.7.9) — adding a Next.js 14 dashboard for live agent monitoring, formal WS event schema, 6th LLM provider, native Cursor `.cursor/rules/*.mdc` + slash commands generation, and structured output enforcement.
 
-### V2.7.7 Cursor IDE Full Support (Latest)
+### V2.7.9 Multi-CLI scanner, question form, quality gate, artifacts (Latest)
+
+Four runtime features for safer, more structured agent output.
+
+- **`engines`** — List CLI engines detected in `$PATH`
+- **`run --engine cli:claude`** — Use a CLI engine as failover provider
+- **`run --no-form`** — Skip the turn-1 question-form guardrail
+- **`run --strict-quality-gate`** — Fail runs on quality violations
+- **`run --output-format artifact --write-artifacts ./out`** — Parse `<artifact>` tags and write files safely
+- **API** — `POST /jobs` and `POST /agents/run-from-note` accept `output_format`, `no_form`, `strict_quality_gate`; `GET /artifacts/:jobId` retrieves artifacts
+
+### V2.7.7 Cursor IDE full support
 
 First-class Cursor IDE integration via a new generator (`lib/commands/cursor-generator.js`) that converts `.windsurf/` artifacts → `.cursor/` natively. **Coexists** with Windsurf, no breaking changes.
 
@@ -90,136 +102,36 @@ First-class Cursor IDE integration via a new generator (`lib/commands/cursor-gen
 
 Full guide: [`docs/CURSOR-IDE.md`](docs/CURSOR-IDE.md)
 
+### Roo Code (VS Code) support
+
+First-class Roo Code integration via `lib/core/roo-generator.js` — converts `.agent/` agents → Roo custom modes.
+
+- **`init --roo-only`** — Generate `.roomodes`, `.roorules`, `.roo/` from existing `.agent/`
+- **`init --no-roo`** — Skip Roo Code generation during regular init
+- **84 custom modes** → `.roomodes` (one per agent, selectable via Roo mode picker)
+- **Project rules** → `.roorules` (mirrors `.windsurfrules`)
+- **System prompts** → `.roo/` (per-agent instructions)
+
+### V2.7.6 Groq + frontmatter task runner
+
+- **6th LLM provider** — `callGroq()` with `GROQ_API_KEY` env var, free tier (14,400 req/day)
+- **`run-from-file <path>`** — Execute agent from markdown with frontmatter (agent, provider, model, maxSteps)
+- **`init --windsurf-only`** — Create `.windsurf/` only (no `.agent/` directory)
+- **`init --agent-only`** — Create `.agent/` only (no `.windsurf/` symlink)
+
 | Area | Change | Impact |
 |------|--------|--------|
-| 🎯 V2.7.7 Cursor IDE | `.cursor/rules/*.mdc` + `.cursor/commands/*.md` generator — 84 agents, 45 skills, 78 commands | IDE Support ⬆️ |
-| ⚡ V2.7.6 Groq + Frontmatter | 5th LLM provider (`callGroq`) + `run-from-file <path>` task runner | Flexibility ⬆️ |
-| 📊 Dashboard | Next.js 14 real-time monitoring (`aiyu-multi-agent-dashboard/`) | Observability ⬆️ |
-| 🌙 P3 Polish | Dark mode, export trace, keyboard shortcuts, WS auto-reconnect, mobile | UX ⬆️ |
-| 📡 WS Schema | `docs/WS-SCHEMA.md` — formal contract (6 client→server, 10 server→client) | Reliability ⬆️ |
-| 🔄 Broadcasts | `agent.status`, `handoff.started/complete`, `delegate.started/complete` | Dashboard ⬆️ |
-| 🐛 V2.7.0 Fixes | 11 bugs — path traversal, timer leak, Ollama deprioritize, etc. | Security ⬆️ |
-| 🐛 V2.7.1 Fixes | 75 bugs across 5 rounds — Dashboard integration, WS disconnect abort, mutable Map export, server crash guard, input validation, path traversal in packager, npm --ignore-scripts, agent file size limit, env secret leak, true LRU, retry jitter, recursive secret scan, symlink warning, heading truncation, watch timer cleanup, .tmp file cleanup, health-check agent reuse, dev --provider flag, dynamic compliance agent, SKIP_DIRS | Stability ⬆️ |
-| 🐛 V2.7.4 Fixes | Chat mode `agent.status` broadcast — `AgentStatusPanel` now updates during chat sessions | Dashboard ⬆️ |
-| 🐛 V2.7.2 Fixes | Mock provider default + Full System + Core Logic + Dashboard/API Bug Audit (56 bugs) — var→let leak, circuit-breaker stale cleanup, Ollama probe guard, chat timeout leak, failover loop-index, Claude model passthrough, queue settled flag, handoff regex, cache mutable fallback, halfOpenMaxAttempts 1→3, context trim pair fix + original task preservation, sliding window pair-preservation, isRetryableError word-boundary, Ollama model passthrough, WS reconnect re-subscribe, pendingInterventions cleanup, /health auth bypass, agent duration live refresh, chat-session context trim pair-preservation, chat error turnId, chat-panel auto-select session, completedRuns eviction, handoff artifact count, status complete→completed standardization, endTrace status check, plan pathTraversal sanitization, MCP timeout timer leak, metrics-panel AbortController, delegate context trim pair-preservation | Stability ⬆️ |
-| � V2.7.3 Fixes | React Strict Mode WS disconnect, markdown rendering, keyboard shortcut conflicts, duplicate React keys, dropdown overflow, provider filtering, unified ChatPanel, responsive mobile layout | UX ⬆️ |
-| � Dashboard Security | CSP headers, API proxy path whitelist, WS auth `Sec-WebSocket-Protocol`, input validation | Security ⬆️ |
-| 🧪 Test Suite | Jest + React Testing Library + Playwright E2E (29 unit + 9 E2E tests) | Quality ⬆️ |
-| 🏗️ Refactoring | `page.tsx` 479→160 lines, `DashboardHeader`/`RunPanel`/`ResetDialog` components | Maintainability ⬆️ |
-
-### V2.7.4 Chat Mode Agent Status Broadcast
-
-**v2.7.4** fixes a high-severity bug where Chat mode did not broadcast `agent.status` WebSocket events, causing the dashboard's `AgentStatusPanel` to show "No agents running" during active chat sessions.
-
-- **Chat mode `agent.status` broadcast** — `handleChatCreate` and `handleChatSend` in `ws.js` did not call `setAgentStatus()`. Added status broadcasts at session creation (`"idle"`), chat send start (`"running"`), and chat send completion (`"completed"`/`"error"`). Now both Run and Chat modes update `AgentStatusPanel` in real-time (`lib/api/ws.js`)
-- **ExecutionTimeline empty during chat** — Only read from `runs`/`completedRuns` (Run mode). Fixed by merging `chatSteps`/`chatCompletions` into timeline data (`execution-timeline.tsx`)
-- **LogsViewer empty during chat** — Same root cause. Fixed by including chat data in log entries (`logs-viewer.tsx`)
-- **InterventionPanel shows "No active runs" during chat** — Only checked `runs`/`completedRuns`. Fixed by detecting active chat sessions (`intervention-panel.tsx`)
-
-### V2.7.3 Dashboard UI Upgrade + Responsive Design
-
-**v2.7.3** polishes the dashboard ChatPanel with a unified layout, responsive mobile support, and fixes for React Strict Mode WebSocket disconnects.
-
-**Dashboard UI Polish:**
-- **Unified ChatPanel** — Run mode and Chat mode merged into a single full-width ChatPanel with internal sidebar for sessions and monitor
-- **Sidebar tabs** — Underline-style tabs (Chat=blue, Monitor=cyan) replacing pill toggle
-- **Compact header** — Pill-style AgentSelect/ProviderSelect with token usage badge and streaming indicator in one row
-- **Session cards** — Rounded cards with avatar icon, active ring, provider badge, and color-coded action buttons
-- **New Chat dialog** — Gradient icon header, stable open/close behavior (fixed conflicting outside-click listener)
-
-**Responsive Design:**
-- **Mobile sidebar** — Hidden on mobile (<1024px) with floating toggle button; slides in as overlay with dark backdrop
-- **Responsive header** — Icon-only buttons on small screens, flex-wrap selectors, smaller title
-- **Compact monitor panels** — Tighter spacing and smaller fonts in MetricsPanel and AgentStatusPanel for sidebar fit
-
-**Bug Fixes:**
-- **React Strict Mode WS disconnect** — Deferred close pattern: cleanup sets 100ms timer instead of immediate close; remount cancels timer
-- **Markdown rendering** — All panels (ExecutionTimeline, AgentStatus, Logs) now use `MarkdownRenderer` for bold, lists, code blocks
-- **Keyboard shortcut conflicts** — Global `Enter` handler restricted to `Ctrl/Cmd+Enter`; plain `Enter` only sends chat
-- **Duplicate React keys** — `turnKey` now includes `timestamp` to ensure uniqueness across Fast Refresh remounts
-- **Dropdown overflow** — Removed `overflow-hidden` from containers, raised dropdown z-index to prevent clipping
-- **Provider filtering** — Filter now includes `"configured"` and `"ok"` statuses; defaults to `["mock"]` before health responds
-
-### V2.7.2 Bug Fixes (Mock Provider Default + Full System + Core Logic Bug Audit)
-
-**v2.7.2** makes `mock` the default provider when no API keys are configured, eliminating the "No LLM provider detected" error. A warning is shown so users know they're in mock mode. Also fixes failover chain and health-check to accept mock without requiring `AIYU_ENABLE_MOCK`.
-
-**Full System Bug Audit (10 bugs fixed):**
-- **Core Engine** — `chat-session.js`: aborted message no longer overwritten by timeout message; empty-string `finalContent` no longer treated as error in trace results
-- **API / WS** — `ws.js`: `provider ??` and `maxSteps ??` nullish coalescing prevents `0`/`""` from incorrectly falling back to defaults; `handleChatSend` catch block now clears timeout to prevent timer leak
-- **CLI / Jobs** — `jobs.js`: `provider ??` and `max_steps ??` nullish coalescing fixes
-- **Handoff** — `handoff.js`: `provider ??` nullish coalescing in source/target agent calls
-- **Metrics** — `server.js`: percentile index calculation fixed from `floor(n * p)` to `floor((n-1) * p)` for correct 0-indexed array percentiles
-- **Output** — `react-loop.js`: JSON output enforcement now triggers on empty-string outputs (`!= null` instead of truthiness check)
-- **UX Audit** — `ux_audit.py`: `has_form` regex no longer falsely matches `glass-card` CSS class, eliminating 5 false-positive "form inputs without labels" issues
-
-**Core Logic Bug Audit (15 bugs fixed — 4C + 5H + 6M):**
-- **Critical** — `var`→`let` in `react-loop.js` and `chat-session.js`: function-scoped `var result` leaked tool results across iterations
-- **Critical** — `circuit-breaker.js`: `cleanupStaleBreakers` deleted recovered breakers; `lastFailureTime` now cleared on HALF_OPEN→CLOSED
-- **Critical** — `health-check.js`: Ollama probe ran without `OLLAMA_HOST`, causing 2s timeout delay on every health check
-- **Critical** — `chat-session.js`: `chatTimeoutId` leaked on normal ReAct loop exit; added `clearTimeout`
-- **High** — `failover.js`: `indexOf` inside loop → loop-index based last-provider check
-- **High** — `llm-providers.js`: `callClaude` now receives resolved model like `callOpenAI`
-- **High** — `request-queue.js`: `settled` flag guard prevents job timeout/completion race
-- **High** — `health-check.js`: queue error message now includes actual error
-- **High** — `handoff.js`: sentence-boundary regex replaces naive `includes("decided")`
-- **Medium** — `cache.js`: mutable shallow copy replaces `Object.freeze` fallback (was breaking `_fromCache` mutation)
-- **Medium** — `circuit-breaker.js`: `halfOpenMaxAttempts` default 1→3 for resilient recovery
-- **Medium** — `failover.js`: `_ollamaLastOk` shared state documented for single-process assumption
-- **Medium** — `react-loop.js`: context trimming now drops assistant + ALL consecutive user messages (was only 2, leaving orphaned tool results)
-- **Medium** — `chat-session.js`: sliding window pair-preservation — if window starts with `user`, include preceding `assistant`
-- **Medium** — `llm-providers.js`: `isRetryableError` uses word-boundary regex (`\b429\b`) instead of `includes("429")`
-
-**Dashboard + API Bug Audit Round 4 (9 bugs fixed — 1C + 2H + 6M):**
-- **Critical** — `react-loop.js`: context trimming dropped `messages[1]` (original user task) instead of starting from `messages[2]`, causing LLM to receive invalid `system→assistant` sequence and lose task context. Now preserves system + original user message
-- **High** — `ws.js`: `pendingInterventions` Map entry never cleaned when run completes/errors, causing unbounded memory growth. Added `PENDING_INTERVENTIONS.delete(runId)` on run completion and error
-- **High** — `use-websocket.ts`: no re-subscription to active runs after WS reconnect, causing missed steps/completions. Added subscribe messages for active runIds on `ws.onopen`
-- **Medium** — `llm-providers.js`: `callOllama(messages, options)` didn't receive resolved model from failover chain (unlike `callOpenAI`/`callClaude`). Changed to `callOllama(messages, { ...options, model })`
-- **Medium** — `handoff.js`: decision regex required sentence boundary (`^|\n|.\s`) before keywords, missing mid-sentence patterns like "Based on this, I decided". Added `.,;!?` as boundary characters
-- **Medium** — `server.js`: `apiKeyAuth` middleware ran on `/health` endpoint, breaking K8s/load balancer probes when API key is configured. Added path check to skip auth for `/health`
-- **Medium** — `agent-status-panel.tsx`: `formatSince` duration computed once and never refreshed for running agents. Added 1-second interval tick when any agent is in running state
-- **Medium** — `dashboard-header.tsx`: API Key row showed `••••••••` implying the key was hidden, but `NEXT_PUBLIC_*` vars are in page source. Changed to show "Configured"/"Not set" for honest labeling
-- **Medium** — `tracing.js`: p95 percentile index used `Math.floor` causing low bias for small samples (e.g., length=2 → index=0 instead of 1). Changed to `Math.round`
-
-**Deep System Bug Audit Round 5 (7 bugs fixed — 2H + 5M):**
-- **High** — `chat-session.js`: context trim after tool execution had no pair-preservation — could start with orphaned `user` tool-result, producing invalid `system→user(tool result)` LLM sequence. Added pair-preservation logic
-- **High** — `ws.js`: `handleChatSend` error event missing `turnId` — dashboard couldn't map error to streaming turn, leaving message stuck as "streaming" forever. Added `turnId: resolvedTurnId`
-- **Medium** — `chat-panel.tsx`: `useEffect` auto-selected session only when `!activeSessionId` — creating new session while another was active wouldn't switch to it. Fixed condition
-- **Medium** — `use-websocket.ts`: `completedRuns` added entries without immediate eviction — memory bloat between cleanup timer intervals. Added eviction when over `MAX_RUNS`
-- **Medium** — `handoff.js`: `broadcastHandoffComplete` passed `bundle.artifacts` (array) instead of count — dashboard displayed `[object Object]`. Changed to `.length`
-- **Medium** — `react-loop.js` + 4 files: `state.status = "complete"` didn't match `"completed"` in WS/API/types.ts, breaking downstream checks. Standardized to `"completed"`
-- **Medium** — `react-loop.js`: `endTrace` checked `state.status === "complete"` after rename, recording successful runs as `"error"`. Updated to `"completed"`
-
-**Deep System Bug Audit Round 6 (4 bugs fixed — 1H + 3M):**
-- **High** — `tool-definitions.js`: `plan.update` and `plan.list` used `planId` directly in path without sanitization — `../` in planId allowed directory traversal. Added sanitization + `pathTraversal` guard
-- **Medium** — `mcp/server.js`: MCP `run_agent` timeout timer never cleared after `Promise.race` — 2-minute timer leaked after agent completed. Added `clearTimeout`
-- **Medium** — `metrics-panel.tsx`: `fetch("/api/metrics")` had no `AbortController` — in-flight requests continued after unmount, calling `setState` on unmounted component. Added abort on cleanup
-- **Medium** — `tool-definitions.js`: delegate context trim `splice` assumed `messages[1]` was always `assistant` — could throw `TypeError` after prior splices. Added optional chaining + pair-preservation
-
-### V2.7.1 Bug Fixes (10 Critical + 17 High + 19 Medium + 7 Low + 3 CI)
-
-**Dashboard Security Hardening (Post-release):**
-- **CSP Headers**: `Content-Security-Policy`, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy` via `next.config.js`
-- **API Proxy Whitelist**: `isPathAllowed()` blocks non-whitelisted paths (`admin/*`, `secrets/*`, etc.) with 403
-- **WS Auth**: Client sends token via `Sec-WebSocket-Protocol: aiyu-token.<key>` instead of query param; server `handleProtocols` selects subprotocol
-- **Input Validation**: `validateInput()` / `validateIdentifier()` in `use-websocket.ts` guards `sendRun`, `sendIntervene`, `sendChatCreate`, `sendChatSend`
-- **Component Refactoring**: `page.tsx` 479→160 lines — extracted `DashboardHeader`, `RunPanel`, `ResetDialog` components
-- **Test Suite**: Jest + React Testing Library (29 tests, 4 suites) + Playwright E2E (9 specs) — API proxy, input validation, component rendering
-
-**Dashboard Integration (2 Critical + 3 High + 2 Medium):**
-- **Critical**: WS client no API key token (auto `?token=` injection), `sensitiveRouteAuth` blocks Docker network (server-side API proxy with auth)
-- **High**: Docker port mapping `3001:3000` → `3001:3001`, `NEXT_PUBLIC_WS_URL` build-time embedding, Next.js rewrite no auth forwarding (API route proxy)
-- **Medium**: Dashboard missing `sendChatCreate`/`sendChatSend`, `/agents/statuses` missing ISO `timestamp` field
-
-**Server-side (8 Critical + 14 High + 17 Medium + 5 Low + 3 CI):**
-- **Critical**: WS run/chat timeout doesn't cancel agent execution (AbortController), agent-loader `isValidAgentName` path traversal, WS timeout timer leak, agent.delegate missing `_runId`, failover `.filter()` mutation, handoff catch `ReferenceError`, WS disconnect doesn't cancel running agent (activeRuns Map), PENDING_INTERVENTIONS mutable Map export (read-only snapshot)
-- **High**: `wsApiKeyAuth` crashes on malformed URL, prompt-builder hardcodes tool list, usage.js atomic write, search-tools async, chat-session intervention, `AIYU_ENABLE_MOCK` not set in tests, context trim pair mismatch, chat tool timeout/abort, Claude Content-Length, intervene WS fallback, chat lastActivity timing, `/agents/statuses` crash on ws require fail, jobs.js no input length validation, packager bin/run.js path traversal, plugin.js `--ignore-scripts`, agent-loader no file size limit (200KB)
-- **Medium**: Handoff WS broadcast fallback, Claude system message merge, request-queue `timeout=0`, chat context limit, circuit breaker leak, tracing idle leak, cache key collision, tracing recursion → setImmediate, queue job deletion, safeWrite temp cleanup, grep early match limit, _broadcast error handling, SKILL.md size limit, Ollama health check, sandboxExec env secret leak, cache not true LRU (lastAccess), retry no jitter, validator secret scan too narrow (recursive), config symlink fallback no warning, prompt-builder heading overflow, test.js watch timer no unref
-- **Low**: ws.js Map accessor functions, health-check GET for Ollama, config.json try/catch, chatSessions read-only, memory pathTraversal, callMock UTF-8 slice, usage.js stale .tmp file, health-check agent GC pressure, dev hardcodes mock (`--provider` flag), compliance hardcodes agent name, search-tools SKIP_DIRS
+| V2.7.9 Quality + CLI | Multi-CLI scanner, question-form guardrail, anti-slop quality gate, artifact output | Safety ⬆️ |
+| V2.7.8 Cursor Output | Output Contract in 78 slash commands — agent ID enforced even without alwaysApply | Reliability ⬆️ |
+| V2.7.7 Cursor IDE | `.cursor/rules/*.mdc` + `.cursor/commands/*.md` generator — 84 agents, 45 skills, 78 commands | IDE Support ⬆️ |
+| V2.7.6 Groq + Frontmatter | 6th LLM provider (`callGroq`) + `run-from-file <path>` task runner | Flexibility ⬆️ |
+| Dashboard | Next.js 14 real-time monitoring (`aiyu-multi-agent-dashboard/`) | Observability ⬆️ |
+| WS Schema | `docs/WS-SCHEMA.md` — formal contract (6 client→server, 10 server→client) | Reliability ⬆️ |
+| V2.7.0–V2.7.4 Hardening | 150+ bug fixes across 6 audit rounds — see [CHANGELOG.md](CHANGELOG.md) for details | Stability ⬆️ |
 
 ---
 
-## ✨ What's New in V2.6
+## What's new in V2.6
 
 V2.6 brings **module decomposition** and **reliability hardening** — breaking the two largest god modules into focused, maintainable files while preserving full backward compatibility.
 
@@ -257,7 +169,7 @@ tool-registry.js (re-export) ──► tool-definitions.js — Tools + schemas
 
 ---
 
-## ✨ What's New in V2.5
+## What's new in V2.5
 
 V2.5 brings **Claude Design-inspired** capabilities to the Aiyu MultiAgent platform, enabling real-time agent collaboration, external API access, and smarter project-aware AI automation. This release adds 9 major features and fixes 31 bugs for improved reliability.
 
@@ -284,7 +196,7 @@ V2.5 brings **Claude Design-inspired** capabilities to the Aiyu MultiAgent platf
 
 ---
 
-## 🚀 Quick Start
+## Quick start
 
 Get started in seconds with `npx` — no installation required:
 
@@ -300,6 +212,12 @@ npx aiyu-multi-agent init --cursor-only
 
 # Multi-IDE projects — generate both .windsurf/ and .cursor/
 npx aiyu-multi-agent init --cursor
+
+# Roo Code (VS Code) users — generate .roomodes, .roorules, .roo/
+npx aiyu-multi-agent init --roo-only
+
+# Windsurf-only (no .agent/ directory)
+npx aiyu-multi-agent init --windsurf-only
 ```
 
 Once initialized, type any **slash command** in the Windsurf chat panel, Cursor chat, or terminal to activate specialized AI agents:
@@ -326,13 +244,13 @@ aiyu-multi-agent .
 
 ---
 
-## � Why Aiyu MultiAgent?
+## Why Aiyu MultiAgent?
 
-### The Problem
+### The problem
 Developers waste hours on repetitive tasks — setting up projects, writing boilerplate, auditing code, debugging, and orchestrating complex multi-step workflows across different tools and LLM providers.
 
-### The Solution
-Aiyu MultiAgent is a **unified AI agent platform** that brings 83+ specialized agents to your fingertips. Instead of context-switching between ChatGPT, Claude, and custom scripts, you get:
+### The solution
+Aiyu MultiAgent is a **unified AI agent platform** that brings 84 specialized agents to your fingertips. Instead of context-switching between ChatGPT, Claude, and custom scripts, you get:
 
 - **⚡ Instant Agent Activation** — Type `/backend`, `/security`, or `/deploy` and a domain expert agent takes over
 - **🧠 Multi-LLM Support** — Works with OpenAI GPT-4, Anthropic Claude, local Ollama models, and mock mode for testing
@@ -345,11 +263,11 @@ Aiyu MultiAgent is a **unified AI agent platform** that brings 83+ specialized a
 
 ---
 
-##  CLI Reference
+## CLI reference
 
 Aiyu MultiAgent provides a comprehensive command-line interface for managing AI agents, running tasks, testing, and publishing. All commands support `--help` for detailed usage.
 
-### 🏠 Core Commands
+### Core commands
 
 ```bash
 aiyu-multi-agent init                        # Quick setup (smart defaults)
@@ -362,7 +280,7 @@ aiyu-multi-agent inspect                     # Observability dashboard
 aiyu-multi-agent checklist                   # Run master checklist
 ```
 
-### ⚙️ Execution Engine
+### Execution engine
 
 Run agents with natural language input or start an interactive chat session:
 
@@ -374,13 +292,19 @@ aiyu-multi-agent run "..." --provider claude # Claude (needs ANTHROPIC_API_KEY)
 aiyu-multi-agent run "..." --provider groq   # Groq (needs GROQ_API_KEY, free tier)
 aiyu-multi-agent run "..." --provider local  # Ollama (local LLM)
 aiyu-multi-agent run "..." --provider mock   # Mock (testing)
+aiyu-multi-agent run "..." --provider cli:claude  # CLI engine as provider
 aiyu-multi-agent run "..." --json            # JSON output (CI/CD)
 aiyu-multi-agent run "..." --max-steps 20    # Override max ReAct steps
 aiyu-multi-agent run "..." --verbose         # Streaming step-by-step
 aiyu-multi-agent run "..." --no-cache        # Skip cache
+aiyu-multi-agent run "..." --output-format artifact  # Parse <artifact> tags
+aiyu-multi-agent run "..." --write-artifacts ./out   # Write artifacts to dir
+aiyu-multi-agent run "..." --no-form         # Skip question-form guardrail
+aiyu-multi-agent run "..." --strict-quality-gate  # Fail on quality violations
 
 aiyu-multi-agent run-from-file tasks/login.md   # Run agent from markdown with frontmatter
 # Frontmatter: agent, provider, model, maxSteps, outputFormat (all optional, --flags override)
+# Also supports: --output-format, --no-form, --strict-quality-gate, --write-artifacts
 
 aiyu-multi-agent dev                         # Dev REPL (mock provider)
 aiyu-multi-agent dev --provider openai       # Dev REPL with real LLM
@@ -388,9 +312,25 @@ aiyu-multi-agent dev --verbose               # Dev REPL with step logging
 
 aiyu-multi-agent chat                        # Interactive session
 aiyu-multi-agent chat --agent backend        # Chat with specific agent
+
+aiyu-multi-agent engines                    # List CLI engines in PATH
+aiyu-multi-agent engines --json             # JSON output
+
+aiyu-multi-agent health                     # System health check
+aiyu-multi-agent health --json              # JSON output
+
+aiyu-multi-agent traces                     # View recent traces
+aiyu-multi-agent traces --id <traceId>       # Specific trace details
+aiyu-multi-agent traces --metrics            # Trace metrics summary
+
+aiyu-multi-agent inspect                     # Observability dashboard
+aiyu-multi-agent usage                       # Usage statistics
+aiyu-multi-agent info <agent>                # Agent details
+aiyu-multi-agent update                      # Update config to latest
+aiyu-multi-agent uninstall                   # Remove config directories
 ```
 
-### 🌐 HTTP API & WebSocket
+### HTTP API and WebSocket
 
 Start a production-ready HTTP server with REST API and WebSocket streaming:
 
@@ -407,9 +347,11 @@ aiyu-multi-agent serve                       # Start HTTP API server
 | `/traces` | GET | Distributed trace data |
 | `/handoff` | POST | Chain agents with context bundles |
 | `/agents/intervene` | POST | Inject mid-run feedback |
+| `/agents/statuses` | GET | Live agent status grid |
+| `/artifacts/:jobId` | GET | Retrieve parsed artifacts for a job |
 | `/ws` | WebSocket | Real-time agent step streaming |
 
-### 🎯 Cursor IDE Support
+### Cursor IDE support
 
 First-class Cursor IDE integration via auto-generated `.cursor/rules/*.mdc` and `.cursor/commands/*.md`:
 
@@ -428,7 +370,29 @@ This generates:
 
 Full guide: [`docs/CURSOR-IDE.md`](docs/CURSOR-IDE.md)
 
-### 🔌 MCP Server
+### Roo Code support
+
+First-class Roo Code (VS Code extension) integration via auto-generated `.roomodes`, `.roorules`, `.roo/`:
+
+```bash
+npx aiyu-multi-agent init --roo-only          # .roomodes + .roorules + .roo/
+npx aiyu-multi-agent init --roo-only --force  # Re-generate after .agent/ changes
+```
+
+This generates:
+- **84 custom modes** — one per agent, selectable via Roo mode picker
+- **Project rules** — `.roorules` mirrors `.windsurfrules`
+- **System prompts** — `.roo/` per-agent instructions
+
+### Config directory modes
+
+```bash
+npx aiyu-multi-agent init --windsurf-only     # .windsurf/ only (no .agent/)
+npx aiyu-multi-agent init --agent-only       # .agent/ only (no .windsurf/ symlink)
+npx aiyu-multi-agent init --no-roo           # Skip Roo Code generation
+```
+
+### MCP server
 
 Integrate with Claude Code, Cursor, Windsurf, and any MCP-compatible host:
 
@@ -472,19 +436,21 @@ aiyu-multi-agent mcp                         # Start MCP server (stdio)
 
 </details>
 
-### 🧪 Testing & Publishing
+### Testing and publishing
 
 ```bash
 aiyu-multi-agent test                        # Run agent test suite
 aiyu-multi-agent test --compliance           # Spec compliance (15 checks)
-aiyu-multi-agent test --unit                 # Unit tests (29 tests)
+aiyu-multi-agent test --unit                 # Unit tests (41 tests)
+aiyu-multi-agent test --production           # Production tests (25 tests)
+aiyu-multi-agent test --integration          # Integration tests (12 tests)
 aiyu-multi-agent test --watch                # Watch mode
 
 aiyu-multi-agent publish                     # Publish agent to npm
 aiyu-multi-agent publish --dry-run           # Validate without publishing
 ```
 
-### 📦 Plugin System
+### Plugin system
 
 ```bash
 aiyu-multi-agent add skill <name>            # Install skill from npm
@@ -493,7 +459,7 @@ aiyu-multi-agent remove skill <name>         # Uninstall skill
 
 ---
 
-## 🔧 LLM Providers
+## LLM providers
 
 Aiyu MultiAgent supports multiple large language model providers with **automatic failover**. If one provider's circuit breaker opens, the system automatically tries the next provider in the chain.
 
@@ -504,14 +470,15 @@ Aiyu MultiAgent supports multiple large language model providers with **automati
 | **Groq** | `GROQ_API_KEY` (+ optional `GROQ_MODEL`) | `llama-3.3-70b-versatile`, `mixtral-8x7b-32768`, `gemma2-9b-it` | Fast inference, free tier (14,400 req/day at console.groq.com) |
 | **Ollama** | `OLLAMA_HOST` | `llama3`, `mistral`, `codellama` | Local/offline execution, privacy-sensitive projects |
 | **Mock** | `AIYU_ENABLE_MOCK=1` | Canned responses | Testing, CI/CD pipelines, development without API keys |
+| **CLI Engines** | Auto-detected in `$PATH` | `claude`, `codex`, `gemini`, etc. | Use installed AI CLIs as failover providers |
 
-**🔄 Failover Chain:** `openai → claude → groq → ollama → mock`
+**Failover chain:** `openai → claude → groq → ollama → mock`
 
 When the circuit breaker detects failures (timeouts, 5xx errors, rate limits), it automatically promotes the next provider. No manual intervention required.
 
 ---
 
-## 🛠️ Built-in Tools
+## Built-in tools
 
 Every agent gets access to a set of **sandboxed, namespaced tools** for safe file system and shell operations. All tools run with path traversal protection and argument validation.
 
@@ -545,7 +512,7 @@ Every agent gets access to a set of **sandboxed, namespaced tools** for safe fil
 
 ---
 
-## 📁 Project Structure
+## Project structure
 
 ```
 .agent/                          # Universal config (primary)
@@ -560,6 +527,10 @@ Every agent gets access to a set of **sandboxed, namespaced tools** for safe fil
 └── config.yaml                  # Agent configuration
 
 .windsurf/                       # Symlink → .agent/ (Windsurf IDE)
+.cursor/                        # Auto-generated for Cursor IDE (84 agents + 45 skills + 78 commands)
+.roomodes                       # Roo Code custom modes (84 agents)
+.roorules                        # Roo Code project rules
+.roo/                            # Roo Code system prompts
 ```
 
 <details>
@@ -593,11 +564,17 @@ aiyu-multi-agent/
 │   │   ├── tool-definitions.js  # Tools + schemas + registry
 │   │   ├── search-tools.js      # Grep + Glob
 │   │   ├── command-parser.js    # Shell arg parse + ReDoS-safe
-│   │   ├── llm-providers.js     # OpenAI, Claude, Ollama, Mock + retry
+│   │   ├── llm-providers.js     # OpenAI, Claude, Groq, Ollama, Mock + retry
 │   │   ├── circuit-breaker.js   # Prevents cascade LLM failures
 │   │   ├── request-queue.js     # Concurrency control + backpressure
 │   │   ├── tracing.js           # Distributed tracing (OTel export)
 │   │   ├── health-check.js      # System + Ollama health status
+│   │   ├── cli-scanner.js       # Multi-CLI PATH scanner
+│   │   ├── cli-adapters/        # Per-CLI adapters (claude, codex, generic)
+│   │   ├── question-form.js     # Turn-1 discovery guardrail
+│   │   ├── quality-gate.js      # Anti-slop output quality checker
+│   │   ├── artifact-parser.js   # <artifact> tag parser
+│   │   ├── roo-generator.js     # Roo Code (.roomodes, .roorules, .roo/)
 │   │   ├── config.js            # Config loader (.agent/ + .windsurf/)
 │   │   ├── plugin.js            # Plugin lifecycle + permission system
 │   │   ├── guardrails.js        # Security & safety layer
@@ -612,15 +589,18 @@ aiyu-multi-agent/
 ├── docs/                       # Architecture, runtime spec, roadmap, usage
 ├── .windsurf/                  # 84 Agents, 46 Skills, 78 Workflows, 10 Rules (Windsurf IDE)
 ├── .cursor/                    # 84 agents + 45 skills + 9 domain rules + 78 commands (Cursor IDE, auto-generated)
+├── .roomodes                   # 84 custom modes (Roo Code, auto-generated)
+├── .roorules                   # Roo Code project rules (auto-generated)
+├── .roo/                       # Roo Code system prompts (auto-generated)
 └── aiyu-multi-agent-dashboard/ # Real-time monitoring dashboard (Next.js 14)
 ```
 </details>
 
 ---
 
-## 🎯 How to Use Aiyu MultiAgent
+## How to use Aiyu MultiAgent
 
-### Method 1: Slash Commands — Instant Agent Activation
+### Method 1: slash commands
 
 Type `/` followed by a command name to instantly activate a specialized AI agent. Each agent has domain-specific skills, tools, and guardrails tailored to its purpose.
 
@@ -640,7 +620,7 @@ Type `/` followed by a command name to instantly activate a specialized AI agent
 | `/senior-orchestrate` (4-6 agents) | `/staff` `/platform` `/ux-research` `/accessibility` |
 | `/elite-orchestrate` (7+ agents) | |
 
-### Method 2: Natural Language — Smart Auto-Routing
+### Method 2: natural language
 
 Just describe your task in plain English — the built-in **intelligent routing system** automatically selects the best AI agent for your request:
 
@@ -655,7 +635,7 @@ Just describe your task in plain English — the built-in **intelligent routing 
 → 🤖 Active Agent: cloud-architect
 ```
 
-### Method 3: Multi-Agent Orchestration — Complex Projects
+### Method 3: multi-agent orchestration
 
 For complex, multi-domain projects, orchestrate multiple agents to work together:
 
@@ -667,7 +647,7 @@ For complex, multi-domain projects, orchestrate multiple agents to work together
 
 ---
 
-## 🛡️ Security & Guardrails
+## Security and guardrails
 
 Aiyu MultiAgent is built with **security-first design** for safe AI agent execution in production environments. Every tool call passes through multiple safety layers:
 
@@ -685,7 +665,7 @@ Aiyu MultiAgent is built with **security-first design** for safe AI agent execut
 
 ---
 
-## 🧪 Testing Your Agents
+## Testing your agents
 
 Write declarative tests in **Markdown** — no code required. Create `.agent/tests/your-agent.test.md`:
 
@@ -714,7 +694,9 @@ Run tests with a single command:
 ```bash
 aiyu-multi-agent test                        # Run all test suites
 aiyu-multi-agent test --compliance           # 15 spec compliance checks
-aiyu-multi-agent test --unit                 # 29 core module unit tests
+aiyu-multi-agent test --unit                 # 41 core module unit tests
+aiyu-multi-agent test --production           # 25 production module tests
+aiyu-multi-agent test --integration          # 12 integration tests
 aiyu-multi-agent test --watch                # Auto-re-run on file changes
 ```
 
@@ -729,7 +711,7 @@ aiyu-multi-agent test --watch                # Auto-re-run on file changes
 
 ---
 
-## 🔌 Plugin System — Extend With Skills
+## Plugin system
 
 Install community skills from npm to extend your agents:
 
@@ -760,7 +742,7 @@ aiyu-multi-agent-skill-my-skill/
 
 ---
 
-## 🔧 Customize and Extend
+## Customize and extend
 
 <details>
 <summary><b>➕ Add a New Agent</b></summary>
@@ -812,7 +794,7 @@ Guidelines that auto-trigger when keywords match...
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 We welcome contributions from the community! Whether it's bug fixes, new agents, skills, or documentation improvements.
 

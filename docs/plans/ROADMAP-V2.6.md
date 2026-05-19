@@ -4,9 +4,9 @@
 
 ---
 
-## ✅ V2.6.0 Completed — Module Decomposition + Reliability Hardening
+## V2.6.0 completed — module decomposition + reliability hardening
 
-### Phase 0 — Codebase Quality (Completed)
+### Phase 0 — codebase quality (completed)
 
 | # | Change | Files | Impact |
 |---|--------|-------|--------|
@@ -20,13 +20,13 @@
 | 8 | **Dev command** | `bin/cli.js` | REPL with verbose tool logging, trace support |
 | 9 | **TypeScript declarations** | `lib/core/types.d.ts` | 12 core modules typed — foundation for TS migration |
 
-### Backward Compatibility
+### Backward compatibility
 
 All existing `require("./agent-runtime")` and `require("./tool-registry")` calls work unchanged — both files are now thin re-exports.
 
 ---
 
-## Phase 1 — Core Infrastructure (V2.6.0)
+## Phase 1 — core infrastructure (V2.6.0)
 
 > ขยาย runtime engine ให้รองรับ local CLI + persistence + project isolation
 
@@ -87,7 +87,7 @@ All existing `require("./agent-runtime")` and `require("./tool-registry")` calls
 
 ---
 
-## Phase 2 — Skills & Design System (V2.7.0)
+## Phase 2 — skills & design system (V2.7.0)
 
 > เพิ่ม design capability ผ่าน skill + design token system
 
@@ -127,7 +127,7 @@ All existing `require("./agent-runtime")` and `require("./tool-registry")` calls
 
 ---
 
-## Phase 3 — Quality & Observability (V)
+## Phase 3 — quality & observability
 
 > เพิ่ม quality gate + BYOK proxy + artifact format
 
@@ -199,7 +199,7 @@ Phase 3.3 (Artifact) → Phase 1.2 — artifact เก็บใน session store
 
 ---
 
-## Source Reference
+## Source reference
 
 แนวคิดทั้งหมดมาจากการวิเคราะห์ [nexu-io/open-design](https://github.com/nexu-io/open-design) — open-source alternative ของ Claude Design
 

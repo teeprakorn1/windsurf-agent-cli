@@ -1,6 +1,6 @@
-# Plan v2.7.8 — Multi-CLI PATH Scanner + Question-Form + Quality Gate + Artifact Parser
+# Plan v2.7.9 — Multi-CLI PATH Scanner + Question-Form + Quality Gate + Artifact Parser
 
-> Port 4 pending features from ROADMAP-V2.6.md Phase 1-3 into aiyu-multi-agent, starting with CLI Scanner infrastructure.
+> **COMPLETED** — All 4 features shipped in v2.7.9. This plan is archived for reference.
 
 ---
 
@@ -8,17 +8,17 @@
 
 | # | Feature | Branch | Est. | Status |
 |---|---|---|---|---|
-| 1 | Multi-CLI PATH Scanner | `feat/cli-scanner` | 6-8h | ⏳ Pending |
-| 2 | Question-Form Guardrail | `feat/question-form` | 2-3h | ⏳ Pending |
-| 3 | Anti-Slop Quality Gate | `feat/quality-gate` | 4-5h | ⏳ Pending |
-| 4 | Artifact Output Format | `feat/artifact-parser` | 6h | ⏳ Pending |
+| 1 | Multi-CLI PATH Scanner | `feat/cli-scanner` | 6-8h | ✅ Done |
+| 2 | Question-Form Guardrail | `feat/question-form` | 2-3h | ✅ Done |
+| 3 | Anti-Slop Quality Gate | `feat/quality-gate` | 4-5h | ✅ Done |
+| 4 | Artifact Output Format | `feat/artifact-parser` | 6h | ✅ Done |
 
-**Version:** v2.7.8 (minor — new features, no breaking changes)
+**Version:** v2.7.9 (minor — new features, no breaking changes)
 **Pre-requisite:** Sprint 1 (v2.7.6) committed
 
 ---
 
-## Feature 1: Multi-CLI PATH Scanner
+## Feature 1: multi-CLI PATH scanner
 
 ### Goal
 
@@ -69,7 +69,7 @@ aiyu-multi-agent engines                          # list detected CLIs
 
 ---
 
-## Feature 2: Question-Form Guardrail
+## Feature 2: question-form guardrail
 
 ### Goal
 
@@ -111,7 +111,7 @@ Force agents to ask structured discovery questions in turn 1 before generating c
 
 ---
 
-## Feature 3: Anti-Slop Quality Gate
+## Feature 3: anti-slop quality gate
 
 ### Goal
 
@@ -159,7 +159,7 @@ Post-step hook that checks LLM output for quality issues before returning to use
 
 ---
 
-## Feature 4: Artifact Output Format
+## Feature 4: artifact output format
 
 ### Goal
 
@@ -211,7 +211,7 @@ Supported types: `html`, `css`, `js`, `ts`, `json`, `yaml`, `md`, `python`, `she
 
 ---
 
-## Execution Strategy
+## Execution strategy
 
 Each feature: **branch → implement → test → review → commit → merge**
 
@@ -224,25 +224,25 @@ feat/quality-gate ─────────> review ──> merge
                                           │
 feat/artifact-parser ──────> review ──> merge
                                           │
-                                    v2.7.8 tag + npm publish
+                                    v2.7.9 tag + npm publish
 ```
 
-All 4 features merge into single version bump (v2.7.8).
+All 4 features merge into single version bump (v2.7.9).
 
 ---
 
-## Done Criteria (All Features)
+## Done criteria (all features)
 
 - [ ] `npm run lint` passes
 - [ ] `npm test` passes (all existing + ~18 new tests)
-- [ ] CHANGELOG.md updated (v2.7.8 entry)
+- [ ] CHANGELOG.md updated (v2.7.9 entry)
 - [ ] CODEBASE.md updated
 - [ ] README.md sections added
-- [ ] package.json version = 2.7.7
+- [ ] package.json version = 2.7.9
 
 ---
 
-## Risk Register
+## Risk register
 
 | Risk | Impact | Mitigation |
 |---|---|---|

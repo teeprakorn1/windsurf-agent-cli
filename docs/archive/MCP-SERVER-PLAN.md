@@ -5,7 +5,7 @@
 
 ---
 
-## 1. Overview
+## 1. overview
 
 Build an official MCP (Model Context Protocol) server for aiyu-multi-agent, enabling integration with Claude Code, Cursor, Zed, Windsurf, and any MCP-compatible host.
 
@@ -13,7 +13,7 @@ Build an official MCP (Model Context Protocol) server for aiyu-multi-agent, enab
 
 ---
 
-## 2. Architecture
+## 2. architecture
 
 ```
 ┌─────────────────────────────────────────────────────┐
@@ -47,7 +47,7 @@ Build an official MCP (Model Context Protocol) server for aiyu-multi-agent, enab
 
 ---
 
-## 3. MCP Tools Specification
+## 3. MCP tools specification
 
 ### 3.1 `list_agents`
 
@@ -135,7 +135,7 @@ Build an official MCP (Model Context Protocol) server for aiyu-multi-agent, enab
 
 ---
 
-## 4. Provider Keys Strategy
+## 4. provider keys strategy
 
 **Priority order (highest wins):**
 
@@ -148,7 +148,7 @@ This means the MCP server reads from the **same config** as the CLI, with env va
 
 ---
 
-## 5. Transport Strategy
+## 5. transport strategy
 
 ### Phase 1: stdio (This PR)
 - Uses `StdioServerTransport` from `@modelcontextprotocol/server`
@@ -162,7 +162,7 @@ This means the MCP server reads from the **same config** as the CLI, with env va
 
 ---
 
-## 6. File Structure
+## 6. file structure
 
 ```
 lib/mcp/
@@ -181,7 +181,7 @@ lib/mcp/
 
 ---
 
-## 7. CLI Command
+## 7. CLI command
 
 ```bash
 # Start MCP server (stdio — for host config)
@@ -218,7 +218,7 @@ aiyu-multi-agent mcp --transport stdio
 
 ---
 
-## 8. Dependencies
+## 8. dependencies
 
 | Package | Version | Purpose |
 |---------|---------|---------|
@@ -229,7 +229,7 @@ aiyu-multi-agent mcp --transport stdio
 
 ---
 
-## 9. Implementation Steps
+## 9. implementation steps
 
 | Step | File | Description | Status |
 |------|------|-------------|--------|
@@ -247,7 +247,7 @@ aiyu-multi-agent mcp --transport stdio
 
 ---
 
-## 10. Risk Assessment
+## 10. risk assessment
 
 | Risk | Likelihood | Impact | Mitigation |
 |------|-----------|--------|-----------|
@@ -258,7 +258,7 @@ aiyu-multi-agent mcp --transport stdio
 
 ---
 
-## 11. Open Questions for Maintainer
+## 11. open questions
 
 1. ✅ stdio-only for Phase 1? → **Implemented: Yes**
 2. ✅ 3 tools (run_agent + list_agents + inspect_agent)? → **Implemented: Yes**
@@ -269,7 +269,7 @@ aiyu-multi-agent mcp --transport stdio
 
 ---
 
-## 12. Success Criteria
+## 12. success criteria
 
 - [x] `aiyu-multi-agent mcp` starts and responds to MCP handshake
 - [x] `list_agents` returns all agents in project
@@ -281,7 +281,7 @@ aiyu-multi-agent mcp --transport stdio
 
 ---
 
-## 13. Implementation Notes
+## 13. implementation notes
 
 ### ESM-only SDK Workaround
 The `@modelcontextprotocol/sdk` is ESM-only (no CJS build). Since aiyu-multi-agent uses CJS (`require()`), we use dynamic `await import()` in `lib/mcp/server.js`:

@@ -2,7 +2,7 @@
 
 /**
  * Aiyu MultiAgent — AI Agent Platform
- * Production-grade AI Agent CLI — thin router, commands in lib/commands/
+ * AI Agent CLI — thin router, commands in lib/commands/
  */
 
 const { Command } = require("commander");
@@ -14,7 +14,7 @@ const program = new Command();
 
 program
   .name("aiyu-multi-agent")
-  .description("Production-grade AI Agent Platform")
+  .description("AI Agent Platform")
   .version(inline.CURRENT_VERSION)
   .addHelpText("before", `\n  ${chalk.cyan(`Aiyu MultiAgent v${inline.CURRENT_VERSION}`)} — ${inline.getComponentCounts().agents} Agents | ${inline.getComponentCounts().skills} Skills | ${inline.getComponentCounts().workflows} Workflows\n`)
   .addHelpText("after", `\n  Documentation: https://github.com/teeprakorn1/aiyu-multi-agent#readme\n`);
@@ -148,13 +148,18 @@ program
   .command("run <input>")
   .description("Execute agent with input (the core execution engine)")
   .option("-a, --agent <name>", "Agent to run (default: first found)")
-  .option("-p, --provider <provider>", "LLM provider: openai, claude, groq, local, mock")
+  .option("-p, --provider <provider>", "LLM provider: openai, claude, groq, local, mock, cli:<name>")
   .option("-m, --model <model>", "LLM model name")
   .option("--max-steps <n>", "Max ReAct loop steps", "10")
   .option("--json", "Output as JSON")
   .option("--verbose", "Show step-by-step thinking and tool results")
   .option("--dry-run", "Preview execution without running")
   .option("--no-cache", "Skip cache, always re-run")
+  .option("--output-format <format>", "Output format: text, json, artifact")
+  .option("--no-form", "Skip question-form guardrail on first turn")
+  .option("--no-quality-gate", "Skip anti-slop quality gate")
+  .option("--strict-quality-gate", "Fail on quality violations instead of warn")
+  .option("--write-artifacts <dir>", "Write parsed artifacts to directory")
   .action(async (input, options) => {
     const runCmd = require("../lib/commands/run");
     await runCmd.run(input, options);
@@ -173,6 +178,11 @@ program
   .option("--verbose", "Show step-by-step thinking and tool results")
   .option("--dry-run", "Preview execution without running")
   .option("--no-cache", "Skip cache, always re-run")
+  .option("--output-format <format>", "Output format: text, json, artifact")
+  .option("--no-form", "Skip question-form guardrail on first turn")
+  .option("--no-quality-gate", "Skip anti-slop quality gate")
+  .option("--strict-quality-gate", "Fail on quality violations instead of warn")
+  .option("--write-artifacts <dir>", "Write parsed artifacts to directory")
   .action(async (file, options) => {
     const cmd = require("../lib/commands/run-from-file");
     const result = await cmd.runFromFile(file, options);
@@ -186,13 +196,37 @@ program
   .command("chat")
   .description("Interactive chat session with an agent")
   .option("-a, --agent <name>", "Agent to chat with (default: first found)")
-  .option("-p, --provider <provider>", "LLM provider: openai, claude, groq, local, mock")
+  .option("-p, --provider <provider>", "LLM provider: openai, claude, groq, local, mock, cli:<name>")
   .option("-m, --model <model>", "LLM model name")
+  .option("--output-format <format>", "Output format: text, json, artifact")
+  .option("--no-form", "Skip question-form guardrail on first turn")
+  .option("--no-quality-gate", "Skip anti-slop quality gate")
+  .option("--strict-quality-gate", "Fail on quality violations instead of warn")
   .action(async (options) => {
     const chatCmd = require("../lib/commands/chat");
     await chatCmd.run(options);
     const usage = require("../lib/core/usage");
     usage.trackCommand(process.cwd(), "chat");
+  });
+
+program
+  .command("engines")
+  .description("List available CLI engines detected in PATH")
+  .option("--json", "Output as JSON")
+  .action(async (options) => {
+    const cliScanner = require("../lib/core/cli-scanner");
+    const engines = cliScanner.listAvailableEngines();
+    if (options.json) {
+      console.log(JSON.stringify(engines, null, 2));
+    } else {
+      console.log("Available CLI engines:");
+      for (const engine of engines) {
+        console.log(`  ${engine.name}: ${engine.available ? engine.version || "ok" : "not found"}`);
+      }
+      if (engines.length === 0) console.log("  (none found)");
+    }
+    const usage = require("../lib/core/usage");
+    usage.trackCommand(process.cwd(), "engines");
   });
 
 program

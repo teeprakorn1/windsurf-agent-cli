@@ -1,6 +1,6 @@
 # Security Policy
 
-## Supported Versions
+## Supported versions
 
 | Version | Supported |
 | ------- | --------- |
@@ -10,11 +10,11 @@
 | 2.4.x   | ⚠️ Critical fixes only |
 | < 2.4   | ❌ End of life |
 
-## Reporting a Vulnerability
+## Reporting a vulnerability
 
 **⚠️ Do NOT file a public GitHub issue for security vulnerabilities.**
 
-### How to Report
+### How to report
 
 1. **Email:** Send details to the maintainers via GitHub's private vulnerability reporting:
    - Go to [Security tab](https://github.com/teeprakorn1/aiyu-multi-agent/security)
@@ -27,7 +27,7 @@
    - Potential impact
    - Suggested fix (if any)
 
-### Response Timeline
+### Response timeline
 
 | Stage | Target Time |
 |-------|-------------|
@@ -36,7 +36,7 @@
 | Fix development | 14 business days (critical), 30 days (high) |
 | Advisory published | After fix is released |
 
-### What We Consider Security Issues
+### What we consider security issues
 
 Given this project involves **AI agent execution with shell access**, we take these especially seriously:
 
@@ -47,13 +47,13 @@ Given this project involves **AI agent execution with shell access**, we take th
 - **Permission escalation** in plugin system
 - **Supply chain** risks in dependencies
 
-### What We Do NOT Consider Security Issues
+### What we do NOT consider security issues
 
 - LLM prompt injection (inherent to AI systems, not a code vulnerability)
 - Missing features (e.g., "should add sandboxing for X")
 - Configuration errors by the user
 
-## Security Architecture
+## Security architecture
 
 This project implements defense-in-depth for shell execution:
 
@@ -66,17 +66,18 @@ This project implements defense-in-depth for shell execution:
 7. **Rate limiting** — Prevents abuse of tool calls
 8. **Result truncation** — 100KB limit prevents memory exhaustion
 
-## Security Changelog
+## Security changelog
 
-| Version | Fix |
-|---------|-----|
-| 2.7.2 | Mock provider default — init works without API keys (with warning), failover chain accepts mock without AIYU_ENABLE_MOCK, health-check reports mock enabled |
-| 2.7.1 | Failover chain mutation fix, handoff catch block scope fix, chat session timeout, circuit breaker cleanup, tracing cleanup timer, cache key collision fix |
-| 2.7.0 | plan.create/memory.save path traversal fix, WS timer leak fix, agentStatuses TTL cleanup, sensitiveRouteAuth for /agents/statuses |
-| 2.6.0 | fetch.url SSRF protection (DNS + private IP block), WS maxPayload 1MB + perMessageDeflate:false, WS heartbeat + stale connection termination, WS handleRun/handleChatSend 5min timeout, sensitiveRouteAuth for /traces + /metrics, security headers (X-Content-Type-Options, X-Frame-Options, X-XSS-Protection, Referrer-Policy, HSTS), WS terminateAllConnections on shutdown |
-| 2.5.1 | Per-provider circuit breaker keys, rate limit hard cap + X-Forwarded-For spoofing fix, cache freeze-on-fallback, LLM retry off-by-one fix |
-| 2.4.1 | BLOCKED_FLAGS bypass fix, sandboxExec `path.basename`, rateLimits Map unbounded growth fix, safeWrite temp file leak, ReDoS protection, truncateResult deep clone, glob regex metacharacter escaping, maxSteps hard cap, API /jobs validation, secret scanning in publish |
-| 2.4.0 | MCP host authorization, secret scanning in publish, rate limiting middleware, graceful shutdown |
-| 2.2.0 | Symlink traversal attack fix, init.js guardrails bypass fix, circuit breaker null state guard, safeWrite temp file leak fix, queue operations after destroy guard |
-| 2.1.0 | Command injection fix, path traversal fix, removed curl/wget, dangerous pattern detection |
-| 2.0.0 | Initial security layer (guardrails, sandboxExec, safeWrite, rateLimit) |
+For the full security fix history, see [CHANGELOG.md](CHANGELOG.md).
+
+Key security fixes by version:
+
+| Version | Key fix |
+|---------|--------|
+| 2.7.x | CLI engine spawn safety, artifact write path validation, quality gate enforcement |
+| 2.6.x | SSRF protection, WS hardening, security headers, sensitive route auth |
+| 2.5.x | Per-provider circuit breaker, rate limit hard cap, X-Forwarded-For spoofing fix |
+| 2.4.x | BLOCKED_FLAGS bypass, sandboxExec hardening, secret scanning, ReDoS protection |
+| 2.2.x | Symlink traversal fix, safeWrite temp file leak, queue destroy guard |
+| 2.1.x | Command injection fix, path traversal fix, dangerous pattern detection |
+| 2.0.x | Initial security layer (guardrails, sandboxExec, safeWrite, rateLimit) |

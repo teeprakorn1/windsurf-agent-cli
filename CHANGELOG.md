@@ -7,6 +7,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.7.9] - 2026-05-19
+
+### Added — Multi-CLI PATH Scanner, Question-Form Guardrail, Anti-Slop Quality Gate, Artifact Output Format
+
+- **Multi-CLI PATH Scanner** — Detects AI CLI engines (`claude`, `codex`, `gemini`, `cursor-agent`, `copilot`, `qwen`, `deepseek`, `aider`) in `$PATH` with 5-minute caching. Adds `cli:<name>` providers to failover chain and health checks. Includes generic, claude, and codex adapters with spawn safety (shell: false, timeout, 1MB output cap).
+- **Question-Form Guardrail** — On first user turn, detects build/create/implement/design requests and injects a 5-question discovery form before code. Supports `--no-form` bypass.
+- **Anti-Slop Quality Gate** — Post-step output checks for banned phrases, debug logs, `eval`, hardcoded secrets, and oversized output. Default warn mode; `--strict-quality-gate` can fail the run.
+- **Artifact Output Format** — Parses `<artifact type="..." filename="...">` tags from LLM responses into structured file objects. Supports `html`, `css`, `js`, `ts`, `json`, `yaml`, `md`, `python`, `shell`. Adds `--output-format artifact`, `--write-artifacts <dir>`, and authenticated `GET /artifacts/:jobId`.
+- **CLI commands** — New `engines` subcommand lists detected CLI engines. `run`, `run-from-file`, and `chat` accept `--output-format`, `--no-form`, `--no-quality-gate`, `--strict-quality-gate`, `--write-artifacts`.
+- **API updates** — `/jobs` and `/agents/run-from-note` accept `output_format`, `no_form`, `no_quality_gate`, `strict_quality_gate`.
+- **26 new unit tests** — `lib/test/unit/v2-7-9.test.js` covers CLI scanner, adapters, question form, quality gate, artifact parser, failover chain inclusion, and health report.
+
+### Changed
+
+- `lib/core/llm-providers.js` — Dispatches `cli:<name>` to adapter modules.
+- `lib/core/failover.js` — Builds failover chain including detected CLI engines with per-provider circuit breakers.
+- `lib/core/health-check.js` — Reports CLI engine availability under `checks.llmProviders.cli`.
+- `lib/core/react-loop.js` — Injects question form on turn 1; parses artifacts and applies quality gate before return.
+- `lib/core/chat-session.js` — Tracks turn count, injects question form, parses artifacts, applies quality gate.
+- `lib/core/prompt-builder.js` — Adds artifact format instructions when `outputFormat === "artifact"`.
+- `lib/core/config.js` — Adds `loadCliEngineConfig()` helper.
+- `bin/cli.js` — New options and `engines` command.
+- `lib/commands/run.js`, `run-from-file.js`, `chat.js` — Pass new options and handle artifact writes.
+- `lib/api/jobs.js`, `server.js` — Wire new API fields and add `/artifacts/:jobId` route.
+
+### Changed — Documentation refactoring (22 files)
+
+- **README.md** — Reorganized: TOC matches sections, V2.7.6/7/8/9 feature sections separated, IDE support split into Cursor/Roo/Config subsections, package structure updated with v2.7.9 modules (cli-scanner, cli-adapters, question-form, quality-gate, artifact-parser, roo-generator), project structure adds `.cursor/`, `.roomodes`, `.roorules`, `.roo/`, 83→84 agents, added `--windsurf-only`, `--agent-only`, `--roo-only`, `--no-roo` init flags, added Roo Code support section
+- **CODEBASE.md** — Removed version history, replaced with current-state architecture overview referencing CHANGELOG.md. Added v2.7.9 core modules (cli-scanner, question-form, quality-gate, artifact-parser, roo-generator). Fixed heading styles to sentence case
+- **docs/USAGE.md** — Added all 26 CLI commands with detailed sections. Added `run-from-file` frontmatter format + options table. Added `dev`, `update`, `inspect` sections. Added `publish --strict`, `--tag`, `--license` + options table. Added Groq provider, CLI engines provider, Roo Code support section. Added `--windsurf-only`, `--agent-only`, `--roo-only`, `--no-roo` init flags. Fixed heading styles
+- **CONTRIBUTING.md** — Updated test counts (126 unit), added v2.7.9 modules, added Groq/CLI providers. Fixed heading styles
+- **SECURITY.md** — Replaced detailed security changelog with concise summary + link to CHANGELOG.md. Fixed heading styles
+- **.windsurfrules** — Updated to V2.7.9, added all 26 CLI commands, added v2.7.9 modules (cli-scanner, question-form, quality-gate, artifact-parser, roo-generator), 84 agents, 12 validation scripts. Fixed heading styles
+- **docs/specs/ARCHITECTURE-V2.md** — Expanded CLI commands to all 26. Fixed heading styles
+- **docs/specs/RUNTIME-SPEC.md** — Updated tools to namespaced format (fs.read, shell.exec), added Groq + CLI engine providers. Fixed heading styles
+- **docs/specs/WS-SCHEMA.md** — Added `groq` and `cli:<name>` to provider field. Fixed heading styles
+- **docs/plans/PLAN-V2.7.9.md** — Marked all features Done, fixed version references v2.7.8→v2.7.9, archived. Fixed heading styles
+- **docs/plans/ROADMAP-V2.6.md** — Removed emoji headings, applied sentence case
+- **docs/CURSOR-IDE.md** — Fixed heading styles to sentence case
+- **templates/agent/** (4 files) — Updated tools to namespaced format, removed emoji headings, fixed heading styles
+- **templates/skill/SKILL.md** — Updated tools to namespaced format, fixed heading style
+- **docs/archive/ROADMAP-V2.5.md** — Removed emoji headings, applied sentence case
+- **docs/archive/MCP-SERVER-PLAN.md** — Applied sentence case to headings
+- **docs/archive/PLAN-V2.7.5.md** — Applied sentence case to headings
+- **docs/README.md** — No changes needed (already sentence case)
+
+---
+
 ## [2.7.8] - 2026-05-19
 
 ### Added — Cursor Output Contract & Command Templates
