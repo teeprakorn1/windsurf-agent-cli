@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.7.8] - 2026-05-19
+
+### Added — Cursor Output Contract & Command Templates
+
+- **Cursor Output Contract** — All 78 `.cursor/commands/*.md` now include a `## ⚠️ CURSOR OUTPUT CONTRACT` section that enforces agent activation in the first response line. Fixes Cursor IDE not reliably loading `alwaysApply` rules (GEMINI.md Rule Zero) during slash command execution.
+- **3 Command Type Templates** — Commands are classified into 3 types with type-specific templates injected during generation:
+  - **Orchestration** (10 commands) — Required Response Structure: Mission Brief, Execution Plan, Agent Delegation Matrix, Risk Register, Quality Gates, Next Immediate Actions
+  - **Agent** (34 commands) — Required Behavior: read agent instructions, Socratic Gate, clean-code principles
+  - **Utility** (34 commands) — Required Behavior: follow task steps, Socratic Gate, completion status
+- **Command Type Classification** — `COMMAND_TYPE_MAP` in `cursor-generator.js`: `ORCHESTRATION_COMMANDS` (10), `AGENT_COMMANDS` (34), utility fallback
+- **Agent Info Parser** — `parseAgentActivation()` extracts agent name + skills from workflow body for template personalization
+- **11 new tests** — `getCommandType` (3), `parseAgentActivation` (2), `buildOutputContract` (1), `buildTemplateBlock` (4), `convertWorkflow` injection (1). Total: 34 cursor-generator tests (was 23)
+
+### Changed
+
+- `lib/commands/cursor-generator.js` — Added `ORCHESTRATION_COMMANDS`, `AGENT_COMMANDS`, `getCommandType()`, `parseAgentActivation()`, `buildOutputContract()`, `buildOrchestrationTemplate()`, `buildAgentTemplate()`, `buildUtilityTemplate()`, `buildTemplateBlock()`. Modified `convertWorkflow()` to inject template block. All new functions exported via `_internals`
+- `.cursor/commands/*.md` — All 78 commands regenerated with Output Contract + type-specific templates
+
+---
+
 ## [2.7.7] - 2026-05-19
 
 ### Added — Cursor IDE Full Support

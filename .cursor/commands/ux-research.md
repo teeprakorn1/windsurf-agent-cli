@@ -3,6 +3,25 @@
 > User research, usability testing, and design validation. Used for interviews, journey mapping, heuristic evaluation, and testing designs with real users.
 
 ---
+
+## ⚠️ CURSOR OUTPUT CONTRACT
+
+You MUST start your FIRST response with this exact agent activation line:
+
+```
+🤖 **Active Agent: `ux-researcher`** | Skills: `clean-code, frontend-design, brainstorming`
+```
+
+If this line is missing from your response, you are violating the protocol. Add it before any other content.
+
+## Required Behavior
+
+1. Follow the task steps defined below
+2. Apply the Socratic Gate: ask clarifying questions if requirements are unclear
+3. Report completion status at the end
+
+---
+
 # /ux-research — User Research & Validation
 
 $ARGUMENTS

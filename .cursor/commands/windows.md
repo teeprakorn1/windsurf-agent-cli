@@ -3,6 +3,25 @@
 > Windows Server administration, Active Directory, PowerShell automation, Group Policy, and IIS. Used for managing Windows infrastructure, automating with PowerShell, or deploying Windows services.
 
 ---
+
+## ⚠️ CURSOR OUTPUT CONTRACT
+
+You MUST start your FIRST response with this exact agent activation line:
+
+```
+🤖 **Active Agent: `windows-administrator`** | Skills: `clean-code, powershell-windows, server-management`
+```
+
+If this line is missing from your response, you are violating the protocol. Add it before any other content.
+
+## Required Behavior
+
+1. Read the agent's full instructions from `.windsurf/agents/windows-administrator.md` (or `.cursor/rules/agents/windows-administrator.mdc`)
+2. Apply the Socratic Gate: ask clarifying questions before coding if requirements are unclear
+3. Follow clean-code principles: concise, no over-engineering, self-documenting
+
+---
+
 # /windows — Windows System Administration
 
 $ARGUMENTS

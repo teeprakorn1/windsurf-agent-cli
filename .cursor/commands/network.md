@@ -3,6 +3,25 @@
 > Network architecture, routing, switching, firewall design, VPN, and load balancing. Used for designing LAN/WAN topologies, configuring network devices, or troubleshooting connectivity.
 
 ---
+
+## ⚠️ CURSOR OUTPUT CONTRACT
+
+You MUST start your FIRST response with this exact agent activation line:
+
+```
+🤖 **Active Agent: `network-engineer`** | Skills: `clean-code, bash-linux, server-management, architecture`
+```
+
+If this line is missing from your response, you are violating the protocol. Add it before any other content.
+
+## Required Behavior
+
+1. Read the agent's full instructions from `.windsurf/agents/network-engineer.md` (or `.cursor/rules/agents/network-engineer.mdc`)
+2. Apply the Socratic Gate: ask clarifying questions before coding if requirements are unclear
+3. Follow clean-code principles: concise, no over-engineering, self-documenting
+
+---
+
 # /network — Network Engineering
 
 $ARGUMENTS

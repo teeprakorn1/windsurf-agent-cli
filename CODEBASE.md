@@ -1,6 +1,28 @@
-# CODEBASE.md — Aiyu MultiAgent V2.7.7
+# CODEBASE.md — Aiyu MultiAgent V2.7.8
 
 ## Version History
+
+### V2.7.8 (2026-05-19) — Cursor Output Contract & Command Templates
+
+**v2.7.8** fixes Cursor IDE not enforcing agent identification (Rule Zero) during slash command execution. All 78 `.cursor/commands/*.md` now include a self-contained Output Contract + type-specific template injected by the generator.
+
+**Root Cause:** Cursor doesn't reliably load `alwaysApply` rules (GEMINI.md) when running slash commands, so global Rule Zero doesn't trigger.
+
+**Solution:** `convertWorkflow()` now injects the Output Contract directly into each command file — making commands self-contained.
+
+**New in `cursor-generator.js`:**
+- `ORCHESTRATION_COMMANDS` (Set, 10 entries) — elite/senior/junior-orchestrate, orchestrate, *-orchestration, elite-tech-leader
+- `AGENT_COMMANDS` (Set, 34 entries) — backend, frontend, database, security, react, etc.
+- `getCommandType(name)` — returns `"orchestration"` | `"agent"` | `"utility"` (default fallback)
+- `parseAgentActivation(body)` — regex extracts `{agentName, skills}` from `🤖 **Active Agent:` pattern
+- `buildOutputContract(agentName, skills)` — shared section: `## ⚠️ CURSOR OUTPUT CONTRACT` with exact activation line
+- `buildOrchestrationTemplate()` — 6-section Required Response Structure (Mission Brief → Next Actions)
+- `buildAgentTemplate(agentName)` — Required Behavior: read agent .md, Socratic Gate, clean-code
+- `buildUtilityTemplate()` — Required Behavior: follow task steps, Socratic Gate, completion status
+- `buildTemplateBlock(commandName, body)` — orchestrator: parse agent info → classify type → build contract + template
+- `convertWorkflow()` — now calls `buildTemplateBlock()` and prepends result before original body
+
+**Tests:** 34 total (was 23). 11 new: getCommandType (3), parseAgentActivation (2), buildOutputContract (1), buildTemplateBlock (4), convertWorkflow injection (1)
 
 ### V2.7.7 (2026-05-19) — Cursor IDE Full Support
 

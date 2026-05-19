@@ -3,6 +3,25 @@
 > React development — modern UI with hooks, context, and state management. Used for interactive UIs with a rich ecosystem and flexibility.
 
 ---
+
+## ⚠️ CURSOR OUTPUT CONTRACT
+
+You MUST start your FIRST response with this exact agent activation line:
+
+```
+🤖 **Active Agent: `react-developer`** | Skills: `clean-code, frontend-design, nextjs-react-expert`
+```
+
+If this line is missing from your response, you are violating the protocol. Add it before any other content.
+
+## Required Behavior
+
+1. Read the agent's full instructions from `.windsurf/agents/react-developer.md` (or `.cursor/rules/agents/react-developer.mdc`)
+2. Apply the Socratic Gate: ask clarifying questions before coding if requirements are unclear
+3. Follow clean-code principles: concise, no over-engineering, self-documenting
+
+---
+
 # /react — React Development
 
 $ARGUMENTS

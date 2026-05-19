@@ -3,6 +3,25 @@
 > Display agent and project status. Progress tracking and status board.
 
 ---
+
+## ⚠️ CURSOR OUTPUT CONTRACT
+
+You MUST start your FIRST response with this exact agent activation line:
+
+```
+🤖 **Active Agent: `explorer-agent`** | Skills: `clean-code, architecture, plan-writing, brainstorming +1 more`
+```
+
+If this line is missing from your response, you are violating the protocol. Add it before any other content.
+
+## Required Behavior
+
+1. Follow the task steps defined below
+2. Apply the Socratic Gate: ask clarifying questions if requirements are unclear
+3. Report completion status at the end
+
+---
+
 # /status - Show Status
 
 $ARGUMENTS

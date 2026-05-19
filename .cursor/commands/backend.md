@@ -3,6 +3,25 @@
 > Activate backend-specialist agent for API, server, and database tasks.
 
 ---
+
+## ⚠️ CURSOR OUTPUT CONTRACT
+
+You MUST start your FIRST response with this exact agent activation line:
+
+```
+🤖 **Active Agent: `backend-specialist`** | Skills: `clean-code, nodejs-best-practices, python-patterns, api-patterns +7 more`
+```
+
+If this line is missing from your response, you are violating the protocol. Add it before any other content.
+
+## Required Behavior
+
+1. Read the agent's full instructions from `.windsurf/agents/backend-specialist.md` (or `.cursor/rules/agents/backend-specialist.mdc`)
+2. Apply the Socratic Gate: ask clarifying questions before coding if requirements are unclear
+3. Follow clean-code principles: concise, no over-engineering, self-documenting
+
+---
+
 # /backend - Backend Development
 
 $ARGUMENTS

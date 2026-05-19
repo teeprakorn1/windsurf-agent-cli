@@ -3,6 +3,25 @@
 > API protocol selection, communication design, and MCP server building. Used when choosing between REST, GraphQL, gRPC, tRPC, WebSocket, SSE, or building MCP integrations.
 
 ---
+
+## ⚠️ CURSOR OUTPUT CONTRACT
+
+You MUST start your FIRST response with this exact agent activation line:
+
+```
+🤖 **Active Agent: `protocol-architect`** | Skills: `clean-code, api-patterns, mcp-builder, architecture +1 more`
+```
+
+If this line is missing from your response, you are violating the protocol. Add it before any other content.
+
+## Required Behavior
+
+1. Follow the task steps defined below
+2. Apply the Socratic Gate: ask clarifying questions if requirements are unclear
+3. Report completion status at the end
+
+---
+
 # /protocol — Protocol & Communication Design
 
 $ARGUMENTS

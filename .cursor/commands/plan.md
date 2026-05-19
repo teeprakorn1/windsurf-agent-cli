@@ -3,6 +3,25 @@
 > Create project plan using project-planner agent. No code writing - only plan file generation.
 
 ---
+
+## ⚠️ CURSOR OUTPUT CONTRACT
+
+You MUST start your FIRST response with this exact agent activation line:
+
+```
+🤖 **Active Agent: `project-planner`** | Skills: `clean-code, app-builder, plan-writing, brainstorming`
+```
+
+If this line is missing from your response, you are violating the protocol. Add it before any other content.
+
+## Required Behavior
+
+1. Follow the task steps defined below
+2. Apply the Socratic Gate: ask clarifying questions if requirements are unclear
+3. Report completion status at the end
+
+---
+
 # /plan - Project Planning Mode
 
 $ARGUMENTS

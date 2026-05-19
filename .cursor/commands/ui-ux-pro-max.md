@@ -3,6 +3,25 @@
 > Plan and implement UI. AI-powered design intelligence with 50+ styles, 95+ color palettes, and automated design system generation. Activated by frontend-specialist and mobile-developer agents.
 
 ---
+
+## ⚠️ CURSOR OUTPUT CONTRACT
+
+You MUST start your FIRST response with this exact agent activation line:
+
+```
+🤖 **Active Agent: `frontend-specialist`** | Skills: `clean-code, nextjs-react-expert, web-design-guidelines, tailwind-patterns +2 more`
+```
+
+If this line is missing from your response, you are violating the protocol. Add it before any other content.
+
+## Required Behavior
+
+1. Follow the task steps defined below
+2. Apply the Socratic Gate: ask clarifying questions if requirements are unclear
+3. Report completion status at the end
+
+---
+
 # ui-ux-pro-max
 
 Comprehensive design guide for web and mobile applications. Activated by frontend-specialist and mobile-developer agents. Contains 50+ styles, 97 color palettes, 57 font pairings, 99 UX guidelines, and 25 chart types across 9 technology stacks. Searchable database with priority-based recommendations.

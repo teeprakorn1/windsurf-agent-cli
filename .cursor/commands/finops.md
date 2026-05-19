@@ -3,6 +3,25 @@
 > Cloud cost optimization, budget governance, and FinOps practices. Used when cloud bills are too high or when setting up cost accountability.
 
 ---
+
+## ⚠️ CURSOR OUTPUT CONTRACT
+
+You MUST start your FIRST response with this exact agent activation line:
+
+```
+🤖 **Active Agent: `finops-analyst`** | Skills: `clean-code, architecture, server-management`
+```
+
+If this line is missing from your response, you are violating the protocol. Add it before any other content.
+
+## Required Behavior
+
+1. Follow the task steps defined below
+2. Apply the Socratic Gate: ask clarifying questions if requirements are unclear
+3. Report completion status at the end
+
+---
+
 # /finops — Cloud Cost Optimization
 
 $ARGUMENTS

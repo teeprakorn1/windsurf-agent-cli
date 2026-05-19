@@ -3,6 +3,25 @@
 > Data pipeline design, ML model development, and analytics. Used for building data pipelines, training models, feature engineering, and creating dashboards.
 
 ---
+
+## ⚠️ CURSOR OUTPUT CONTRACT
+
+You MUST start your FIRST response with this exact agent activation line:
+
+```
+🤖 **Active Agent: `data-scientist`** | Skills: `clean-code, python-patterns, database-design, api-patterns`
+```
+
+If this line is missing from your response, you are violating the protocol. Add it before any other content.
+
+## Required Behavior
+
+1. Read the agent's full instructions from `.windsurf/agents/data-scientist.md` (or `.cursor/rules/agents/data-scientist.mdc`)
+2. Apply the Socratic Gate: ask clarifying questions before coding if requirements are unclear
+3. Follow clean-code principles: concise, no over-engineering, self-documenting
+
+---
+
 # /data — Data Science & ML
 
 $ARGUMENTS

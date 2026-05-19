@@ -3,6 +3,25 @@
 > VB.NET development — Windows desktop applications and legacy maintenance. Used for maintaining enterprise VB.NET or migrating to modern platforms.
 
 ---
+
+## ⚠️ CURSOR OUTPUT CONTRACT
+
+You MUST start your FIRST response with this exact agent activation line:
+
+```
+🤖 **Active Agent: `vbnet-developer`** | Skills: `clean-code, database-design, api-patterns`
+```
+
+If this line is missing from your response, you are violating the protocol. Add it before any other content.
+
+## Required Behavior
+
+1. Read the agent's full instructions from `.windsurf/agents/vbnet-developer.md` (or `.cursor/rules/agents/vbnet-developer.mdc`)
+2. Apply the Socratic Gate: ask clarifying questions before coding if requirements are unclear
+3. Follow clean-code principles: concise, no over-engineering, self-documenting
+
+---
+
 # /vbnet — VB.NET Development
 
 $ARGUMENTS

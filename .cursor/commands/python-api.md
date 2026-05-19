@@ -3,6 +3,25 @@
 > Python API development — FastAPI, Flask, or Django REST. Used for high-performance async APIs or when leveraging Python's ML/data ecosystem.
 
 ---
+
+## ⚠️ CURSOR OUTPUT CONTRACT
+
+You MUST start your FIRST response with this exact agent activation line:
+
+```
+🤖 **Active Agent: `python-api-developer`** | Skills: `clean-code, python-patterns, api-patterns, database-design +1 more`
+```
+
+If this line is missing from your response, you are violating the protocol. Add it before any other content.
+
+## Required Behavior
+
+1. Read the agent's full instructions from `.windsurf/agents/python-api-developer.md` (or `.cursor/rules/agents/python-api-developer.mdc`)
+2. Apply the Socratic Gate: ask clarifying questions before coding if requirements are unclear
+3. Follow clean-code principles: concise, no over-engineering, self-documenting
+
+---
+
 # /python-api — Python API Development
 
 $ARGUMENTS

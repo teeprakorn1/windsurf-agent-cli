@@ -1,6 +1,6 @@
 {
   "name": "aiyu-multi-agent",
-  "version": "2.7.7",
+  "version": "2.7.8",
   "description": "Production-grade AI Agent Platform — 84 Agents, 46 Skills, 78 Workflows, 14 Tools, 5 LLM Providers (OpenAI/Claude/Groq/Ollama/Mock), Smart Init, Frontmatter Task Runner, Plugin System, Agent Testing, Publishing",
   "bin": {
     "aiyu-multi-agent": "./bin/cli.js"

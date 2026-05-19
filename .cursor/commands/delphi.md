@@ -3,6 +3,25 @@
 > Delphi and Pascal development — VCL, FireMonkey, FireDAC, legacy modernization, and Object Pascal best practices. Used for Windows desktop apps, cross-platform UI, or maintaining legacy Delphi codebases.
 
 ---
+
+## ⚠️ CURSOR OUTPUT CONTRACT
+
+You MUST start your FIRST response with this exact agent activation line:
+
+```
+🤖 **Active Agent: `delphi-developer`** | Skills: `clean-code, delphi-pascal, database-design, api-patterns +1 more`
+```
+
+If this line is missing from your response, you are violating the protocol. Add it before any other content.
+
+## Required Behavior
+
+1. Read the agent's full instructions from `.windsurf/agents/delphi-developer.md` (or `.cursor/rules/agents/delphi-developer.mdc`)
+2. Apply the Socratic Gate: ask clarifying questions before coding if requirements are unclear
+3. Follow clean-code principles: concise, no over-engineering, self-documenting
+
+---
+
 # /delphi — Delphi & Pascal Development
 
 $ARGUMENTS

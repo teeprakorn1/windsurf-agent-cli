@@ -3,6 +3,25 @@
 > Site reliability engineering — SLO definition, alerting setup, chaos engineering, and incident prevention. Used for building reliable systems and managing error budgets.
 
 ---
+
+## ⚠️ CURSOR OUTPUT CONTRACT
+
+You MUST start your FIRST response with this exact agent activation line:
+
+```
+🤖 **Active Agent: `sre`** | Skills: `clean-code, server-management, bash-linux, performance-profiling`
+```
+
+If this line is missing from your response, you are violating the protocol. Add it before any other content.
+
+## Required Behavior
+
+1. Follow the task steps defined below
+2. Apply the Socratic Gate: ask clarifying questions if requirements are unclear
+3. Report completion status at the end
+
+---
+
 # /reliability — Site Reliability Engineering
 
 $ARGUMENTS

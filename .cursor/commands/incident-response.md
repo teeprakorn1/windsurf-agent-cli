@@ -3,6 +3,25 @@
 > Security incident response — breach detection, containment, forensics, recovery, and post-mortem. Used when investigating suspected compromise or data breach.
 
 ---
+
+## ⚠️ CURSOR OUTPUT CONTRACT
+
+You MUST start your FIRST response with this exact agent activation line:
+
+```
+🤖 **Active Agent: `incident-responder`** | Skills: `vulnerability-scanner, bash-linux, server-management`
+```
+
+If this line is missing from your response, you are violating the protocol. Add it before any other content.
+
+## Required Behavior
+
+1. Follow the task steps defined below
+2. Apply the Socratic Gate: ask clarifying questions if requirements are unclear
+3. Report completion status at the end
+
+---
+
 # /incident-response — Security Incident Handler
 
 $ARGUMENTS

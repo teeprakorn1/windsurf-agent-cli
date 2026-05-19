@@ -3,6 +3,25 @@
 > Shift-left security coding — input validation, auth patterns, cryptography, and OWASP secure design principles. Used when writing new features or reviewing code for security anti-patterns.
 
 ---
+
+## ⚠️ CURSOR OUTPUT CONTRACT
+
+You MUST start your FIRST response with this exact agent activation line:
+
+```
+🤖 **Active Agent: `secure-coder`** | Skills: `clean-code, vulnerability-scanner, api-patterns, code-review-checklist`
+```
+
+If this line is missing from your response, you are violating the protocol. Add it before any other content.
+
+## Required Behavior
+
+1. Follow the task steps defined below
+2. Apply the Socratic Gate: ask clarifying questions if requirements are unclear
+3. Report completion status at the end
+
+---
+
 # /secure-coding - Secure Code Review & Patterns
 
 $ARGUMENTS

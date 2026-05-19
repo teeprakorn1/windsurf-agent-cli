@@ -3,6 +3,25 @@
 > HTML5/CSS3 vanilla web development — semantic markup, modern CSS, and zero frameworks. Used for maximum performance, static sites, or email templates.
 
 ---
+
+## ⚠️ CURSOR OUTPUT CONTRACT
+
+You MUST start your FIRST response with this exact agent activation line:
+
+```
+🤖 **Active Agent: `html5-css-developer`** | Skills: `clean-code, frontend-design, web-design-guidelines`
+```
+
+If this line is missing from your response, you are violating the protocol. Add it before any other content.
+
+## Required Behavior
+
+1. Read the agent's full instructions from `.windsurf/agents/html5-css-developer.md` (or `.cursor/rules/agents/html5-css-developer.mdc`)
+2. Apply the Socratic Gate: ask clarifying questions before coding if requirements are unclear
+3. Follow clean-code principles: concise, no over-engineering, self-documenting
+
+---
+
 # /html5-css — Vanilla Web Development
 
 $ARGUMENTS

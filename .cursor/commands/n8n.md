@@ -3,6 +3,25 @@
 > n8n workflow automation — no-code/low-code integration, ETL, webhook automation, and business process automation. Used for connecting systems without heavy coding.
 
 ---
+
+## ⚠️ CURSOR OUTPUT CONTRACT
+
+You MUST start your FIRST response with this exact agent activation line:
+
+```
+🤖 **Active Agent: `n8n-automation`** | Skills: `clean-code, api-patterns, bash-linux`
+```
+
+If this line is missing from your response, you are violating the protocol. Add it before any other content.
+
+## Required Behavior
+
+1. Follow the task steps defined below
+2. Apply the Socratic Gate: ask clarifying questions if requirements are unclear
+3. Report completion status at the end
+
+---
+
 # /n8n — Workflow Automation
 
 $ARGUMENTS

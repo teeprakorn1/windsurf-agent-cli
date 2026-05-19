@@ -115,6 +115,22 @@ To add more servers, edit `.windsurf/mcp_config.json` and regenerate.
 
 ---
 
+## Output Contract (v2.7.8)
+
+Every generated `.cursor/commands/*.md` includes a **⚠️ CURSOR OUTPUT CONTRACT** section at the top. This enforces agent identification in Cursor — even when `alwaysApply` rules (GEMINI.md) aren't loaded.
+
+### 3 Command Types
+
+| Type | Count | Template |
+|------|-------|----------|
+| **Orchestration** | 10 | Required Response Structure: Mission Brief, Execution Plan, Agent Delegation Matrix, Risk Register, Quality Gates, Next Actions |
+| **Agent** | 34 | Required Behavior: read agent instructions, Socratic Gate, clean-code |
+| **Utility** | 34 | Required Behavior: follow task steps, Socratic Gate, completion status |
+
+Commands are classified by `ORCHESTRATION_COMMANDS` / `AGENT_COMMANDS` sets in `cursor-generator.js`. Unknown commands default to utility.
+
+---
+
 ## Description Extraction
 
 The generator infers each rule's `description` field intelligently:
